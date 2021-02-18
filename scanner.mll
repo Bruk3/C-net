@@ -1,5 +1,12 @@
-{ open Cnet }
+{
+    open Parser;;
+    open Float
+}
 
+let alpha = ['a'-'Z']
+let digit = ['0'-'9']
+let squote = '\''
+let bslash = '\\'
 
 rule tokenize = parse
   [' ' '\t' '\r' '\n'] { tokenize lexbuf }
@@ -7,6 +14,8 @@ rule tokenize = parse
 | ')' { RPAREN }
 | '{' { LBRACE }
 | '}' { RBRACE }
+| '[' { RBRACKET }
+| ']' { LBRACKET }
 | ',' { COMMA }
 | ';' { SEMI }
 | '\'' {SQUOTE}
@@ -40,4 +49,20 @@ rule tokenize = parse
 | "new" { NEW }
 | "delete" { DELETE }
 (* Now the tokens that have to be matched with regex *)
+| "//" { scomment lexbuf }
+| "/*" { mcomment lexbuf }
+| (alpha | '_')+(alpha | digit | '_')* {ID}
+| digit* as intlit { INTLIT(int_of_string intlit) } 
+| '"'*'"' { STRLIT(str) } (* TODO parse only the string part; discard the quotes *)
+| squote bslash digit digit digit squote { CHARLIT(0) } (* TODO extract char *)
+| squote bslash alpha squote { CHARLIT(0) } (* TODO get special escape sequence *)
+| digit+ '.' digit* as flt { FLOATLIT(flt) }
 | eof { EOF }
+
+and scomment = parse
+'\n' { tokenize lexbuf }
+| _ { scomment lexbuf }
+
+and mcomment = parse
+"*/" { tokenize lexbuf }
+| _ { mcomment lexbuf }
