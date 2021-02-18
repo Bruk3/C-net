@@ -9,12 +9,10 @@ jobs:
       fail-fast: true 
       matrix:
         os:
-          - macos-latest
+          - ubuntu-latest
         ocaml-version:
           - 4.11.1
-
     runs-on: ${{ matrix.os }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -25,3 +23,19 @@ jobs:
           ocaml-version: ${{ matrix.ocaml-version }}
 
       - run: make test
+
+      - name: 
+
+  slack-workflow-status:
+    if: always()
+    name: Post Workflow Status To Slack
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Workflow Notification
+        uses: Gamesight/slack-workflow-status@master
+        with:
+          # Required Input
+          repo_token: ${{secrets.GITHUB_TOKEN}}
+          slack_webhook_url: ${{secrets.SLACK_WEBHOOK}}
