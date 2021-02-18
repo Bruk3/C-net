@@ -24,8 +24,6 @@ jobs:
 
       - run: make test
 
-      - name: 
-
   slack-workflow-status:
     if: always()
     name: Post Workflow Status To Slack
