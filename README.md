@@ -18,7 +18,7 @@ Things to note:
 Having standarized commit messages that are easy to read and understand can be super helpful and easy to implement.
 By taking 5 more seconds to write better commit messages, we can make each other's lives easier. 
 
-Check out [Seven Rules of a Great Commit Message](https://chris.beams.io/posts/git-commit/#separate).
+Check out [The Seven Rules of a Great Commit Message](https://chris.beams.io/posts/git-commit/#separate).
 Tbh, just following 2, 3, and 5 should be enough!
 
 
@@ -36,9 +36,10 @@ __Why VSCode?__
 
 #### Instructions for VSCode 
 
-- Ocaml and Reason IDE
-  - __Dependency_: ocaml-lsp-server
-- Ocaml Platform 
+VSCode Extensions to install. Use the (Ctrl + Shift + P)/(Command + Shift + P) shortcut to open the command palette and then search for `Install Extensions`. In the install extensions tab, you can go ahead and install the following VSCode Extensions. 
+
+- Ocaml and Reason IDE (Syntax highlighting, autoformatting & Code completion)
+- Ocaml Platform (Syntax highlighting for ocamllex files - .mll, .mli, .mly)
 - Vim
 
 

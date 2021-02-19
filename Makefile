@@ -1,7 +1,7 @@
 
 # The "opam exec --" part is for compatiblity with github CI actions
 parser: 
-	opam exec -- ocamlyacc cnet.mly
+	opam exec -- ocamlyacc parser.mly
 
 test: clean parser
 	@echo "SUCCESS"
@@ -9,7 +9,7 @@ test: clean parser
 
 .PHONY: clean
 clean:
-	rm -f cnet.ml cnet.mli 
+	rm -f parser.ml parser.mli 
 
 .PHONY: all
 all: clean parser

@@ -1,6 +1,5 @@
 {
     open Parser;;
-    open Float
 }
 
 let alpha = ['a'-'z' 'A'-'Z']
