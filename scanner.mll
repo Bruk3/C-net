@@ -32,6 +32,7 @@ rule tokenize = parse
 | "-=" { MINUSEQ }
 | "==" { EQ }
 | "!=" { NEQ }
+| "!" { NOT }
 | '<' { LT }
 | "<=" { LEQ }
 | ">" { GT }
@@ -45,6 +46,7 @@ rule tokenize = parse
 | "return" { RETURN }
 | "break" { BREAK }
 | "continue" { CONTINUE }
+| "void" { VOID }
 | "int" { INT }
 | "float" { FLOAT }
 | "char" { CHAR }
@@ -61,11 +63,11 @@ rule tokenize = parse
 | "/*" { mcomment lexbuf }
 | (alpha | '_')+(alpha | digit | '_')* {ID}
 | digit* as intlit { INTLIT(int_of_string intlit) } (* TODO possibly negative*)
-| '"' { str lexbuf }
 | '"' (print_char*) as str '"' { STRLIT(str) } 
-| squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) } (* TODO convert octal string to decimal value *)
+| squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
 | squote bslash ('n' | 't' | '\\' | '0') squote { CHARLIT(0) } (* TODO replace special char with number *)
-| digit+ '.' digit* as flt { FLOATLIT(flt) } (* Optional negative sign *)
+| digit+ '.' digit* as flt { FLOATLIT(flt) } (* TODO Optional negative sign *)
+| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
 | eof { EOF }
 
 and scomment = parse
