@@ -86,27 +86,42 @@ stmt:
 opt_expr: 
     { () }
     | expr { () }
-expr: 
-    INTLIT              { () }
-  | FLOATLIT            { () }
-  | STRLIT              { () }
-  | ID                  { () }
-  | LPAREN expr LPAREN  { () }
-  | expr EQ expr        { () }
-  | expr NEQ expr       { () }
-  | expr LT expr        { () }
-  | expr LEQ expr       { () }
-  | expr GT expr        { () }
-  | expr GEQ expr       { () }
-  | expr PLUS expr      { () }
-  | expr MINUS expr     { () }
-  | expr TIMES expr     { () }
-  | expr DIVIDE expr    { () }    // Revise 
-  | ID ASSIGN expr      { () } 
-    
 
-typ:
-     CHAR        { () }
-  |  INT         { () }
-  |  FLOAT       { () }
-  |  STRING      { () } 
+expr: 
+    INTLIT                { () }
+    | CHARLIT             { () }
+    | FLOATLIT            { () }
+    | STRLIT              { () }
+    | ARRAYLIT            { () }
+    | ID                  { () }
+    | LPAREN expr LPAREN  { () }
+    | expr EQ expr        { () }
+    | expr NEQ expr       { () }
+    | expr LT expr        { () }
+    | expr LEQ expr       { () }
+    | expr GT expr        { () }
+    | expr GEQ expr       { () }
+    | expr PLUS expr      { () }
+    | expr MINUS expr     { () }
+    | expr TIMES expr     { () }
+    | expr DIVIDE expr    { () }    (* revise *)
+    | expr PEQ expr       { () }
+    | expr MEQ expr       { () }
+    | MINUS expr %prec NOT
+    | NOT expr
+    | NEW typ
+    | NEW typ LBRACKET INTLIT RBRACKET 
+    | DELETE ID
+    | ID ASSIGN expr
+    | ID DOT ID ASSIGN expr
+    | ID LPAREN opt_args RPAREN
+    | ID DOT ID LPAREN opt_args RPAREN
+    | PLUSPLUS expr
+    | MINUSMINUS expr
+
+opt_args : 
+    { () }
+    | args { () }
+
+args : 
+    expr | args COMMA expr
