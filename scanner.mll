@@ -8,6 +8,8 @@ let squote = '\''
 let bslash = '\\'
 let octal_dig = ['0'-'7']
 let octal_triplet = (octal_dig)(octal_dig)(octal_dig)
+let normal_id = (alpha | '_')(alpha | digit | '_')* 
+
 
 let print_char = [' '-'~']
 
@@ -61,7 +63,9 @@ rule tokenize = parse
 (* Now the tokens that have to be matched with regex *)
 | "//" { scomment lexbuf }
 | "/*" { mcomment lexbuf }
-| (alpha | '_')+(alpha | digit | '_')* {ID}
+| normal_id {ID}
+| ((normal_id)('.'))+normal_id { STRUCTMEM }
+
 | digit* as intlit { INTLIT(int_of_string intlit) } (* TODO possibly negative*)
 | '"' (print_char*) as str '"' { STRLIT(str) } 
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }

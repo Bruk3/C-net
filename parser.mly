@@ -27,8 +27,10 @@ program:
     | EOF { () }
 
 decls : 
-      { () } (* empty *)
-    | decls vdecl | decls fdecl | decls sdecl { () }
+      { () } /* empty */
+    | decls vdecl { () }
+    | decls fdecl { () }
+    | decls sdecl { () }
 
 fdecl :
     typ ID LPAREN opt_params RPAREN LBRACE opt_stmts RBRACE { () }
@@ -41,7 +43,14 @@ params:
     typ ID { () }
     | params COMMA typ ID { () }
 
-typ : CHAR | INT | FLOAT | STRING | SOCKET | STRUCT ID | typ LBRACKET RBRACKET {()}
+typ : 
+    CHAR  { () }
+    | INT  { () }
+    | FLOAT  { () }
+    | STRING  { () }
+    | SOCKET  { () }
+    | STRUCT ID  { () }
+    | typ LBRACKET RBRACKET { () }
 
 opt_stmts: 
     {()}
@@ -53,7 +62,7 @@ stmt_gen :
 
 stmts_gen:
     stmt { () }
-    | stmts_gen vdecl { () } (* TODO this might have to become vdecl stmts_gen OR make vdecl and vdecl_assign terminals *)
+    | stmts_gen vdecl { () } /* TODO this might have to become vdecl stmts_gen OR make vdecl and vdecl_assign terminals */
     | stmts_gen vdecl_assign { () }
     | stmts_gen stmt { () }
 
@@ -65,7 +74,8 @@ vdecl:
     typ ID SEMI { () }
 
 vdecl_assign:
-    typ ID ASSIGN expr SEMI
+    typ ID ASSIGN expr SEMI { () }
+    | typ ID ASSIGN NEW typ LBRACKET INTLIT RBRACKET LBRACE args RBRACE SEMI { () }
 
 sdecl:
     STRUCT ID LBRACE vdecls RBRACE SEMI { () }
@@ -87,14 +97,17 @@ opt_expr:
     { () }
     | expr { () }
 
+arraylit: 
+    LBRACE args RBRACE { () }
+
 expr: 
     INTLIT                { () }
     | CHARLIT             { () }
     | FLOATLIT            { () }
     | STRLIT              { () }
-    | ARRAYLIT            { () }
+    | arraylit            { () }
     | ID                  { () }
-    | LPAREN expr LPAREN  { () }
+    | LPAREN expr RPAREN  { () }
     | expr EQ expr        { () }
     | expr NEQ expr       { () }
     | expr LT expr        { () }
@@ -104,24 +117,24 @@ expr:
     | expr PLUS expr      { () }
     | expr MINUS expr     { () }
     | expr TIMES expr     { () }
-    | expr DIVIDE expr    { () }    (* revise *)
-    | expr PEQ expr       { () }
-    | expr MEQ expr       { () }
-    | MINUS expr %prec NOT
-    | NOT expr
-    | NEW typ
-    | NEW typ LBRACKET INTLIT RBRACKET 
-    | DELETE ID
-    | ID ASSIGN expr
-    | ID DOT ID ASSIGN expr
-    | ID LPAREN opt_args RPAREN
-    | ID DOT ID LPAREN opt_args RPAREN
-    | PLUSPLUS expr
-    | MINUSMINUS expr
+    | expr DIVIDE expr    { () }
+    | ID PEQ expr       { () }
+    | ID MEQ expr       { () }
+    | MINUS expr %prec NOT { () }
+    | NOT expr { () }
+    | expr LBRACKET expr RBRACKET { () }
+    | NEW typ { () }
+    | NEW typ LBRACKET expr RBRACKET { () }
+    | DELETE ID { () }
+    | ID ASSIGN expr { () }
+    | STRUCTMEM ASSIGN expr { () }
+    | ID LPAREN opt_args RPAREN { () }
+    | STRUCTMEM LPAREN opt_args RPAREN { () }
 
 opt_args : 
     { () }
     | args { () }
 
 args : 
-    expr | args COMMA expr
+    expr { () }
+    | args COMMA expr { () }
