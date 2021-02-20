@@ -47,14 +47,45 @@ opt_stmts:
     {()}
     | stmts_gen { () }
 
+stmt_gen :
+    stmt { () }
+    | LBRACE stmts_gen RBRACE { () }
+
 stmts_gen:
     stmt { () }
-    | stmts_gen vdecl { () }
+    | stmts_gen vdecl { () } (* TODO this might have to become vdecl stmts_gen OR make vdecl and vdecl_assign terminals *)
     | stmts_gen vdecl_assign { () }
     | stmts_gen stmt { () }
 
+vdecls:
+    vdecls vdecl { () }
+    | vdecl { () }
 
+vdecl:
+    typ ID SEMI { () }
 
+vdecl_assign:
+    typ ID ASSIGN expr SEMI
+
+sdecl:
+    STRUCT ID LBRACE vdecls RBRACE SEMI { () }
+
+stmts:
+    stmts stmt { () }
+    | stmt { () }
+
+stmt: 
+    opt_expr SEMI { () }
+    | RETURN opt_expr SEMI { () }
+    | LBRACE stmts RBRACE { () }
+    | IF LPAREN expr RPAREN stmt %prec NOELSE { () }
+    | IF LPAREN expr RPAREN stmt ELSE stmt    { () }
+    | FOR LPAREN opt_expr SEMI expr SEMI opt_expr RPAREN stmt_gen { () }
+    | WHILE RPAREN expr LPAREN stmt_gen  { () }
+
+opt_expr: 
+    { () }
+    | expr { () }
 expr: 
     INTLIT              { () }
   | FLOATLIT            { () }
