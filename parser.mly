@@ -23,7 +23,37 @@
 %%
 
 program: 
-    EOF { () }
+    decls { () }
+    | EOF { () }
+
+decls : 
+      { () } (* empty *)
+    | decls vdecl | decls fdecl | decls sdecl { () }
+
+fdecl :
+    typ ID LPAREN opt_params RPAREN LBRACE opt_stmts RBRACE { () }
+
+opt_params : 
+    { () }
+    | params { () }
+
+params: 
+    typ ID { () }
+    | params COMMA typ ID { () }
+
+typ : CHAR | INT | FLOAT | STRING | SOCKET | STRUCT ID | typ LBRACKET RBRACKET {()}
+
+opt_stmts: 
+    {()}
+    | stmts_gen { () }
+
+stmts_gen:
+    stmt { () }
+    | stmts_gen vdecl { () }
+    | stmts_gen vdecl_assign { () }
+    | stmts_gen stmt { () }
+
+
 
 expr: 
     INTLIT              { () }
