@@ -1,0 +1,6 @@
+INTLIT(10023)
+FLOATLIT(100.240000)
+STRLIT(Hello, World)
+STRLIT(Hello\nWorld)
+STRLIT(Hello'\r\t World)
+EOF
