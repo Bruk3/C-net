@@ -1,0 +1,7 @@
+10023
+100.24
+"Hello, World"
+"Hello\nWorld"
+"Hello'\r\t World"
+'a'
+'\012'
