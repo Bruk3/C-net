@@ -8,6 +8,10 @@
      | RBRACKET
      | LBRACKET
      | EOF
+     | COMMA
+     | SEMI
+     | SQUOTE
+     | DQUOTE
 
 }
 
@@ -25,17 +29,18 @@ let print_char = [' '-'~']
 
 rule tokenize = parse
   [' ' '\t' '\r' '\n'] { tokenize lexbuf }
-| '(' { LPAREN }
-| ')' { RPAREN }
-| '{' { LBRACE }
-| '}' { RBRACE }
-| '[' { LBRACKET }
-| ']' { RBRACKET }
-(*
-| ',' { COMMA }
-| ';' { SEMI }
+| '('  { LPAREN }
+| ')'  { RPAREN }
+| '{'  { LBRACE }
+| '}'  { RBRACE }
+| '['  { LBRACKET }
+| ']'  { RBRACKET }
+| ','  { COMMA }
+| ';'  { SEMI }
 | '\'' {SQUOTE}
-| '"' {DQUOTE}
+| '"'  {DQUOTE}
+(* Operators *)
+(*
 | '+' { PLUS }
 | '-' { MINUS }
 | '*' { TIMES }
@@ -107,6 +112,11 @@ and mcomment = parse
   | RBRACKET              -> Printf.sprintf "RBRACKET"
   | LBRACKET              -> Printf.sprintf "LBRACKET"
   | EOF                   -> Printf.sprintf "EOF"
+  | COMMA                 -> Printf.sprintf "COMMA"
+  | SEMI                  -> Printf.sprintf "SEMI"
+  | SQUOTE                -> Printf.sprintf "SQUOTE"
+  | DQUOTE                -> Printf.sprintf "DQUOTE"
+
   in 
 
   let lexbuf = Lexing.from_channel stdin in
