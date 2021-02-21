@@ -25,6 +25,18 @@
 
 %type <Ast.program> program
 
+%nonassoc NOELSE
+%nonassoc ELSE
+%right ASSIGN
+%left OR
+%left AND
+%left EQ NEQ
+%left LT GT LEQ GEQ
+%left PLUS MINUS
+%left TIMES DIVIDE
+%left MOD
+%right NOT
+
 %%
 
 program: 
@@ -53,6 +65,7 @@ typ :
     | INT  { () }
     | FLOAT  { () }
     | STRING  { () }
+    
     | SOCKET  { () }
     | STRUCT ID  { () }
     | typ LBRACKET RBRACKET { () }
