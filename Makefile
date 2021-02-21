@@ -3,8 +3,12 @@
 parser: 
 	ocamlyacc parser.mly
 
-test: clean parser
+
+test: clean parser runtests
 	@echo "SUCCESS"
+
+runtests: clean scannertest
+	./runtests.sh
 
 scannertest: scanner.cmo 
 	ocamlc -o scannertest $^
@@ -21,7 +25,19 @@ scannertest.out: scannertest test-scanner.tb
 
 .PHONY: clean
 clean:
-	rm -f parser.ml parser.mli scanner.ml scannertest scannertest.out *cmi *cmo
+	rm -f parser.ml parser.mli scanner.ml \
+	scannertest scannertest.out *cmi *cmo \
+	*.log *.diff 
 
 .PHONY: all
 all: clean parser
+
+
+##################################################################
+###### Targets below are for the github action workflows #########
+
+
+ci-parser:
+	ocamlyacc parser.mly
+
+ci-test: clean 

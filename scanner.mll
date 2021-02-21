@@ -162,6 +162,7 @@ and mcomment = parse
   | TIMES                 -> Printf.sprintf "TIMES"
   | DIVIDE                -> Printf.sprintf "DIVIDE"
   | ASSIGN                -> Printf.sprintf "ASSIGN"
+  | MOD                   -> Printf.sprintf "MOD"
   | PLUSEQ                -> Printf.sprintf "PLUSEQ"
   | MINUSEQ               -> Printf.sprintf "MINUSEQ"
   | EQ                    -> Printf.sprintf "EQ"

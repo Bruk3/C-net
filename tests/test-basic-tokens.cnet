@@ -3,7 +3,7 @@
 
 + - * / 
 
-= += -= == != ! < <= > >= && || . %
+= += -= == != ! < <= > >= && || .
 
 if else for while break continue
 
@@ -12,12 +12,3 @@ int float char string socket struct void TCP UDP
 new delete 
 
 return 
-
-
-// delete return while for
-/* new struct socket
-if else for 
-*/
-int x; 
-string y;
-float f;
