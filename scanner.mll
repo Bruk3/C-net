@@ -16,6 +16,7 @@
      | MINUS
      | TIMES 
      | DIVIDE 
+     | MOD
      | ASSIGN 
      | PLUSEQ
      | MINUSEQ

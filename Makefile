@@ -1,7 +1,7 @@
 
 # The "opam exec --" part is for compatiblity with github CI actions
 parser: 
-	opam exec -- ocamlyacc parser.mly
+	ocamlyacc parser.mly
 
 test: clean parser
 	@echo "SUCCESS"
