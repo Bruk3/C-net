@@ -1,5 +1,14 @@
 {
-    open Parser;;
+    (*open Parser;;*)
+    type token = 
+     | LPAREN
+     | RPAREN
+     | LBRACE
+     | RBRACE
+     | RBRACKET
+     | LBRACKET
+     | EOF
+
 }
 
 let alpha = ['a'-'z' 'A'-'Z']
@@ -20,8 +29,9 @@ rule tokenize = parse
 | ')' { RPAREN }
 | '{' { LBRACE }
 | '}' { RBRACE }
-| '[' { RBRACKET }
-| ']' { LBRACKET }
+| '[' { LBRACKET }
+| ']' { RBRACKET }
+(*
 | ',' { COMMA }
 | ';' { SEMI }
 | '\'' {SQUOTE}
@@ -74,8 +84,10 @@ rule tokenize = parse
 | squote print_char squote as lxm               {CHARLIT(lxm.[1])} (*For chars like 'a'*)
 | digit+ '.' digit* as flt { FLOATLIT(flt) } (* TODO Optional negative sign *)
 | _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
+*)
 | eof { EOF }
 
+(*
 and scomment = parse
 '\n' { tokenize lexbuf }
 | eof { tokenize lexbuf }
@@ -84,3 +96,25 @@ and scomment = parse
 and mcomment = parse
 "*/" { tokenize lexbuf }
 | _ { mcomment lexbuf }
+*)
+
+{
+  let pretty_print = function
+  | LPAREN                -> Printf.sprintf "LPAREN"
+  | RPAREN                -> Printf.sprintf "RPAREN"
+  | LBRACE                -> Printf.sprintf "LBRACE"
+  | RBRACE                -> Printf.sprintf "RBRACE"
+  | RBRACKET              -> Printf.sprintf "RBRACKET"
+  | LBRACKET              -> Printf.sprintf "LBRACKET"
+  | EOF                   -> Printf.sprintf "EOF"
+  in 
+
+  let lexbuf = Lexing.from_channel stdin in
+  let token_string_list =
+    let rec next accu = 
+      match tokenize lexbuf with 
+      | EOF -> List.rev (pretty_print EOF :: accu)
+      | x   -> next (pretty_print x :: accu)
+    in next []
+  in List.iter (fun x -> print_endline x) token_string_list 
+}
