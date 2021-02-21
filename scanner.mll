@@ -1,5 +1,55 @@
 {
-    open Parser;;
+    (*open Parser;;*)
+    type token = 
+     | LPAREN
+     | RPAREN
+     | LBRACE
+     | RBRACE
+     | RBRACKET
+     | LBRACKET
+     | EOF
+     | COMMA
+     | SEMI
+     | SQUOTE
+     | DQUOTE
+     | PLUS
+     | MINUS
+     | TIMES 
+     | DIVIDE 
+     | MOD
+     | ASSIGN 
+     | PLUSEQ
+     | MINUSEQ
+     | EQ
+     | NEQ
+     | NOT
+     | LT 
+     | LEQ 
+     | GT
+     | GEQ
+     | AND 
+     | OR 
+     | DOT 
+     | IF 
+     | ELSE 
+     | FOR 
+     | WHILE 
+     | BREAK 
+     | CONTINUE 
+     | INT 
+     | FLOAT 
+     | CHAR 
+     | STRING 
+     | SOCKET 
+     | STRUCT 
+     | VOID
+     | TCP 
+     | UDP 
+     | RETURN 
+     | NEW 
+     | DELETE
+     | ID of string
+
 }
 
 let alpha = ['a'-'z' 'A'-'Z']
@@ -8,26 +58,31 @@ let squote = '\''
 let bslash = '\\'
 let octal_dig = ['0'-'7']
 let octal_triplet = (octal_dig)(octal_dig)(octal_dig)
+let normal_id = (alpha | '_')(alpha | digit | '_')* 
+let esc_char = bslash [''' '"' '\\' 'r' 't' 'n']
+
 
 let print_char = [' '-'~']
 
 rule tokenize = parse
   [' ' '\t' '\r' '\n'] { tokenize lexbuf }
-| '(' { LPAREN }
-| ')' { RPAREN }
-| '{' { LBRACE }
-| '}' { RBRACE }
-| '[' { RBRACKET }
-| ']' { LBRACKET }
-| ',' { COMMA }
-| ';' { SEMI }
+| '('  { LPAREN }
+| ')'  { RPAREN }
+| '{'  { LBRACE }
+| '}'  { RBRACE }
+| '['  { LBRACKET }
+| ']'  { RBRACKET }
+| ','  { COMMA }
+| ';'  { SEMI }
 | '\'' {SQUOTE}
-| '"' {DQUOTE}
+| '"'  {DQUOTE}
+(* Operators *)
 | '+' { PLUS }
 | '-' { MINUS }
 | '*' { TIMES }
 | '/' { DIVIDE }
 | '=' { ASSIGN }
+| '%' { MOD }
 | "+=" { PLUSEQ }
 | "-=" { MINUSEQ }
 | "==" { EQ }
@@ -38,35 +93,47 @@ rule tokenize = parse
 | ">=" { GEQ }
 | "&&" { AND }
 | "||" { OR }
+| "!" { NOT }
+| '.' { DOT }
+(*Control flow*)
 | "if" { IF }
 | "else" { ELSE }
 | "for" { FOR }
 | "while" { WHILE }
-| "return" { RETURN }
 | "break" { BREAK }
 | "continue" { CONTINUE }
+(*Types*)
 | "int" { INT }
 | "float" { FLOAT }
 | "char" { CHAR }
 | "string" { STRING }
-| "socket" { SOCKET }
+| "void" { VOID }
 | "struct" { STRUCT }
+| "socket" { SOCKET }
 | "TCP" {TCP}
 | "UDP" {UDP}
-| '.' { DOT }
+(*Functions*)
+| "return" { RETURN }
+(*Memory*)
 | "new" { NEW }
 | "delete" { DELETE }
+
 (* Now the tokens that have to be matched with regex *)
 | "//" { scomment lexbuf }
 | "/*" { mcomment lexbuf }
-| (alpha | '_')+(alpha | digit | '_')* {ID}
-| digit* as intlit { INTLIT(int_of_string intlit) } (* TODO possibly negative*)
-| '"' { str lexbuf }
-| '"' (print_char*) as str '"' { STRLIT(str) } 
-| squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) } (* TODO convert octal string to decimal value *)
-| squote bslash ('n' | 't' | '\\' | '0') squote { CHARLIT(0) } (* TODO replace special char with number *)
-| digit+ '.' digit* as flt { FLOATLIT(flt) } (* Optional negative sign *)
+| normal_id as lxm {ID(lxm)}
+(*
+| ((normal_id)('.'))+normal_id { STRUCTMEM }
+| digit+ as lxm { INTLIT(int_of_string lxm) } (* TODO possibly negative*)
+| '"' ((print_char | esc_char)* as str) '"' { STRLIT(str) } 
+| squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
+| squote bslash ('n' | 't' | '\\' | '0') squote { CHARLIT(0) } (* TODO replace special char with number *) (*Kingsley: what is this one for?*)
+| squote print_char squote as lxm               {CHARLIT(lxm.[1])} (*For chars like 'a'*)
+| digit+ '.' digit* as flt { FLOATLIT(flt) } (* TODO Optional negative sign *)
+| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
+*)
 | eof { EOF }
+
 
 and scomment = parse
 '\n' { tokenize lexbuf }
@@ -76,3 +143,66 @@ and scomment = parse
 and mcomment = parse
 "*/" { tokenize lexbuf }
 | _ { mcomment lexbuf }
+
+{
+  let pretty_print = function
+  | LPAREN                -> Printf.sprintf "LPAREN"
+  | RPAREN                -> Printf.sprintf "RPAREN"
+  | LBRACE                -> Printf.sprintf "LBRACE"
+  | RBRACE                -> Printf.sprintf "RBRACE"
+  | RBRACKET              -> Printf.sprintf "RBRACKET"
+  | LBRACKET              -> Printf.sprintf "LBRACKET"
+  | EOF                   -> Printf.sprintf "EOF"
+  | COMMA                 -> Printf.sprintf "COMMA"
+  | SEMI                  -> Printf.sprintf "SEMI"
+  | SQUOTE                -> Printf.sprintf "SQUOTE"
+  | DQUOTE                -> Printf.sprintf "DQUOTE"
+  | PLUS                  -> Printf.sprintf "PLUS"
+  | MINUS                 -> Printf.sprintf "MINUS"
+  | TIMES                 -> Printf.sprintf "TIMES"
+  | DIVIDE                -> Printf.sprintf "DIVIDE"
+  | ASSIGN                -> Printf.sprintf "ASSIGN"
+  | PLUSEQ                -> Printf.sprintf "PLUSEQ"
+  | MINUSEQ               -> Printf.sprintf "MINUSEQ"
+  | EQ                    -> Printf.sprintf "EQ"
+  | NEQ                   -> Printf.sprintf "NEQ"
+  | NOT                   -> Printf.sprintf "NOT"
+  | LT                    -> Printf.sprintf "LT"
+  | LEQ                   -> Printf.sprintf "LEQ"
+  | GT                    -> Printf.sprintf "GT"
+  | GEQ                   -> Printf.sprintf "GEQ"
+  | AND                   -> Printf.sprintf "AND"
+  | OR                    -> Printf.sprintf "OR"
+  | DOT                   -> Printf.sprintf "DOT"
+  | MOD                   -> Printf.sprintf "MOD"
+  | IF                    -> Printf.sprintf "IF"
+  | ELSE                  -> Printf.sprintf "ELSE"
+  | FOR                   -> Printf.sprintf "FOR"
+  | WHILE                 -> Printf.sprintf "WHILE"
+  | BREAK                 -> Printf.sprintf "BREAK"
+  | CONTINUE              -> Printf.sprintf "CONTINUE"
+  | INT                   -> Printf.sprintf "INT"
+  | FLOAT                 -> Printf.sprintf "FLOAT"
+  | CHAR                  -> Printf.sprintf "CHAR"
+  | STRING                -> Printf.sprintf "STRING"
+  | SOCKET                -> Printf.sprintf "SOCKET"
+  | STRUCT                -> Printf.sprintf "STRUCT"
+  | VOID                  -> Printf.sprintf "VOID"
+  | TCP                   -> Printf.sprintf "TCP"
+  | UDP                   -> Printf.sprintf "UDP"
+  | RETURN                -> Printf.sprintf "RETURN"
+  | NEW                   -> Printf.sprintf "NEW"
+  | DELETE                -> Printf.sprintf "DELETE"
+  | ID(x)                 -> Printf.sprintf  "ID(%s)" (x)
+
+  in 
+
+  let lexbuf = Lexing.from_channel stdin in
+  let token_string_list =
+    let rec next accu = 
+      match tokenize lexbuf with 
+      | EOF -> List.rev (pretty_print EOF :: accu)
+      | x   -> next (pretty_print x :: accu)
+    in next []
+  in List.iter (fun x -> print_endline x) token_string_list 
+}
