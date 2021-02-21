@@ -27,6 +27,8 @@
 
 %nonassoc NOELSE
 %nonassoc ELSE
+%nonassoc PLUSEQ MINUSEQ
+
 %right ASSIGN
 %left OR
 %left AND
