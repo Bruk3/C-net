@@ -18,7 +18,7 @@
 %token NEW DELETE 
 %token STRUCTMEM
 %token <int> INTLIT CHARLIT
-%token <string> ID FLOATLIT 
+%token <float> ID FLOATLIT 
 %token <string> STRLIT 
 %token <string> ID  
 %token EOF
