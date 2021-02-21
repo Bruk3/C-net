@@ -15,8 +15,8 @@ scanner.cmo : scanner.ml
 scanner.ml : scanner.mll
 	ocamllex $^
 
-scannertest.out: scannertest test-basic-tokens.tb 
-	./scannertest < test-basic-tokens.tb > scannertest.out
+scannertest.out: scannertest test-scanner.tb 
+	./scannertest < test-scanner.tb > scannertest.out
 
 
 .PHONY: clean

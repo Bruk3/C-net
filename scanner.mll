@@ -48,7 +48,7 @@
      | RETURN 
      | NEW 
      | DELETE
-
+     | ID of string
 
 }
 
@@ -118,10 +118,11 @@ rule tokenize = parse
 | "new" { NEW }
 | "delete" { DELETE }
 
-(* Now the tokens that have to be matched with regex 
+(* Now the tokens that have to be matched with regex *)
 | "//" { scomment lexbuf }
 | "/*" { mcomment lexbuf }
 | normal_id as lxm {ID(lxm)}
+(*
 | ((normal_id)('.'))+normal_id { STRUCTMEM }
 | digit+ as lxm { INTLIT(int_of_string lxm) } (* TODO possibly negative*)
 | '"' ((print_char | esc_char)* as str) '"' { STRLIT(str) } 
@@ -133,7 +134,7 @@ rule tokenize = parse
 *)
 | eof { EOF }
 
-(*
+
 and scomment = parse
 '\n' { tokenize lexbuf }
 | eof { tokenize lexbuf }
@@ -142,7 +143,6 @@ and scomment = parse
 and mcomment = parse
 "*/" { tokenize lexbuf }
 | _ { mcomment lexbuf }
-*)
 
 {
   let pretty_print = function
@@ -174,6 +174,7 @@ and mcomment = parse
   | AND                   -> Printf.sprintf "AND"
   | OR                    -> Printf.sprintf "OR"
   | DOT                   -> Printf.sprintf "DOT"
+  | MOD                   -> Printf.sprintf "MOD"
   | IF                    -> Printf.sprintf "IF"
   | ELSE                  -> Printf.sprintf "ELSE"
   | FOR                   -> Printf.sprintf "FOR"
@@ -192,6 +193,7 @@ and mcomment = parse
   | RETURN                -> Printf.sprintf "RETURN"
   | NEW                   -> Printf.sprintf "NEW"
   | DELETE                -> Printf.sprintf "DELETE"
+  | ID(x)                 -> Printf.sprintf  "ID(%s)" (x)
 
   in 
 
