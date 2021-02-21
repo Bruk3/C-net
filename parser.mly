@@ -12,8 +12,10 @@
 %token INT FLOAT CHAR STRING VOID STRUCT 
 %token NEW DELETE 
 %token <int> INTLIT 
-%token <string> ID FLOATLIT 
+%token <string> FLOATLIT 
+%token <char> CHARLIT 
 %token <string> STRLIT 
+%token <string> ID  
 %token EOF
 
 %start program

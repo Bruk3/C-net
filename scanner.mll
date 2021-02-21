@@ -63,10 +63,10 @@ rule tokenize = parse
 (* Now the tokens that have to be matched with regex *)
 | "//" { scomment lexbuf }
 | "/*" { mcomment lexbuf }
-| normal_id {ID}
+| normal_id as lxm {ID(lxm)}
 | ((normal_id)('.'))+normal_id { STRUCTMEM }
 
-| digit* as intlit { INTLIT(int_of_string intlit) } (* TODO possibly negative*)
+| digit+ as lxm { INTLIT(int_of_string lxm) } (* TODO possibly negative*)
 | '"' (print_char*) as str '"' { STRLIT(str) } 
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
 | squote bslash ('n' | 't' | '\\' | '0') squote { CHARLIT(0) } (* TODO replace special char with number *)
