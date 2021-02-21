@@ -1,14 +1,17 @@
 
 # The "opam exec --" part is for compatiblity with github CI actions
-parser: 
-	ocamlyacc parser.mly
 
-
-test: clean parser runtests
+test: test-scanner test-parser
 	@echo "SUCCESS"
 
-runtests: clean scannertest
+test-scanner: clean scannertest
 	./runtests.sh
+
+# TODO
+test-parser: 
+
+parser: 
+	ocamlyacc parser.mly
 
 scannertest: scanner.cmo 
 	ocamlc -o scannertest $^
@@ -18,10 +21,6 @@ scanner.cmo : scanner.ml
 
 scanner.ml : scanner.mll
 	ocamllex $^
-
-scannertest.out: scannertest test-scanner.tb 
-	./scannertest < test-scanner.tb > scannertest.out
-
 
 .PHONY: clean
 clean:
