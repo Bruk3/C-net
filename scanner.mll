@@ -12,6 +12,42 @@
      | SEMI
      | SQUOTE
      | DQUOTE
+     | PLUS
+     | MINUS
+     | TIMES 
+     | DIVIDE 
+     | ASSIGN 
+     | PLUSEQ
+     | MINUSEQ
+     | EQ
+     | NEQ
+     | NOT
+     | LT 
+     | LEQ 
+     | GT
+     | GEQ
+     | AND 
+     | OR 
+     | DOT 
+     | IF 
+     | ELSE 
+     | FOR 
+     | WHILE 
+     | BREAK 
+     | CONTINUE 
+     | INT 
+     | FLOAT 
+     | CHAR 
+     | STRING 
+     | SOCKET 
+     | STRUCT 
+     | VOID
+     | TCP 
+     | UDP 
+     | RETURN 
+     | NEW 
+     | DELETE
+
 
 }
 
@@ -40,7 +76,6 @@ rule tokenize = parse
 | '\'' {SQUOTE}
 | '"'  {DQUOTE}
 (* Operators *)
-(*
 | '+' { PLUS }
 | '-' { MINUS }
 | '*' { TIMES }
@@ -57,26 +92,31 @@ rule tokenize = parse
 | ">=" { GEQ }
 | "&&" { AND }
 | "||" { OR }
+| '.' { DOT }
+(*Control flow*)
 | "if" { IF }
 | "else" { ELSE }
 | "for" { FOR }
 | "while" { WHILE }
-| "return" { RETURN }
 | "break" { BREAK }
 | "continue" { CONTINUE }
-| "void" { VOID }
+(*Types*)
 | "int" { INT }
 | "float" { FLOAT }
 | "char" { CHAR }
 | "string" { STRING }
 | "socket" { SOCKET }
 | "struct" { STRUCT }
+| "void" { VOID }
 | "TCP" {TCP}
 | "UDP" {UDP}
-| '.' { DOT }
+(*Functions*)
+| "return" { RETURN }
+(*Memory*)
 | "new" { NEW }
 | "delete" { DELETE }
-(* Now the tokens that have to be matched with regex *)
+
+(* Now the tokens that have to be matched with regex 
 | "//" { scomment lexbuf }
 | "/*" { mcomment lexbuf }
 | normal_id as lxm {ID(lxm)}
@@ -116,6 +156,41 @@ and mcomment = parse
   | SEMI                  -> Printf.sprintf "SEMI"
   | SQUOTE                -> Printf.sprintf "SQUOTE"
   | DQUOTE                -> Printf.sprintf "DQUOTE"
+  | PLUS                  -> Printf.sprintf "PLUS"
+  | MINUS                 -> Printf.sprintf "MINUS"
+  | TIMES                 -> Printf.sprintf "TIMES"
+  | DIVIDE                -> Printf.sprintf "DIVIDE"
+  | ASSIGN                -> Printf.sprintf "ASSIGN"
+  | PLUSEQ                -> Printf.sprintf "PLUSEQ"
+  | MINUSEQ               -> Printf.sprintf "MINUSEQ"
+  | EQ                    -> Printf.sprintf "EQ"
+  | NEQ                   -> Printf.sprintf "NEQ"
+  | NOT                   -> Printf.sprintf "NOT"
+  | LT                    -> Printf.sprintf "LT"
+  | LEQ                   -> Printf.sprintf "LEQ"
+  | GT                    -> Printf.sprintf "GT"
+  | GEQ                   -> Printf.sprintf "GEQ"
+  | AND                   -> Printf.sprintf "AND"
+  | OR                    -> Printf.sprintf "OR"
+  | DOT                   -> Printf.sprintf "DOT"
+  | IF                    -> Printf.sprintf "IF"
+  | ELSE                  -> Printf.sprintf "ELSE"
+  | FOR                   -> Printf.sprintf "FOR"
+  | WHILE                 -> Printf.sprintf "WHILE"
+  | BREAK                 -> Printf.sprintf "BREAK"
+  | CONTINUE              -> Printf.sprintf "CONTINUE"
+  | INT                   -> Printf.sprintf "INT"
+  | FLOAT                 -> Printf.sprintf "FLOAT"
+  | CHAR                  -> Printf.sprintf "CHAR"
+  | STRING                -> Printf.sprintf "STRING"
+  | SOCKET                -> Printf.sprintf "SOCKET"
+  | STRUCT                -> Printf.sprintf "STRUCT"
+  | VOID                  -> Printf.sprintf "VOID"
+  | TCP                   -> Printf.sprintf "TCP"
+  | UDP                   -> Printf.sprintf "UDP"
+  | RETURN                -> Printf.sprintf "RETURN"
+  | NEW                   -> Printf.sprintf "NEW"
+  | DELETE                -> Printf.sprintf "DELETE"
 
   in 
 
