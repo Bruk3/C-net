@@ -6,12 +6,16 @@
 
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET COMMA SEMI SQUOTE DQUOTE
 %token PLUS MINUS TIMES DIVIDE MOD ASSIGN
+%token PLUSEQ MINUSEQ 
 %token EQ NEQ LT LEQ GT GEQ
 %token AND OR NOT
 %token IF ELSE FOR WHILE RETURN BREAK CONTINUE
-%token INT FLOAT CHAR STRING VOID STRUCT 
+%token NOELSE
+%token INT FLOAT CHAR STRING VOID STRUCT SOCKET
+%token TCP UDP
 %token NEW DELETE 
-%token <int> INTLIT 
+%token STRUCTMEM
+%token <int> INTLIT CHARLIT
 %token <string> ID FLOATLIT 
 %token <string> STRLIT 
 %token EOF
@@ -118,8 +122,9 @@ expr:
     | expr MINUS expr     { () }
     | expr TIMES expr     { () }
     | expr DIVIDE expr    { () }
-    | ID PEQ expr       { () }
-    | ID MEQ expr       { () }
+    | expr MOD expr       { () }
+    | ID PLUSEQ expr       { () }
+    | ID MINUSEQ expr       { () }
     | MINUS expr %prec NOT { () }
     | NOT expr { () }
     | expr LBRACKET expr RBRACKET { () }

@@ -30,17 +30,18 @@ rule tokenize = parse
 | '*' { TIMES }
 | '/' { DIVIDE }
 | '=' { ASSIGN }
+| '%' { MOD }
 | "+=" { PLUSEQ }
 | "-=" { MINUSEQ }
 | "==" { EQ }
 | "!=" { NEQ }
-| "!" { NOT }
 | '<' { LT }
 | "<=" { LEQ }
 | ">" { GT }
 | ">=" { GEQ }
 | "&&" { AND }
 | "||" { OR }
+| "!" { NOT }
 | "if" { IF }
 | "else" { ELSE }
 | "for" { FOR }
@@ -48,13 +49,13 @@ rule tokenize = parse
 | "return" { RETURN }
 | "break" { BREAK }
 | "continue" { CONTINUE }
-| "void" { VOID }
 | "int" { INT }
 | "float" { FLOAT }
 | "char" { CHAR }
 | "string" { STRING }
-| "socket" { SOCKET }
+| "void" { VOID }
 | "struct" { STRUCT }
+| "socket" { SOCKET }
 | "TCP" {TCP}
 | "UDP" {UDP}
 | '.' { DOT }
@@ -65,7 +66,6 @@ rule tokenize = parse
 | "/*" { mcomment lexbuf }
 | normal_id {ID}
 | ((normal_id)('.'))+normal_id { STRUCTMEM }
-
 | digit* as intlit { INTLIT(int_of_string intlit) } (* TODO possibly negative*)
 | '"' (print_char*) as str '"' { STRLIT(str) } 
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
