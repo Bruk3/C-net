@@ -29,7 +29,6 @@
 %nonassoc NOELSE
 %nonassoc ELSE
 %nonassoc PLUSEQ MINUSEQ
-%nonassoc LPAREN RPAREN
 %right ASSIGN
 %left OR
 %left AND
@@ -73,10 +72,6 @@ vdecls:
 
 vdecl:
     typ ID SEMI { () }
-
-/* sdecls: */
-/*     sdecls sdecl { () } */
-/*     | sdecl { () } */
 
 sdecl:
     STRUCT ID LBRACE vdecls RBRACE SEMI { () }
@@ -134,7 +129,6 @@ expr:
     | STRLIT              { () }
     | arraylit            { () }
     | structmem           { () }
-    /* | ID                  { () } */
     | LPAREN expr RPAREN  { () }
     | expr EQ expr        { () }
     | expr NEQ expr       { () }
@@ -156,26 +150,16 @@ expr:
     | NEW typ LBRACKET expr RBRACKET { () }
     | DELETE ID { () }
     | structmem ASSIGN expr { () }
-    | structmem LPAREN args RPAREN { () }
-
-
-    /* | STRUCTMEM LPAREN opt_args RPAREN { () } */
-
-/* a.name = "string"; */
+    | structmem LPAREN opt_args RPAREN { () }
 
 structmem :
     ID { () }
     | ID DOT structmem { () }
 
-/* opt_args : */ 
-/*     { () } */
-/*     | args { () } */
+opt_args : 
+    { () }
+    | args { () }
 
 args : 
     expr { () }
     | args COMMA expr { () } 
-/*
-
-
-
-    */
