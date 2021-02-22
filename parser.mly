@@ -118,7 +118,7 @@ stmt:
     | IF LPAREN expr RPAREN stmt_gen ELSE stmt_gen    { () }
     | IF LPAREN expr RPAREN stmt_gen %prec NOELSE { () }
     | FOR LPAREN opt_expr SEMI opt_expr SEMI opt_expr RPAREN stmt_gen { () }
-    | WHILE RPAREN expr LPAREN stmt_gen { () }
+    | WHILE LPAREN expr RPAREN stmt_gen { () }
 
 opt_expr: 
     { () }
