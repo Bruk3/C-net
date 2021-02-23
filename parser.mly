@@ -7,6 +7,7 @@
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET COMMA SEMI SQUOTE DQUOTE
 %token PLUS MINUS TIMES DIVIDE MOD ASSIGN
 %token PLUSEQ MINUSEQ 
+%token DOT
 %token EQ NEQ LT LEQ GT GEQ
 %token AND OR NOT
 %token IF ELSE FOR WHILE RETURN BREAK CONTINUE
@@ -25,6 +26,22 @@
 
 %type <Ast.program> program
 
+%nonassoc NOELSE
+%nonassoc ELSE
+%nonassoc PLUSEQ MINUSEQ
+%right ASSIGN
+%left OR
+%left AND
+%left EQ NEQ
+%left LT GT LEQ GEQ
+%left PLUS MINUS
+%left TIMES DIVIDE
+%left MOD
+%right NOT
+%left DOT
+
+
+
 %%
 
 program: 
@@ -32,10 +49,32 @@ program:
     | EOF { () }
 
 decls : 
-      { () } /* empty */
-    | decls vdecl { () }
-    | decls fdecl { () }
-    | decls sdecl { () }
+    decls decl { () }
+    | decl { () }
+
+decl:
+   | vdecl { () }
+   | sdecl { () }
+   | fdecl { () }
+
+typ : 
+    CHAR  { () }
+    | INT  { () }
+    | FLOAT  { () }
+    | STRING  { () }
+    | SOCKET  { () }
+    | STRUCT ID  { () }
+    | typ LBRACKET RBRACKET { () }
+
+vdecls:
+    vdecls vdecl { () }
+    | vdecl { () }
+
+vdecl:
+    typ ID SEMI { () }
+
+sdecl:
+    STRUCT ID LBRACE vdecls RBRACE SEMI { () }
 
 fdecl :
     typ ID LPAREN opt_params RPAREN LBRACE opt_stmts RBRACE { () }
@@ -48,55 +87,33 @@ params:
     typ ID { () }
     | params COMMA typ ID { () }
 
-typ : 
-    CHAR  { () }
-    | INT  { () }
-    | FLOAT  { () }
-    | STRING  { () }
-    | SOCKET  { () }
-    | STRUCT ID  { () }
-    | typ LBRACKET RBRACKET { () }
 
 opt_stmts: 
     {()}
     | stmts_gen { () }
 
+stmts_gen:
+    | stmts_gen stmt_gen { () }
+    | stmt_gen { () }
+
 stmt_gen :
-    stmt { () }
+    vdecl { () }
+    | vdecl_assign { () }
+    | stmt { () }
     | LBRACE stmts_gen RBRACE { () }
 
-stmts_gen:
-    stmt { () }
-    | stmts_gen vdecl { () } /* TODO this might have to become vdecl stmts_gen OR make vdecl and vdecl_assign terminals */
-    | stmts_gen vdecl_assign { () }
-    | stmts_gen stmt { () }
-
-vdecls:
-    vdecls vdecl { () }
-    | vdecl { () }
-
-vdecl:
-    typ ID SEMI { () }
-
 vdecl_assign:
-    typ ID ASSIGN expr SEMI { () }
-    | typ ID ASSIGN NEW typ LBRACKET INTLIT RBRACKET LBRACE args RBRACE SEMI { () }
+    typ ID ASSIGN INTLIT SEMI { () }
+    | typ ID ASSIGN NEW typ LBRACKET INTLIT RBRACKET LBRACE INTLIT RBRACE SEMI { () }
 
-sdecl:
-    STRUCT ID LBRACE vdecls RBRACE SEMI { () }
-
-stmts:
-    stmts stmt { () }
-    | stmt { () }
 
 stmt: 
     opt_expr SEMI { () }
     | RETURN opt_expr SEMI { () }
-    | LBRACE stmts RBRACE { () }
-    | IF LPAREN expr RPAREN stmt %prec NOELSE { () }
-    | IF LPAREN expr RPAREN stmt ELSE stmt    { () }
-    | FOR LPAREN opt_expr SEMI expr SEMI opt_expr RPAREN stmt_gen { () }
-    | WHILE RPAREN expr LPAREN stmt_gen  { () }
+    | IF LPAREN expr RPAREN stmt_gen ELSE stmt_gen    { () }
+    | IF LPAREN expr RPAREN stmt_gen %prec NOELSE { () }
+    | FOR LPAREN opt_expr SEMI opt_expr SEMI opt_expr RPAREN stmt_gen { () }
+    | WHILE LPAREN expr RPAREN stmt_gen { () }
 
 opt_expr: 
     { () }
@@ -111,7 +128,7 @@ expr:
     | FLOATLIT            { () }
     | STRLIT              { () }
     | arraylit            { () }
-    | ID                  { () }
+    | structmem           { () }
     | LPAREN expr RPAREN  { () }
     | expr EQ expr        { () }
     | expr NEQ expr       { () }
@@ -128,14 +145,16 @@ expr:
     | ID MINUSEQ expr       { () }
     | MINUS expr %prec NOT { () }
     | NOT expr { () }
-    | expr LBRACKET expr RBRACKET { () }
+    | LBRACKET expr RBRACKET { () }
     | NEW typ { () }
     | NEW typ LBRACKET expr RBRACKET { () }
     | DELETE ID { () }
-    | ID ASSIGN expr { () }
-    | STRUCTMEM ASSIGN expr { () }
-    | ID LPAREN opt_args RPAREN { () }
-    | STRUCTMEM LPAREN opt_args RPAREN { () }
+    | structmem ASSIGN expr { () }
+    | structmem LPAREN opt_args RPAREN { () }
+
+structmem :
+    ID { () }
+    | ID DOT structmem { () }
 
 opt_args : 
     { () }
@@ -143,4 +162,4 @@ opt_args :
 
 args : 
     expr { () }
-    | args COMMA expr { () }
+    | args COMMA expr { () } 
