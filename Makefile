@@ -8,35 +8,19 @@ test-scanner: clean scannertest
 	./runtests.sh
 
 # TODO
-%.cmo : %.ml
-	ocamlc -c $<
+test-parser: 
 
-%.cmi : %.mli
-	ocamlc -c $<
+parser: 
+	ocamlyacc parser.mly
+
+scannertest: scanner.cmo 
+	ocamlc -o scannertest $^
+
+scanner.cmo : scanner.ml
+	ocamlc -c $^
 
 scanner.ml : scanner.mll
 	ocamllex $^
-
-parser.ml parser.mli : parser.mly
-	ocamlyacc $^
-
-# Depedencies from ocamldep
-parser.cmo : ast.cmi parser.cmi
-parser.cmx : ast.cmi parser.cmi
-scanner.cmo : parser.cmi
-scanner.cmx : parser.cmx
-
-# parser: ast.ml
-# 	ocamlyacc parser.mly
-
-# scannertest: scanner.cmo 
-# 	ocamlc -o scannertest $^
-
-# scanner.cmo : scanner.ml
-# 	ocamlc -c $^
-
-# scanner.ml : scanner.mll parser
-# 	ocamllex scanner.mll
 
 .PHONY: clean
 clean:

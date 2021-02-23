@@ -1,4 +1,56 @@
-{ open Parser }
+{
+    (*open Parser;;*)
+    type token = 
+     | LPAREN
+     | RPAREN
+     | LBRACE
+     | RBRACE
+     | RBRACKET
+     | LBRACKET
+     | EOF
+     | COMMA
+     | SEMI
+     | SQUOTE
+     | DQUOTE
+     | PLUS
+     | MINUS
+     | TIMES 
+     | DIVIDE 
+     | MOD
+     | ASSIGN 
+     | PLUSEQ
+     | MINUSEQ
+     | EQ
+     | NEQ
+     | NOT
+     | LT 
+     | LEQ 
+     | GT
+     | GEQ
+     | AND 
+     | OR 
+     | DOT 
+     | IF 
+     | ELSE 
+     | FOR 
+     | WHILE 
+     | BREAK 
+     | CONTINUE 
+     | INT 
+     | FLOAT 
+     | CHAR 
+     | STRING 
+     | SOCKET 
+     | STRUCT 
+     | VOID
+     | TCP 
+     | UDP 
+     | RETURN 
+     | NEW 
+     | DELETE
+     | ID of string
+
+}
 
 let alpha = ['a'-'z' 'A'-'Z']
 let digit = ['0'-'9']
