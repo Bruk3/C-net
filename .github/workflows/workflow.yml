@@ -22,7 +22,7 @@ jobs:
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
 
-      - run: make test
+      - run: make ci-test
 
   slack-workflow-status:
     if: always()
