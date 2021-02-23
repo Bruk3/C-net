@@ -37,6 +37,7 @@ all: clean parser
 
 
 ci-parser:
-	ocamlyacc parser.mly
+	opam exec -- ocamlyacc parser.mly
 
-ci-test: clean 
+ci-test: clean ci-parser
+
