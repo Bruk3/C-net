@@ -1,0 +1,9 @@
+INT
+ID(a)
+SEMI
+INT
+ID(y)
+ASSIGN
+INTLIT(7)
+SEMI
+EOF

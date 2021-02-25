@@ -48,6 +48,11 @@
      | RETURN 
      | NEW 
      | DELETE
+     | INTLIT of int
+     | STRUCTMEM 
+     | STRLIT of string
+     | CHARLIT of int
+     | FLOATLIT of float
      | ID of string
 
 }
@@ -58,9 +63,8 @@ let squote = '\''
 let bslash = '\\'
 let octal_dig = ['0'-'7']
 let octal_triplet = (octal_dig)(octal_dig)(octal_dig)
+let integer = digit+
 let normal_id = (alpha | '_')(alpha | digit | '_')* 
-let esc_char = bslash [''' '"' '\\' 'r' 't' 'n']
-
 
 let print_char = [' '-'~']
 
@@ -122,16 +126,16 @@ rule tokenize = parse
 | "//" { scomment lexbuf }
 | "/*" { mcomment lexbuf }
 | normal_id as lxm {ID(lxm)}
-(*
+
 | ((normal_id)('.'))+normal_id { STRUCTMEM }
-| digit+ as lxm { INTLIT(int_of_string lxm) } (* TODO possibly negative*)
-| '"' ((print_char | esc_char)* as str) '"' { STRLIT(str) } 
+| integer as lxm { INTLIT(int_of_string lxm) } (* TODO possibly negative*)
+| '"' ((print_char)* as str) '"' { STRLIT(str) } 
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
 | squote bslash ('n' | 't' | '\\' | '0') squote { CHARLIT(0) } (* TODO replace special char with number *) (*Kingsley: what is this one for?*)
-| squote print_char squote as lxm               {CHARLIT(lxm.[1])} (*For chars like 'a'*)
-| digit+ '.' digit* as flt { FLOATLIT(flt) } (* TODO Optional negative sign *)
+| squote print_char squote as lxm               {CHARLIT(Char.code(lxm.[1]))} (*For chars like 'a'*)
+| digit+ '.' digit* as flt { FLOATLIT(float_of_string flt) } (* TODO Optional negative sign *)
 | _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
-*)
+
 | eof { EOF }
 
 
@@ -194,6 +198,11 @@ and mcomment = parse
   | NEW                   -> Printf.sprintf "NEW"
   | DELETE                -> Printf.sprintf "DELETE"
   | ID(x)                 -> Printf.sprintf  "ID(%s)" (x)
+  | INTLIT(x)             -> Printf.sprintf  "INTLIT(%d)" (x)
+  | STRUCTMEM             -> Printf.sprintf  "STRUCTMEM"
+  | STRLIT(x)             -> Printf.sprintf  "STRLIT(%s)" (x)
+  | CHARLIT(x)            -> Printf.sprintf  "CHARLIT(%d)" (x)
+  | FLOATLIT(x)           -> Printf.sprintf  "FLOATLIT(%f)" (x)
 
   in 
 

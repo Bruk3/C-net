@@ -5,7 +5,9 @@
 %}
 
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET COMMA SEMI SQUOTE DQUOTE
-%token PLUS MINUS TIMES DIVIDE MOD ASSIGN
+%left PLUS MINUS 
+%left TIMES DIVIDE 
+%token MOD ASSIGN
 %token PLUSEQ MINUSEQ 
 %token DOT
 %token EQ NEQ LT LEQ GT GEQ
@@ -17,7 +19,7 @@
 %token NEW DELETE 
 %token STRUCTMEM
 %token <int> INTLIT CHARLIT
-%token <string> ID FLOATLIT 
+%token <float> ID FLOATLIT 
 %token <string> STRLIT 
 %token <string> ID  
 %token EOF
