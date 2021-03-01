@@ -150,8 +150,8 @@ expr:
     | NEW typ { () }
     | NEW typ LBRACKET expr RBRACKET opt_arraylit { () }
     | DELETE ID { () }
-    | id LPAREN opt_args RPAREN { () }
     | id LBRACKET expr RBRACKET { () }
+    | id LPAREN opt_args RPAREN { () }
 
 id :
     ID { Id($1) }
