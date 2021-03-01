@@ -1,0 +1,12 @@
+if (5 < 15 || 4 > 5) { 
+  return true; 
+} else { 
+     return false; 
+} 
+
+int x = 5;
+while (x < 15) {
+  x += 5; 
+}
+
+for (int i =16; x < i; ) {x -= 1;}
