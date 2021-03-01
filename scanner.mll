@@ -1,6 +1,6 @@
 {
-    (*open Parser;;*)
-    type token = 
+    open Parser;;
+(*    type token = 
      | LPAREN
      | RPAREN
      | LBRACE
@@ -53,7 +53,7 @@
      | STRLIT of string
      | CHARLIT of int
      | FLOATLIT of float
-     | ID of string
+     | ID of string *)
 
 }
 
@@ -128,7 +128,7 @@ rule tokenize = parse
 | normal_id as lxm {ID(lxm)}
 
 | ((normal_id)('.'))+normal_id { STRUCTMEM }
-| integer as lxm { INTLIT(int_of_string lxm) } (* TODO possibly negative*)
+| integer as lxm { INTLIT(int_of_string lxm) }
 | '"' ((print_char)* as str) '"' { STRLIT(str) } 
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
 | squote bslash ('n' | 't' | '\\' | '0') squote { CHARLIT(0) } (* TODO replace special char with number *) (*Kingsley: what is this one for?*)
