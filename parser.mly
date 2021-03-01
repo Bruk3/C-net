@@ -1,7 +1,7 @@
 /* Ocamlyacc parser for C-net */ 
 
 %{
-    (* open Ast *)
+    open Ast
 %}
 
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET COMMA SEMI SQUOTE DQUOTE
@@ -25,7 +25,7 @@
 
 %start program
 
-%type <int> program
+%type <Ast.program> program
 
 %nonassoc NOELSE
 %nonassoc ELSE
@@ -46,8 +46,8 @@
 %%
 
 program: 
-    decls { 1 }
-    | EOF { 1 }
+    decls { Program("prog") }
+    | EOF { Program("prog") }
 
 decls : 
     decls decl { () }

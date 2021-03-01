@@ -37,9 +37,14 @@ parser.ml parser.mli: parser.mly
 scanner.cmo: scanner.ml parser.cmi
 	ocamlc -c $<
 
+parser.cmo: parser.ml parser.cmi ast.cmi
+	ocamlc -c $<
+
+parser.cmi: parser.mli ast.cmi
+
 .PHONY: clean
 clean:
-	rm -f parser.ml parser.mli scanner.ml \
+	rm -f final parser.ml parser.mli scanner.ml \
 	scannertest scannertest.out *cmi *cmo \
 	*.log *.diff 
 
