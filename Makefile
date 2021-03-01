@@ -1,30 +1,50 @@
 
 # The "opam exec --" part is for compatiblity with github CI actions
 
+################ TEST TARGETS ######################
 test: test-scanner test-parser
 	@echo "SUCCESS"
+
 
 test-scanner: clean scannertest
 	./runtests.sh
 
-# TODO
-test-parser: 
-
-parser: 
-	ocamlyacc parser.mly
-
 scannertest: scanner.cmo 
 	ocamlc -o scannertest $^
 
-scanner.cmo : scanner.ml
-	ocamlc -c $^
+# TODO
+test-parser: 
 
-scanner.ml : scanner.mll
-	ocamllex $^
+############### END TEST TARGETS ###################
+
+cnet: parser.cmo scanner.cmo
+	ocamlc -o final $^
+
+
+%.cmo: %.ml %.cmi
+	ocamlc -c $<
+
+%.cmi: %.mli
+	ocamlc -c $<
+
+scanner.ml: scanner.mll
+	ocamllex $<
+
+parser.ml parser.mli: parser.mly
+	ocamlyacc $^
+
+# Dependencies for opening modules
+scanner.cmo: scanner.ml parser.cmi
+	ocamlc -c $<
+
+parser.cmo: parser.ml parser.cmi ast.cmi
+	ocamlc -c $<
+
+parser.cmi: parser.mli ast.cmi
 
 .PHONY: clean
 clean:
-	rm -f parser.ml parser.mli scanner.ml \
+	rm -f final parser.ml parser.mli scanner.ml \
 	scannertest scannertest.out *cmi *cmo \
 	*.log *.diff 
 

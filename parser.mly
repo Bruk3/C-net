@@ -5,9 +5,8 @@
 %}
 
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET COMMA SEMI SQUOTE DQUOTE
-%left PLUS MINUS 
-%left TIMES DIVIDE 
 %token MOD ASSIGN
+%token PLUS MINUS TIMES DIVIDE
 %token PLUSEQ MINUSEQ 
 %token DOT
 %token EQ NEQ LT LEQ GT GEQ
@@ -19,7 +18,7 @@
 %token NEW DELETE 
 %token STRUCTMEM
 %token <int> INTLIT CHARLIT
-%token <float> ID FLOATLIT 
+%token <float> FLOATLIT 
 %token <string> STRLIT 
 %token <string> ID  
 %token EOF
@@ -47,8 +46,8 @@
 %%
 
 program: 
-    decls { () }
-    | EOF { () }
+    decls { Program("prog") }
+    | EOF { Program("prog") }
 
 decls : 
     decls decl { () }
