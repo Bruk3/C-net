@@ -1,0 +1,6 @@
+//testing loops 
+
+for(count = 1; count <= num; count= COUNT+1)
+{
+    sum += count;
+}
