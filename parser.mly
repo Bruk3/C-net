@@ -128,7 +128,7 @@ expr:
     | CHARLIT             { () }
     | FLOATLIT            { () }
     | STRLIT              { () }
-    | id           { () }
+    | id                  { () }
     | LPAREN expr RPAREN  { () }
     | expr EQ expr        { () }
     | expr NEQ expr       { () }
@@ -141,15 +141,15 @@ expr:
     | expr TIMES expr     { () }
     | expr DIVIDE expr    { () }
     | expr MOD expr       { () }
-    | id PLUSEQ expr       { () }
-    | id MINUSEQ expr       { () }
+    | id ASSIGN expr      { () }
+    | id PLUSEQ expr      { () }
+    | id MINUSEQ expr     { () }
     | MINUS expr %prec NOT { () }
     | NOT expr { () }
     | LBRACKET expr RBRACKET { () } /* TODO why is this here? What does [3] do?  */
     | NEW typ { () }
     | NEW typ LBRACKET expr RBRACKET opt_arraylit { () }
     | DELETE ID { () }
-    | id ASSIGN expr { () }
     | id LPAREN opt_args RPAREN { () }
     | id LBRACKET expr RBRACKET { () }
 
