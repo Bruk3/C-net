@@ -21,7 +21,7 @@ cnet: parser.cmo scanner.cmo
 	ocamlc -o final $^
 
 
-%.cmo: %.ml %.cmi
+%.cmo: %.ml
 	ocamlc -c $<
 
 %.cmi: %.mli
@@ -37,10 +37,10 @@ parser.ml parser.mli: parser.mly
 scanner.cmo: scanner.ml parser.cmi
 	ocamlc -c $<
 
-parser.cmo: parser.ml parser.cmi ast.cmi
+parser.cmo: parser.ml parser.cmi ast.cmo
 	ocamlc -c $<
 
-parser.cmi: parser.mli ast.cmi
+parser.cmi: parser.mli ast.cmo
 
 .PHONY: clean
 clean:

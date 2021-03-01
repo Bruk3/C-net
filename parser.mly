@@ -16,7 +16,6 @@
 %token INT FLOAT CHAR STRING VOID STRUCT SOCKET
 %token TCP UDP
 %token NEW DELETE 
-%token STRUCTMEM
 %token <int> INTLIT CHARLIT
 %token <float> FLOATLIT 
 %token <string> STRLIT 
@@ -120,16 +119,16 @@ opt_expr:
     { () }
     | expr { () }
 
-arraylit: 
-    LBRACE args RBRACE { () }
+opt_arraylit:
+        { () }
+    | LBRACE args RBRACE { () }
 
 expr: 
     INTLIT                { () }
     | CHARLIT             { () }
     | FLOATLIT            { () }
     | STRLIT              { () }
-    | arraylit            { () }
-    | structmem           { () }
+    | id           { () }
     | LPAREN expr RPAREN  { () }
     | expr EQ expr        { () }
     | expr NEQ expr       { () }
@@ -142,20 +141,21 @@ expr:
     | expr TIMES expr     { () }
     | expr DIVIDE expr    { () }
     | expr MOD expr       { () }
-    | ID PLUSEQ expr       { () }
-    | ID MINUSEQ expr       { () }
+    | id PLUSEQ expr       { () }
+    | id MINUSEQ expr       { () }
     | MINUS expr %prec NOT { () }
     | NOT expr { () }
-    | LBRACKET expr RBRACKET { () }
+    | LBRACKET expr RBRACKET { () } /* TODO why is this here? What does [3] do?  */
     | NEW typ { () }
-    | NEW typ LBRACKET expr RBRACKET { () }
+    | NEW typ LBRACKET expr RBRACKET opt_arraylit { () }
     | DELETE ID { () }
-    | structmem ASSIGN expr { () }
-    | structmem LPAREN opt_args RPAREN { () }
+    | id ASSIGN expr { () }
+    | id LPAREN opt_args RPAREN { () }
+    | id LBRACKET expr RBRACKET { () }
 
-structmem :
+id :
     ID { () }
-    | ID DOT structmem { () }
+    | ID DOT id { () }
 
 opt_args : 
     { () }
