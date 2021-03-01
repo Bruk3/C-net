@@ -1,60 +1,5 @@
 {
     open Parser;;
-(*    type token = 
-     | LPAREN
-     | RPAREN
-     | LBRACE
-     | RBRACE
-     | RBRACKET
-     | LBRACKET
-     | EOF
-     | COMMA
-     | SEMI
-     | SQUOTE
-     | DQUOTE
-     | PLUS
-     | MINUS
-     | TIMES 
-     | DIVIDE 
-     | MOD
-     | ASSIGN 
-     | PLUSEQ
-     | MINUSEQ
-     | EQ
-     | NEQ
-     | NOT
-     | LT 
-     | LEQ 
-     | GT
-     | GEQ
-     | AND 
-     | OR 
-     | DOT 
-     | IF 
-     | ELSE 
-     | FOR 
-     | WHILE 
-     | BREAK 
-     | CONTINUE 
-     | INT 
-     | FLOAT 
-     | CHAR 
-     | STRING 
-     | SOCKET 
-     | STRUCT 
-     | VOID
-     | TCP 
-     | UDP 
-     | RETURN 
-     | NEW 
-     | DELETE
-     | INTLIT of int
-     | STRUCTMEM 
-     | STRLIT of string
-     | CHARLIT of int
-     | FLOATLIT of float
-     | ID of string *)
-
 }
 
 let alpha = ['a'-'z' 'A'-'Z']
@@ -127,7 +72,6 @@ rule tokenize = parse
 | "/*" { mcomment lexbuf }
 | normal_id as lxm {ID(lxm)}
 
-| ((normal_id)('.'))+normal_id { STRUCTMEM }
 | integer as lxm { INTLIT(int_of_string lxm) }
 | '"' ((print_char)* as str) '"' { STRLIT(str) } 
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
@@ -199,7 +143,6 @@ and mcomment = parse
   | DELETE                -> Printf.sprintf "DELETE"
   | ID(x)                 -> Printf.sprintf  "ID(%s)" (x)
   | INTLIT(x)             -> Printf.sprintf  "INTLIT(%d)" (x)
-  | STRUCTMEM             -> Printf.sprintf  "STRUCTMEM"
   | STRLIT(x)             -> Printf.sprintf  "STRLIT(%s)" (x)
   | CHARLIT(x)            -> Printf.sprintf  "CHARLIT(%d)" (x)
   | FLOATLIT(x)           -> Printf.sprintf  "FLOATLIT(%f)" (x)
