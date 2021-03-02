@@ -2,7 +2,6 @@
                       Abstract syntax tree types for C-net
 *******************************************************************************)
 
-
                           (*  Relational operators  *)
 type bin_relational_op =
   Eq | Neq | Lt | Leq | Gt | Geq
@@ -73,12 +72,12 @@ type vdecl = {vtyp : typ ; vname : string}
 type stmt =
     Statement         of expr
   | Return            of expr
-  | If                of expr  * (stmt list) * (stmt list)
-  | For               of expr  * expr * expr * (stmt list)
-  | While             of expr  * (stmt list)
+  | If                of expr  * stmt  * stmt 
+  | For               of expr  * expr * expr * stmt
+  | While             of expr  * stmt 
   | Vdecl             of vdecl
   | Vdecl_assign      of vdecl * expr
-  | Block_statement   of stmt list
+  | Block   of stmt list
 
                                 (* Parameters *)
 type params = Params of id list
