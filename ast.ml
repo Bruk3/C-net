@@ -2,14 +2,6 @@
                       Abstract syntax tree types for C-net
 *******************************************************************************)
 
-type typ = 
-  Void 
-  | Char
-  | Int 
-  | Float 
-  | String 
-  | Array of typ
-
                           (*  Relational operators  *)
 type bin_relational_op =
   Eq | Neq | Lt | Leq | Gt | Geq

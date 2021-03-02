@@ -143,7 +143,9 @@ expr:
     | id MINUSEQ expr     { Binassop($1, MinusEq, $3) }
     | MINUS expr %prec NOT { Unariop(Minus, $2) }
     | NOT expr { Unrelop(Not, $2) }
-    | NEW newable { New($2) }
+    | NEW typ { () }
+    | NEW typ LBRACKET expr RBRACKET opt_arraylit { () }
+    // | NEW newable { New($2) }
     | DELETE ID { () }
     | id LBRACKET expr RBRACKET { () }
     | id LPAREN opt_args RPAREN { () }
