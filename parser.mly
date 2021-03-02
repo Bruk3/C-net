@@ -52,9 +52,9 @@ decls :
     | decl { [$1] }
 
 decl:
-   | vdecl { () }
-   | sdecl { () }
-   | fdecl { () }
+   | vdecl { $1 }
+   | sdecl { $1 }
+   | fdecl { $1 }
 
 typ : 
     VOID   { Void }
@@ -62,8 +62,8 @@ typ :
     | INT  { Int }
     | FLOAT  { Float }
     | STRING  { String }
-    | SOCKET  { () }
-    | STRUCT ID  { () }
+    | SOCKET  { Socket }
+    | STRUCT ID  { Struct($2) }
     | typ LBRACKET RBRACKET { Array($1) }
 
 vdecls:
@@ -71,7 +71,7 @@ vdecls:
     | vdecl { [$1] }
 
 vdecl:
-    typ ID SEMI { () }
+    typ ID SEMI { Vdecl({vtyp: $1, vname: $2}) }
 
 sdecl:
     STRUCT ID LBRACE vdecls RBRACE SEMI { () }
@@ -97,7 +97,7 @@ stmts:
     | stmt { [$1] }
 
 vdecl_assign:
-    typ ID ASSIGN expr SEMI { VDecl({vtyp: $1, vname: $2}) }
+    typ ID ASSIGN expr SEMI { Vdecl_assign(Vdecl({vtyp: $1, vname: $2}), $4) }
     /* | typ ID ASSIGN NEW typ LBRACKET INTLIT RBRACKET LBRACE INTLIT RBRACE SEMI { () } */
     /* became redundant because expr handles array literals */
 
@@ -108,7 +108,7 @@ stmt:
     | IF LPAREN expr RPAREN stmt %prec NOELSE { If($3, $5, Block([])) }
     | FOR LPAREN opt_expr SEMI opt_expr SEMI opt_expr RPAREN stmt { For($3, $5, $7, $9) }
     | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
-    | vdecl { () }
+    | vdecl { $1 }
     | vdecl_assign { () }
     | LBRACE stmts RBRACE { () }
 
