@@ -44,8 +44,8 @@ parser.cmi: parser.mli ast.cmo
 
 .PHONY: clean
 clean:
-	rm -f final parser.ml parser.mli scanner.ml \
-	scannertest scannertest.out *cmi *cmo \
+	rm -f final parser.ml parser.mli scanner.ml parser.output \
+	scanner.ml scannertest scannertest.out *cmi *cmo \
 	*.log *.diff 
 
 .PHONY: all

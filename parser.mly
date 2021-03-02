@@ -103,7 +103,7 @@ vdecl_assign:
     /* became redundant because expr handles array literals */
 
 stmt:
-    expr SEMI { Statement($1) }
+    expr SEMI { Expr($1) }
     | RETURN opt_expr SEMI { Return($2) }
     | IF LPAREN expr RPAREN stmt ELSE stmt    { If($3, $5, $7) }
     | IF LPAREN expr RPAREN stmt %prec NOELSE { If($3, $5, Block([])) }
@@ -111,7 +111,7 @@ stmt:
     | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
     | vdecl { $1 }
     | vdecl_assign { $1 }
-    | LBRACE stmts RBRACE { List.rev $2 }
+    | LBRACE stmts RBRACE { Block(List.rev $2) }
 
 opt_expr:
     { Noexpr }
