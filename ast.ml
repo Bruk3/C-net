@@ -36,7 +36,8 @@ and rid =
                               (* types in C-net *)
 and typ =
     Char | Int | Float | String | Socket | Struct of string
-  | Array of typ * int * expr list (* int:length and expr list:array literal *)
+  | ArrayLit of typ * expr * expr list (* expr:length and expr list:array literal *)
+  | Array of typ
 
              (* Arguments to a function call or an array literal *)
 and args =
@@ -72,9 +73,9 @@ type vdecl = {vtyp : typ ; vname : string}
 type stmt =
     Statement         of expr
   | Return            of expr
-  | If                of expr  * stmt  * stmt 
+  | If                of expr  * stmt  * stmt
   | For               of expr  * expr * expr * stmt
-  | While             of expr  * stmt 
+  | While             of expr  * stmt
   | Vdecl             of vdecl
   | Vdecl_assign      of vdecl * expr
   | Block   of stmt list
