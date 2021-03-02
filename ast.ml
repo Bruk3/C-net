@@ -30,7 +30,6 @@ type bin_assign_op =  (* assignment operators *)
   Assign | PlusEq | MinusEq
 
 
-
 type expr = 
     Intlit of int
   | Charlit of int
@@ -42,6 +41,9 @@ type expr =
   | Binlogop of expr * bin_logical_op    * expr
   | Binariop of expr * bin_arithmetic_op * expr
   | Binassop of rid * bin_assign_op      * expr
+  | Unrelop of un_relational_op * expr 
+  | Unariop of un_arithmetic_op * expr
+
        
 
 

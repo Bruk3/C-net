@@ -45,8 +45,7 @@
 %%
 
 program: 
-    decls { Program("prog") }
-    | EOF { Program("prog") }
+    decls EOF { $1 }
 
 decls : 
     decls decl { () }
@@ -58,7 +57,8 @@ decl:
    | fdecl { () }
 
 typ : 
-    CHAR  { () }
+    VOID   { () }
+    | CHAR  { () }
     | INT  { () }
     | FLOAT  { () }
     | STRING  { () }
@@ -116,37 +116,37 @@ stmt:
     | WHILE LPAREN expr RPAREN stmt_gen { () }
 
 opt_expr: 
-    { () }
-    | expr { () }
+    { Noexpr }
+    | expr { $1 }
 
 opt_arraylit:
         { () }
     | LBRACE args RBRACE { () }
 
 expr: 
-    INTLIT                { () }
-    | CHARLIT             { () }
-    | FLOATLIT            { () }
-    | STRLIT              { () }
-    | id                  { () }
-    | LPAREN expr RPAREN  { () }
-    | expr EQ expr        { () }
-    | expr NEQ expr       { () }
-    | expr LT expr        { () }
-    | expr LEQ expr       { () }
-    | expr GT expr        { () }
-    | expr GEQ expr       { () }
-    | expr PLUS expr      { () }
-    | expr MINUS expr     { () }
-    | expr TIMES expr     { () }
-    | expr DIVIDE expr    { () }
-    | expr MOD expr       { () }
-    | id ASSIGN expr      { () }
-    | id PLUSEQ expr      { () }
-    | id MINUSEQ expr     { () }
-    | MINUS expr %prec NOT { () }
-    | NOT expr { () }
-    | LBRACKET expr RBRACKET { () } /* TODO why is this here? What does [3] do?  */
+    INTLIT                { Intlit($1) }
+    | CHARLIT             { Charlit($1) }
+    | FLOATLIT            { Floatlit($1) }
+    | STRLIT              { Strlit($1) }
+    | id                  { Id($1) }
+    | LPAREN expr RPAREN  { $2 }
+    | expr EQ expr        { Binrelop($1, Eq, $3) }
+    | expr NEQ expr       { Binrelop($1, Neq, $3) }
+    | expr LT expr        { Binrelop($1, Lt, $3)}
+    | expr LEQ expr       { Binrelop($1, Leq, $3)}
+    | expr GT expr        { Binrelop($1, Gt, $3) }
+    | expr GEQ expr       { Binrelop($1, Geq, $3) }
+    | expr PLUS expr      { Binariop($1, Add, $3) } 
+    | expr MINUS expr     { Binariop($1, Sub, $3) }
+    | expr TIMES expr     { Binariop($1, Mul, $3) }
+    | expr DIVIDE expr    { Binariop($1, Div, $3) }
+    | expr MOD expr       { Binariop($1, Mod, $3) }
+    | id ASSIGN expr      { Binassop($1, Assign, $3) }
+    | id PLUSEQ expr      { Binassop($1, PlusEq, $3) }
+    | id MINUSEQ expr     { Binassop($1, MinusEq, $3) }
+    | MINUS expr %prec NOT { Unariop(Minus, $2) }
+    | NOT expr { Unrelop(Not, $2) }
+    // | LBRACKET expr RBRACKET { () } /* TODO why is this here? What does [3] do?  */
     | NEW typ { () }
     | NEW typ LBRACKET expr RBRACKET opt_arraylit { () }
     | DELETE ID { () }
@@ -154,13 +154,13 @@ expr:
     | id LBRACKET expr RBRACKET { () }
 
 id :
-    ID { () }
+    ID { Id($1) }
     | ID DOT id { () }
 
 opt_args : 
-    { () }
-    | args { () }
+    { [] }
+    | args { List.rev $1 }
 
 args : 
-    expr { () }
-    | args COMMA expr { () } 
+    expr { [$1] }
+    | args COMMA expr { $3 :: $1 } 
