@@ -97,8 +97,9 @@ stmts:
     | stmt { () }
 
 vdecl_assign:
-    typ ID ASSIGN INTLIT SEMI { () }
-    | typ ID ASSIGN NEW typ LBRACKET INTLIT RBRACKET LBRACE INTLIT RBRACE SEMI { () }
+    typ ID ASSIGN expr SEMI { () }
+    /* | typ ID ASSIGN NEW typ LBRACKET INTLIT RBRACKET LBRACE INTLIT RBRACE SEMI { () } */
+    /* became redundant because expr handles array literals */
 
 
 stmt: 
