@@ -103,18 +103,18 @@ vdecl_assign:
     /* became redundant because expr handles array literals */
 
 stmt:
-    expr SEMI { Statement($1) }
-    | RETURN opt_expr SEMI { Return($2) } /* TODO Maybe we want the return type to be NoExpr if empty? */
+    expr SEMI { Expr($1) }
+    | RETURN opt_expr SEMI { Return($2) }
     | IF LPAREN expr RPAREN stmt ELSE stmt    { If($3, $5, $7) }
     | IF LPAREN expr RPAREN stmt %prec NOELSE { If($3, $5, Block([])) }
     | FOR LPAREN opt_expr SEMI opt_expr SEMI opt_expr RPAREN stmt { For($3, $5, $7, $9) }
     | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
     | vdecl { $1 }
     | vdecl_assign { $1 }
-    | LBRACE stmts RBRACE { List.rev $2 }
+    | LBRACE stmts RBRACE { Block(List.rev $2) }
 
 opt_expr:
-    { Intlit(1) } /* if empty, just replace with 1 since we want for(;;) to be infinite */
+    { Noexpr }
     | expr { $1 }
 
 opt_arraylit:
@@ -144,7 +144,7 @@ expr:
     | id MINUSEQ expr     { Binassop($1, MinusEq, $3) }
     | MINUS expr %prec NOT { Unariop(Minus, $2) }
     | NOT expr { Unlogop(Not, $2) }
-    | NEW typ { New($2) }
+    | NEW STRUCT ID { New(Struct($3)) }
     | NEW typ LBRACKET expr RBRACKET opt_arraylit { New(ArrayLit($2, $4, $6)) }
     // | NEW newable { New($2) }
     | DELETE id { Delete($2) }

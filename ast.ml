@@ -45,8 +45,9 @@ and args =
 
                                 (* Expression *)
 and expr =
+  Noexpr
   (* Literals *)
-    Intlit of int
+  | Intlit of int
   | Charlit of int
   | Floatlit of float
   | Strlit of string
@@ -71,7 +72,7 @@ and expr =
 type vdecl = {vtyp : typ ; vname : string}
 
 type stmt =
-    Statement         of expr
+    Expr of expr
   | Return            of expr
   | If                of expr  * stmt  * stmt
   | For               of expr  * expr * expr * stmt
