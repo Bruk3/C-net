@@ -48,8 +48,8 @@ program:
     decls EOF { $1 }
 
 decls : 
-    decls decl { () }
-    | decl { () }
+    decls decl { $2::$1 }
+    | decl { [$1] }
 
 decl:
    | vdecl { () }
@@ -57,18 +57,18 @@ decl:
    | fdecl { () }
 
 typ : 
-    VOID   { () }
-    | CHAR  { () }
-    | INT  { () }
-    | FLOAT  { () }
-    | STRING  { () }
+    VOID   { Void }
+    | CHAR  { Char }
+    | INT  { Int }
+    | FLOAT  { Float }
+    | STRING  { String }
     | SOCKET  { () }
     | STRUCT ID  { () }
-    | typ LBRACKET RBRACKET { () }
+    | typ LBRACKET RBRACKET { Array($1) }
 
 vdecls:
-    vdecls vdecl { () }
-    | vdecl { () }
+    vdecls vdecl { $2::$1 }
+    | vdecl { [$1] }
 
 vdecl:
     typ ID SEMI { () }
@@ -80,35 +80,34 @@ fdecl :
     typ ID LPAREN opt_params RPAREN LBRACE opt_stmts RBRACE { () }
 
 opt_params : 
-    { () }
-    | params { () }
+    { [] }
+    | params { List.rev $1 }
 
 params: 
-    typ ID { () }
-    | params COMMA typ ID { () }
+    typ ID { [($1, $2)] }
+    | params COMMA typ ID { ($3, $4) :: $1 }
 
 
 opt_stmts: 
     {()}
-    | stmts { () }
+    | stmts { List.rev $1 }
 
 stmts:
-    | stmts stmt { () }
-    | stmt { () }
+    | stmts stmt { $2::$1 }
+    | stmt { [$1] }
 
 vdecl_assign:
-    typ ID ASSIGN expr SEMI { () }
+    typ ID ASSIGN expr SEMI { VDecl({vtyp: $1, vname: $2}) }
     /* | typ ID ASSIGN NEW typ LBRACKET INTLIT RBRACKET LBRACE INTLIT RBRACE SEMI { () } */
     /* became redundant because expr handles array literals */
 
-
 stmt: 
-    opt_expr SEMI { () }
+    expr SEMI { () }
     | RETURN opt_expr SEMI { () }
-    | IF LPAREN expr RPAREN stmt ELSE stmt    { () }
-    | IF LPAREN expr RPAREN stmt %prec NOELSE { () }
-    | FOR LPAREN opt_expr SEMI opt_expr SEMI opt_expr RPAREN stmt { () }
-    | WHILE LPAREN expr RPAREN stmt { () }
+    | IF LPAREN expr RPAREN stmt ELSE stmt    { If($3, $5, $7) }
+    | IF LPAREN expr RPAREN stmt %prec NOELSE { If($3, $5, Block([])) }
+    | FOR LPAREN opt_expr SEMI opt_expr SEMI opt_expr RPAREN stmt { For($3, $5, $7, $9) }
+    | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
     | vdecl { () }
     | vdecl_assign { () }
     | LBRACE stmts RBRACE { () }
@@ -118,8 +117,8 @@ opt_expr:
     | expr { $1 }
 
 opt_arraylit:
-        { () }
-    | LBRACE args RBRACE { () }
+        { [] }
+    | LBRACE args RBRACE { $2 }
 
 expr: 
     INTLIT                { Intlit($1) }
@@ -144,9 +143,7 @@ expr:
     | id MINUSEQ expr     { Binassop($1, MinusEq, $3) }
     | MINUS expr %prec NOT { Unariop(Minus, $2) }
     | NOT expr { Unrelop(Not, $2) }
-    // | LBRACKET expr RBRACKET { () } /* TODO why is this here? What does [3] do?  */
-    | NEW typ { () }
-    | NEW typ LBRACKET expr RBRACKET opt_arraylit { () }
+    | NEW newable { New($2) }
     | DELETE ID { () }
     | id LBRACKET expr RBRACKET { () }
     | id LPAREN opt_args RPAREN { () }
