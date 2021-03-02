@@ -2,26 +2,27 @@
                       Abstract syntax tree types for C-net
 *******************************************************************************)
 
-                          (*  Relational operators  *)
-type bin_relational_op =
-  Eq | Neq | Lt | Leq | Gt | Geq
 
+type unop = Not | Minus
+type binop = 
+      (*  Relational operators  *)
+    Eq
+  | Neq
+  | Lt
+  | Leq
+  | Gt
+  | Geq
+      (*  Logical operators  *)
+  | And
+  | Or
+      (*  Arithmetic operators  *)
+  | Add 
+  | Sub 
+  | Mul 
+  | Div 
+  | Mod
 
-                           (*  Logical operators  *)
-type bin_logical_op =
-  And | Or
-
-type un_logical_op =
-  Not
-
-                          (*  Arithmetic operators  *)
-type bin_arithmetic_op =
-  Add | Sub | Mul | Div | Mod
-
-type un_arithmetic_op =
-  Minus
-
-                           (* assignment operators *)
+      (* assignment operators *)
 type bin_assign_op =
   Assign | PlusEq | MinusEq
 
@@ -54,11 +55,8 @@ and expr =
   | Rid of rid
   (* | Expr of expr *)
   (* Operators *)
-  | Binrelop of expr * bin_relational_op * expr
-  | Binlogop of expr * bin_logical_op    * expr
-  | Unlogop  of un_logical_op     * expr
-  | Binariop of expr * bin_arithmetic_op * expr
-  | Unariop  of un_arithmetic_op  * expr
+  | Binop of expr * binop * expr
+  | Unop of unop * expr
   | Binassop of rid * bin_assign_op      * expr
   (* Arrays and new/delete *)
   | Delete of rid
@@ -98,3 +96,4 @@ type decl =
 
 type program =
   Program of decl list
+

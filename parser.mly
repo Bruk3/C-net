@@ -128,22 +128,22 @@ expr:
     | STRLIT              { Strlit($1) }
     | id                  { Rid($1) }
     | LPAREN expr RPAREN  { $2 }
-    | expr EQ expr        { Binrelop($1, Eq, $3) }
-    | expr NEQ expr       { Binrelop($1, Neq, $3) }
-    | expr LT expr        { Binrelop($1, Lt, $3)}
-    | expr LEQ expr       { Binrelop($1, Leq, $3)}
-    | expr GT expr        { Binrelop($1, Gt, $3) }
-    | expr GEQ expr       { Binrelop($1, Geq, $3) }
-    | expr PLUS expr      { Binariop($1, Add, $3) }
-    | expr MINUS expr     { Binariop($1, Sub, $3) }
-    | expr TIMES expr     { Binariop($1, Mul, $3) }
-    | expr DIVIDE expr    { Binariop($1, Div, $3) }
-    | expr MOD expr       { Binariop($1, Mod, $3) }
+    | expr EQ expr        { Binop($1, Eq, $3) }
+    | expr NEQ expr       { Binop($1, Neq, $3) }
+    | expr LT expr        { Binop($1, Lt, $3)}
+    | expr LEQ expr       { Binop($1, Leq, $3)}
+    | expr GT expr        { Binop($1, Gt, $3) }
+    | expr GEQ expr       { Binop($1, Geq, $3) }
+    | expr PLUS expr      { Binop($1, Add, $3) }
+    | expr MINUS expr     { Binop($1, Sub, $3) }
+    | expr TIMES expr     { Binop($1, Mul, $3) }
+    | expr DIVIDE expr    { Binop($1, Div, $3) }
+    | expr MOD expr       { Binop($1, Mod, $3) }
     | id ASSIGN expr      { Binassop($1, Assign, $3) }
     | id PLUSEQ expr      { Binassop($1, PlusEq, $3) }
     | id MINUSEQ expr     { Binassop($1, MinusEq, $3) }
-    | MINUS expr %prec NOT { Unariop(Minus, $2) }
-    | NOT expr { Unlogop(Not, $2) }
+    | MINUS expr %prec NOT { Unop(Minus, $2) }
+    | NOT expr { Unop(Not, $2) }
     | NEW STRUCT ID { New(Struct($3)) }
     | NEW typ LBRACKET expr RBRACKET opt_arraylit { New(ArrayLit($2, $4, $6)) }
     // | NEW newable { New($2) }
