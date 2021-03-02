@@ -90,30 +90,28 @@ params:
 
 opt_stmts: 
     {()}
-    | stmts_gen { () }
+    | stmts { () }
 
-stmts_gen:
-    | stmts_gen stmt_gen { () }
-    | stmt_gen { () }
-
-stmt_gen :
-    vdecl { () }
-    | vdecl_assign { () }
+stmts:
+    | stmts stmt { () }
     | stmt { () }
-    | LBRACE stmts_gen RBRACE { () }
 
 vdecl_assign:
-    typ ID ASSIGN INTLIT SEMI { () }
-    | typ ID ASSIGN NEW typ LBRACKET INTLIT RBRACKET LBRACE INTLIT RBRACE SEMI { () }
+    typ ID ASSIGN expr SEMI { () }
+    /* | typ ID ASSIGN NEW typ LBRACKET INTLIT RBRACKET LBRACE INTLIT RBRACE SEMI { () } */
+    /* became redundant because expr handles array literals */
 
 
 stmt: 
     opt_expr SEMI { () }
     | RETURN opt_expr SEMI { () }
-    | IF LPAREN expr RPAREN stmt_gen ELSE stmt_gen    { () }
-    | IF LPAREN expr RPAREN stmt_gen %prec NOELSE { () }
-    | FOR LPAREN opt_expr SEMI opt_expr SEMI opt_expr RPAREN stmt_gen { () }
-    | WHILE LPAREN expr RPAREN stmt_gen { () }
+    | IF LPAREN expr RPAREN stmt ELSE stmt    { () }
+    | IF LPAREN expr RPAREN stmt %prec NOELSE { () }
+    | FOR LPAREN opt_expr SEMI opt_expr SEMI opt_expr RPAREN stmt { () }
+    | WHILE LPAREN expr RPAREN stmt { () }
+    | vdecl { () }
+    | vdecl_assign { () }
+    | LBRACE stmts RBRACE { () }
 
 opt_expr: 
     { Noexpr }
@@ -150,8 +148,8 @@ expr:
     | NEW typ { () }
     | NEW typ LBRACKET expr RBRACKET opt_arraylit { () }
     | DELETE ID { () }
-    | id LPAREN opt_args RPAREN { () }
     | id LBRACKET expr RBRACKET { () }
+    | id LPAREN opt_args RPAREN { () }
 
 id :
     ID { Id($1) }
