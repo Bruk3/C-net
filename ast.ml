@@ -45,8 +45,9 @@ and args =
 
                                 (* Expression *)
 and expr =
+  Noexpr
   (* Literals *)
-    Intlit of int
+  | Intlit of int
   | Charlit of int
   | Floatlit of float
   | Strlit of string
