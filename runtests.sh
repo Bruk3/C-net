@@ -11,7 +11,7 @@ rm -f $globallog
 error=0
 globalerror=0
 
-scannertest="scannertest"
+scannertest="scanner_pp.native"
 
 keep=0
 

@@ -5,18 +5,22 @@
 test: test-scanner test-parser
 	@echo "SUCCESS"
 
+test-scanner: scanner_pp.native
+	./runtests.sh
+	
+## Old scanner "Not So pretty" printer
+scanner_pp.native: 
+	opam config exec -- \
+		ocamlbuild -use-ocamlfind scanner_pp.native
+
+## cnet top level - Currently just prints ast 
 cnet.native: 
 	opam config exec -- \
 		ocamlbuild -use-ocamlfind cnet.native
 
-test-scanner: clean scannertest
-	./runtests.sh
 
-scannertest: scanner.cmo 
-	ocamlc -o scannertest $^
-
-# TODO
 test-parser: 
+	ocamlyacc -v parser.mly
 
 ############### END TEST TARGETS ###################
 
@@ -50,7 +54,7 @@ clean:
 	ocamlbuild -clean
 	rm -f final parser.ml parser.mli scanner.ml parser.output \
 	scanner.ml scannertest scannertest.out *cmi *cmo \
-	*.log *.diff  *.native
+	*.log *.diff *.out *.err 
 
 .PHONY: all
 all: clean parser
@@ -63,5 +67,5 @@ all: clean parser
 ci-parser:
 	opam exec -- ocamlyacc parser.mly
 
-ci-test: clean ci-parser
+ci-test: ci-parser
 
