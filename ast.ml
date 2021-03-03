@@ -46,7 +46,6 @@ and typ =
                                 (* Expression *)
 and newable =
     NStruct of string
-  | NArray  of typ
 
 and expr =
   Noexpr
@@ -62,8 +61,8 @@ and expr =
   | Binassop of rid * bin_assign_op      * expr
   (* Arrays and new/delete *)
   | Delete of rid
-  | New of newable * expr
-  | ArrayLit of expr * expr list (* expr:length and expr list:array literal *)
+  | New of newable 
+  | ArrayLit of typ * expr * expr list (* expr:length and expr list:array literal *)
   | Index  of rid * expr
   (* Function calls *)
   | Call of rid * expr list
@@ -89,6 +88,8 @@ type func = {t: typ ; name : string ; parameters : id list ; body : stmt list }
 type strct = { name : string ; members : vdecl list }
 
                                  (* Program *)
+
+                            
 type decl =
     Vdecl of vdecl
   | Sdecl of strct
@@ -137,16 +138,17 @@ type program =
     | Struct(t)    -> "struct " ^ t
     | Void      -> "void"
     | Array(t) ->  "" ^ string_of_typ t ^ "[]"
-    | ArrayLit(t, e, el) -> "ArrayLiteral here"
-    (* TODO: Replace by fixed version of
-     ^ string_of_typ t  ^ "[" ^ String.concat "," (List.map string_of_expr  el) ^ "]"
-     *)
 
+  let string_of_nid = function 
+    Nid(id) -> id
   let string_of_id = function
   | Id(t, n) -> "" ^ string_of_typ t ^ n
   let rec string_of_rid = function
-  | FinalID(id) -> string_of_id id
+  | FinalID(id) -> string_of_nid id
   | RID(r, final) -> string_of_rid r ^ "." ^ final
+
+  let string_of_newable = function 
+    NStruct(n)  -> "struct " ^ n
 
     let rec string_of_expr = function
       | Noexpr -> ""
@@ -160,7 +162,10 @@ type program =
       | Unop(o, e) -> string_of_uop o ^ string_of_expr e
       | Binassop(id, op, r) -> string_of_rid id ^ string_of_binassop op ^ " " ^ string_of_expr r
       | Delete(id) -> "delete " ^ string_of_rid id
-      | New(typ) -> "new " ^  string_of_typ typ
+      | New(n) -> "new " ^  string_of_newable n 
+      | ArrayLit(t, e, el) ->
+         "new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^ "] = {" ^ 
+         String.concat ", " (List.map string_of_expr el) ^ "}"
       | Index(id, e) -> string_of_rid id ^ "[" ^ string_of_expr e ^ "]"
       | Call(f, el) ->
           string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
@@ -201,7 +206,6 @@ let string_of_decl = function
   | Sdecl({name; members}) -> string_of_strct(name, members)
   | Fdecl({t; name; parameters; body}) -> string_of_func(t, name, parameters, body)
 
-
-let string_of_program (decls) =
-  String.concat "" (List.map string_of_decl decls) ^ "\n"
-
+let string_of_program  = function
+  Program(decls) -> String.concat "" (List.map string_of_decl decls) ^ "\n"
+  

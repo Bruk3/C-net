@@ -45,7 +45,7 @@
 %%
 
 program:
-    decls EOF { List.rev $1 }
+    decls EOF { Program(List.rev $1) }
 
 decls :
     decls decl { $2::$1 }
@@ -98,7 +98,7 @@ stmts:
     | stmt { [$1] }
 
 vdecl_assign:
-    typ ID ASSIGN expr SEMI { Vdecl_assign(Vdecl({vtyp: $1, vname: $2}), $4) }
+    typ ID ASSIGN expr SEMI { Vdecl_assign({vtyp = $1; vname = $2}, $4) }
     /* | typ ID ASSIGN NEW typ LBRACKET INTLIT RBRACKET LBRACE INTLIT RBRACE SEMI { () } */
     /* became redundant because expr handles array literals */
 
@@ -109,7 +109,7 @@ stmt:
     | IF LPAREN expr RPAREN stmt %prec NOELSE { If($3, $5, Block([])) }
     | FOR LPAREN opt_expr SEMI opt_expr SEMI opt_expr RPAREN stmt { For($3, $5, $7, $9) }
     | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
-    | vdecl { $1 }
+    | vdecl { Vdecl($1) }
     | vdecl_assign { $1 }
     | LBRACE stmts RBRACE { Block(List.rev $2) }
 
@@ -144,9 +144,8 @@ expr:
     | id MINUSEQ expr     { Binassop($1, MinusEq, $3) }
     | MINUS expr %prec NOT { Unop(Minus, $2) }
     | NOT expr { Unop(Not, $2) }
-    | NEW STRUCT ID { New(Struct($3)) }
-    | NEW typ LBRACKET expr RBRACKET opt_arraylit { New(ArrayLit($2, $4, $6)) }
-    // | NEW newable { New($2) }
+    | NEW STRUCT ID { New(NStruct($3)) }
+    | NEW typ LBRACKET expr RBRACKET opt_arraylit { ArrayLit($2, $4, $6)) }
     | DELETE id { Delete($2) }
     | id LBRACKET expr RBRACKET { Index($1, $3) }
     | id LPAREN opt_args RPAREN { Call($1, $3) }
