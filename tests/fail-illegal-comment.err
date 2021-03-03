@@ -1,1 +1,1 @@
-Fatal error: exception Failure("lexing: empty token")
+Fatal error: exception Failure("Unmatched multiline comment")
