@@ -93,7 +93,7 @@ and mcomment = parse
 | eof { raise (Failure("Unmatched multiline comment"))}
 | _ { mcomment lexbuf }
 
-{
+(* {
   let pretty_print = function
   | LPAREN                -> Printf.sprintf "LPAREN"
   | RPAREN                -> Printf.sprintf "RPAREN"
@@ -158,4 +158,4 @@ and mcomment = parse
       | x   -> next (pretty_print x :: accu)
     in next []
   in List.iter (fun x -> print_endline x) token_string_list 
-}
+} *)
