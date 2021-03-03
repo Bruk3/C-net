@@ -81,6 +81,8 @@ type func = {t: typ ; name : string ; parameters : id list ; body : stmt list }
 type strct = { name : string ; members : vdecl list }
 
                                  (* Program *)
+
+                            
 type decl =
     Vdecl of vdecl
   | Sdecl of strct
@@ -189,6 +191,6 @@ let string_of_decl = function
   | Fdecl({t; name; parameters; body}) -> string_of_func(t, name, parameters, body) 
     
 
-let string_of_program (decls) = 
-  String.concat "" (List.map string_of_decl decls) ^ "\n"
+let string_of_program  = function
+  Program(decls) -> String.concat "" (List.map string_of_decl decls) ^ "\n"
   

@@ -5,6 +5,9 @@
 test: test-scanner test-parser
 	@echo "SUCCESS"
 
+cnet.native: 
+	opam config exec -- \
+		ocamlbuild -use-ocamlfind cnet.native
 
 test-scanner: clean scannertest
 	./runtests.sh
