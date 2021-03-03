@@ -115,9 +115,8 @@ type program =
     | MinusEq -> "-="
   
 
+
   (* // TODO  *)
-  let string_of_rid = function  
-  | _ -> "parsed_rid_var_here"
 
   
   let rec string_of_typ = function
@@ -133,6 +132,12 @@ type program =
     (* TODO: Replace by fixed version of 
      ^ string_of_typ t  ^ "[" ^ String.concat "," (List.map string_of_expr  el) ^ "]"
      *)
+
+  let string_of_id = function 
+  | Id(t, n) -> "" ^ string_of_typ t ^ n 
+  let rec string_of_rid = function  
+  | FinalID(id) -> string_of_id id 
+  | RID(r, final) -> string_of_rid r ^ "." ^ final
 
     let rec string_of_expr = function
       | Noexpr -> ""
@@ -177,7 +182,7 @@ let rec string_of_stmt = function
   | Vdecl_assign({vtyp; vname}, e) -> string_of_vdecl_assign(vtyp, vname, e) 
 
 let string_of_func (t, n, p, b) = 
-  string_of_typ t ^ " " ^ n ^ "(" ^ String.concat "," (List.map string_of_rid p) ^ 
+  string_of_typ t ^ " " ^ n ^ "(" ^ String.concat "," (List.map string_of_id p) ^ 
   ")\n{\n" ^ 
   String.concat "" (List.map string_of_stmt b ) ^ 
   "}\n"
