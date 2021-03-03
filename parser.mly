@@ -51,7 +51,7 @@ decls :
     | decl { [$1] }
 
 decl:
-   | vdecl { Vdecl($1) }
+   | vdecl { GVdecl($1) } 
    | sdecl { Sdecl($1) }
    | fdecl { Fdecl($1) }
 

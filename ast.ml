@@ -91,7 +91,7 @@ type strct = { name : string ; members : vdecl list }
 
                             
 type decl =
-    Vdecl of vdecl
+    GVdecl of vdecl (* Renamed to GVdecl to avoid collision with Vdecl of stmt which was giving errors*)
   | Sdecl of strct
   | Fdecl of func
 
@@ -192,7 +192,7 @@ let rec string_of_stmt = function
       "for (" ^ string_of_expr e1  ^ " ; " ^ string_of_expr e2 ^ " ; " ^
       string_of_expr e3  ^ ") " ^ string_of_stmt s
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
-  | Vdecl(vdecl) -> string_of_vdecl vdecl
+  | Vdecl(v) -> string_of_vdecl v
   | Vdecl_assign({vtyp; vname}, e) -> string_of_vdecl_assign(vtyp, vname, e)
 
 let string_of_func (t, n, p, b) =
@@ -202,7 +202,7 @@ let string_of_func (t, n, p, b) =
   "}\n"
 
 let string_of_decl = function
-  Vdecl(vdecl) -> string_of_vdecl vdecl
+  GVdecl(vdecl) -> string_of_vdecl vdecl
   | Sdecl({name; members}) -> string_of_strct(name, members)
   | Fdecl({t; name; parameters; body}) -> string_of_func(t, name, parameters, body)
 
