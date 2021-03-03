@@ -152,8 +152,8 @@ expr:
     | id LPAREN opt_args RPAREN { Call($1, $3) }
 
 id :
-    ID { FinalID(Id(typeof $1, $1)) }
-    | ID DOT id { RID($3, $1) }
+    ID { FinalID(Nid($1)) }
+    | id DOT ID { RID($1, $3) }
 
 opt_args :
     { [] }
