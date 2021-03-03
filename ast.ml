@@ -78,7 +78,7 @@ type stmt =
 type params = Params of id list
 
                                 (* Functions *)
-type func = { name : string ; parameters : params ; body : stmt list }
+type func = { t: typ ; name : string ; parameters : params ; body : stmt list }
 
                                  (* Structs *)
 type strct = { name : string ; members : vdecl list }
@@ -154,3 +154,48 @@ type program =
       | Call(f, el) ->   
           string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   
+
+    
+
+let rec string_of_stmt = function
+    Block(stmts) ->
+      "{\n" ^ String.concat "" (List.map string_of_stmt stmts) ^ "}\n"
+  | Expr(expr) -> string_of_expr expr ^ ";\n"
+  | Return(expr) -> "return " ^ string_of_expr expr ^ ";\n"
+  | If(e, s, Block([])) -> "if (" ^ string_of_expr e ^ ")\n" ^ string_of_stmt s
+  | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
+      string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
+  | For(e1, e2, e3, s) ->
+      "for (" ^ string_of_expr e1  ^ " ; " ^ string_of_expr e2 ^ " ; " ^
+      string_of_expr e3  ^ ") " ^ string_of_stmt s
+  | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
+  | Vdecl({vtyp; vname}) -> string_of_vdecl(vtyp, vname) 
+  | Vdecl_assign({vtyp; vname}, e) -> string_of_vdecl_assign(vtyp, vname, e) 
+
+
+let string_of_func (t, n, p, b) = 
+  string_of_typ t ^ " " ^ n ^ "(" ^ String.concat "," (List.map ((_typ, name) -> name) p) ^ 
+  ")\n{\n" ^ 
+  String.concat "" (List.map string_of_stmt b ) ^ 
+  "}\n"
+
+let string_of_strct (name, members) = 
+  "struct " * 
+
+let string_of_decl = function 
+  Vdecl({vtyp; vname}) -> string_of_vdecl(vtyp, vname)
+  | Sdecl({name; members}) -> string_of_strct(name, members) 
+  | Fdecl({t; name; parameters; body}) -> string_of_func(t, name, parameters, body) 
+  
+
+let string_of_vdecl (t, id) = string_of_typ t ^ " " ^ id ^ ";\n"
+
+
+let string_of_vdecl_assign (t, id, e) 
+= string_of_typ t ^ " " ^ id ^ " = " ^ string_of_expr e ^ ";\n"
+
+
+
+let string_of_program (decls) = 
+  String.concat "" (List.map string_of_decl decls) ^ "\n"
+

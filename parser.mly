@@ -78,7 +78,7 @@ sdecl:
 
 fdecl :
     typ ID LPAREN opt_params RPAREN LBRACE opt_stmts RBRACE
-                    { {name = $2; parameters = $4; body = $7} }
+                    { {t = $1; name = $2; parameters = $4; body = $7} }
 
 opt_params :
     { [] }
