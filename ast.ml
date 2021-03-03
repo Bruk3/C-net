@@ -74,11 +74,8 @@ type stmt =
   | Vdecl_assign      of vdecl * expr
   | Block   of stmt list
 
-                                (* Parameters *)
-type params = Params of id list
-
                                 (* Functions *)
-type func = {t: typ ; name : string ; parameters : params ; body : stmt list }
+type func = {t: typ ; name : string ; parameters : id list ; body : stmt list }
 
                                  (* Structs *)
 type strct = { name : string ; members : vdecl list }
@@ -163,17 +160,6 @@ let string_of_strct (name, members) =
   String.concat "" (List.map string_of_vdecl members) ^ "\n}\n"
 
 (* TODO *)
-let string_of_func (t, n, p, b) = 
-  string_of_typ t ^ " " ^ n ^ "(" ^ String.concat "," (List.map string_of_rid p) ^ 
-  ")\n{\n" ^ 
-  String.concat "" (List.map string_of_stmt b ) ^ 
-  "}\n"
-
-let string_of_decl = function 
-  Vdecl(vdecl) -> string_of_vdecl vdecl
-  | Sdecl({name; members}) -> string_of_strct(name, members) 
-  | Fdecl({t; name; parameters; body}) -> string_of_func(t, name, parameters, body) 
-    
 
 let rec string_of_stmt = function
     Block(stmts) ->
@@ -190,6 +176,17 @@ let rec string_of_stmt = function
   | Vdecl(vdecl) -> string_of_vdecl vdecl
   | Vdecl_assign({vtyp; vname}, e) -> string_of_vdecl_assign(vtyp, vname, e) 
 
+let string_of_func (t, n, p, b) = 
+  string_of_typ t ^ " " ^ n ^ "(" ^ String.concat "," (List.map string_of_rid p) ^ 
+  ")\n{\n" ^ 
+  String.concat "" (List.map string_of_stmt b ) ^ 
+  "}\n"
+
+let string_of_decl = function 
+  Vdecl(vdecl) -> string_of_vdecl vdecl
+  | Sdecl({name; members}) -> string_of_strct(name, members) 
+  | Fdecl({t; name; parameters; body}) -> string_of_func(t, name, parameters, body) 
+    
 
 let string_of_program (decls) = 
   String.concat "" (List.map string_of_decl decls) ^ "\n"
