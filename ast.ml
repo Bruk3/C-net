@@ -78,7 +78,7 @@ type stmt =
 type params = Params of id list
 
                                 (* Functions *)
-type func = { t: typ ; name : string ; parameters : params ; body : stmt list }
+type func = {t: typ ; name : string ; parameters : params ; body : stmt list }
 
                                  (* Structs *)
 type strct = { name : string ; members : vdecl list }
@@ -155,6 +155,24 @@ type program =
           string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   
 
+let string_of_vdecl vdecl  = string_of_typ vdecl.vtyp ^ " " ^ vdecl.vname ^ ";\n"
+let string_of_vdecl_assign (t, id, e) 
+= string_of_typ t ^ " " ^ id ^ " = " ^ string_of_expr e ^ ";\n"
+let string_of_strct (name, members) = 
+  "struct " ^ name ^ "{\n" ^ 
+  String.concat "" (List.map string_of_vdecl members) ^ "\n}\n"
+
+(* TODO *)
+let string_of_func (t, n, p, b) = 
+  string_of_typ t ^ " " ^ n ^ "(" ^ String.concat "," (List.map string_of_rid p) ^ 
+  ")\n{\n" ^ 
+  String.concat "" (List.map string_of_stmt b ) ^ 
+  "}\n"
+
+let string_of_decl = function 
+  Vdecl(vdecl) -> string_of_vdecl vdecl
+  | Sdecl({name; members}) -> string_of_strct(name, members) 
+  | Fdecl({t; name; parameters; body}) -> string_of_func(t, name, parameters, body) 
     
 
 let rec string_of_stmt = function
@@ -169,31 +187,8 @@ let rec string_of_stmt = function
       "for (" ^ string_of_expr e1  ^ " ; " ^ string_of_expr e2 ^ " ; " ^
       string_of_expr e3  ^ ") " ^ string_of_stmt s
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
-  | Vdecl({vtyp; vname}) -> string_of_vdecl(vtyp, vname) 
+  | Vdecl(vdecl) -> string_of_vdecl vdecl
   | Vdecl_assign({vtyp; vname}, e) -> string_of_vdecl_assign(vtyp, vname, e) 
-
-
-let string_of_func (t, n, p, b) = 
-  string_of_typ t ^ " " ^ n ^ "(" ^ String.concat "," (List.map ((_typ, name) -> name) p) ^ 
-  ")\n{\n" ^ 
-  String.concat "" (List.map string_of_stmt b ) ^ 
-  "}\n"
-
-let string_of_strct (name, members) = 
-  "struct " * 
-
-let string_of_decl = function 
-  Vdecl({vtyp; vname}) -> string_of_vdecl(vtyp, vname)
-  | Sdecl({name; members}) -> string_of_strct(name, members) 
-  | Fdecl({t; name; parameters; body}) -> string_of_func(t, name, parameters, body) 
-  
-
-let string_of_vdecl (t, id) = string_of_typ t ^ " " ^ id ^ ";\n"
-
-
-let string_of_vdecl_assign (t, id, e) 
-= string_of_typ t ^ " " ^ id ^ " = " ^ string_of_expr e ^ ";\n"
-
 
 
 let string_of_program (decls) = 
