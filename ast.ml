@@ -89,6 +89,7 @@ type decl =
 type program =
   Program of decl list
 
+
   (* Pretty-printing functions *)
   let string_of_op = function
       Add -> "+"
@@ -195,4 +196,4 @@ let string_of_decl = function
 
 let string_of_program (decls) = 
   String.concat "" (List.map string_of_decl decls) ^ "\n"
-
+  

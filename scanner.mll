@@ -24,7 +24,6 @@ rule tokenize = parse
 | ','  { COMMA }
 | ';'  { SEMI }
 | '\'' {SQUOTE}
-| '"'  {DQUOTE}
 (* Operators *)
 | '+' { PLUS }
 | '-' { MINUS }
@@ -78,6 +77,7 @@ rule tokenize = parse
 | squote bslash ('n' | 't' | '\\' | '0') squote { CHARLIT(0) } (* TODO replace special char with number *) (*Kingsley: what is this one for?*)
 | squote print_char squote as lxm               {CHARLIT(Char.code(lxm.[1]))} (*For chars like 'a'*)
 | digit+ '.' digit* as flt { FLOATLIT(float_of_string flt) } (* TODO Optional negative sign *)
+| '"'  { raise (Failure("Unmatched double quote"))}
 | _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
 
 | eof { EOF }
@@ -90,6 +90,7 @@ and scomment = parse
 
 and mcomment = parse
 "*/" { tokenize lexbuf }
+| eof { raise (Failure("Unmatched multiline comment"))}
 | _ { mcomment lexbuf }
 
 {
