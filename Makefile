@@ -47,9 +47,10 @@ parser.cmi: parser.mli ast.cmo
 
 .PHONY: clean
 clean:
+	ocamlbuild -clean
 	rm -f final parser.ml parser.mli scanner.ml parser.output \
 	scanner.ml scannertest scannertest.out *cmi *cmo \
-	*.log *.diff 
+	*.log *.diff  *.native
 
 .PHONY: all
 all: clean parser

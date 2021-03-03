@@ -12,7 +12,6 @@
 %token EQ NEQ LT LEQ GT GEQ
 %token AND OR NOT
 %token IF ELSE FOR WHILE RETURN BREAK CONTINUE
-%token NOELSE
 %token INT FLOAT CHAR STRING VOID STRUCT SOCKET
 %token TCP UDP
 %token NEW DELETE
@@ -145,7 +144,7 @@ expr:
     | MINUS expr %prec NOT { Unop(Minus, $2) }
     | NOT expr { Unop(Not, $2) }
     | NEW STRUCT ID { New(NStruct($3)) }
-    | NEW typ LBRACKET expr RBRACKET opt_arraylit { ArrayLit($2, $4, $6)) }
+    | NEW typ LBRACKET expr RBRACKET opt_arraylit { ArrayLit($2, $4, $6) }
     | DELETE id { Delete($2) }
     | id LBRACKET expr RBRACKET { Index($1, $3) }
     | id LPAREN opt_args RPAREN { Call($1, $3) }
