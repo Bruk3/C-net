@@ -25,8 +25,9 @@
 
 %type <Ast.program> program
 
-%nonassoc NOELSE NOELIF
+%nonassoc NOELSE
 %nonassoc ELSE
+%left ELIF
 %nonassoc PLUSEQ MINUSEQ
 %right ASSIGN
 %left OR
