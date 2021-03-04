@@ -184,10 +184,10 @@ let rec string_of_stmt = function
       "{\n" ^ String.concat "" (List.map string_of_stmt stmts) ^ "}\n"
   | Expr(expr) -> string_of_expr expr ^ ";\n"
   | Return(expr) -> "return " ^ string_of_expr expr ^ ";\n"
-  | If(e_s_l, s) -> 
-      let string_of_if ((e, s))  = 
-        "if (" ^ string_of_expr e ^ ")"  ^ string_of_stmt s in 
-      String.concat "else " (List.map string_of_if e_s_l) ^ 
+  | If(e_s_l, s) ->
+      let string_of_if ((e, s))  =
+        "if (" ^ string_of_expr e ^ ")"  ^ string_of_stmt s in
+      String.concat "else " (List.map string_of_if e_s_l) ^
       "else " ^ string_of_stmt s
 (*  | If(e, s, Block([])) -> "if (" ^ string_of_expr e ^ ")\n" ^ string_of_stmt s
   | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^

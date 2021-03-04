@@ -114,7 +114,7 @@ stmt:
     | LBRACE stmts RBRACE { Block(List.rev $2) }
 
 ifstmt:
-    IF LPAREN expr RPAREN stmt %prec NOELIF { [ ($3,$5) ] }
+    IF LPAREN expr RPAREN stmt %prec ELIF { [ ($3,$5) ] }
     | IF LPAREN expr RPAREN stmt ELSE ifstmt { ($3,$5)::$7 }
 
 
