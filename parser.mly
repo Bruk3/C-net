@@ -102,7 +102,7 @@ vdecl_assign:
     /* became redundant because expr handles array literals */
 
 stmt:
-    expr SEMI { Expr($1) }
+    opt_expr SEMI { Expr($1) }
     | RETURN opt_expr SEMI { Return($2) }
     | ifstmt ELSE stmt    { If($1, $3)}
     | ifstmt %prec NOELSE { If($1,Expr(Noexpr))}
