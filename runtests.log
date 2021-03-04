@@ -1,0 +1,70 @@
+
+###### Testing test-array-declarations
+./scanner_pp.native > test-array-declarations.out
+diff -b test-array-declarations.out tests/test-array-declarations.out > test-array-declarations.diff
+###### SUCCESS
+
+###### Testing test-basic-tokens
+./scanner_pp.native > test-basic-tokens.out
+diff -b test-basic-tokens.out tests/test-basic-tokens.out > test-basic-tokens.diff
+###### SUCCESS
+
+###### Testing test-comments
+./scanner_pp.native > test-comments.out
+diff -b test-comments.out tests/test-comments.out > test-comments.diff
+###### SUCCESS
+
+###### Testing test-control-flow
+./scanner_pp.native > test-control-flow.out
+diff -b test-control-flow.out tests/test-control-flow.out > test-control-flow.diff
+###### SUCCESS
+
+###### Testing test-func
+./scanner_pp.native > test-func.out
+diff -b test-func.out tests/test-func.out > test-func.diff
+###### SUCCESS
+
+###### Testing test-literals
+./scanner_pp.native > test-literals.out
+diff -b test-literals.out tests/test-literals.out > test-literals.diff
+###### SUCCESS
+
+###### Testing test-loops
+./scanner_pp.native > test-loops.out
+diff -b test-loops.out tests/test-loops.out > test-loops.diff
+###### SUCCESS
+
+###### Testing test-struct-member
+./scanner_pp.native > test-struct-member.out
+diff -b test-struct-member.out tests/test-struct-member.out > test-struct-member.diff
+###### SUCCESS
+
+###### Testing test-struct
+./scanner_pp.native > test-struct.out
+diff -b test-struct.out tests/test-struct.out > test-struct.diff
+###### SUCCESS
+
+###### Testing test-var
+./scanner_pp.native > test-var.out
+diff -b test-var.out tests/test-var.out > test-var.diff
+###### SUCCESS
+
+###### Testing fail-illegal-comment
+./scanner_pp.native < tests/fail-illegal-comment.cnet 2> fail-illegal-comment.err >> runtests.log
+diff -b fail-illegal-comment.err tests/fail-illegal-comment.err > fail-illegal-comment.diff
+###### SUCCESS
+
+###### Testing fail-illegal-tokens
+./scanner_pp.native < tests/fail-illegal-tokens.cnet 2> fail-illegal-tokens.err >> runtests.log
+diff -b fail-illegal-tokens.err tests/fail-illegal-tokens.err > fail-illegal-tokens.diff
+###### SUCCESS
+
+###### Testing fail-string
+./scanner_pp.native < tests/fail-string.cnet 2> fail-string.err >> runtests.log
+diff -b fail-string.err tests/fail-string.err > fail-string.diff
+###### SUCCESS
+
+###### Testing fail-unmatched-quote
+./scanner_pp.native < tests/fail-unmatched-quote.cnet 2> fail-unmatched-quote.err >> runtests.log
+diff -b fail-unmatched-quote.err tests/fail-unmatched-quote.err > fail-unmatched-quote.diff
+###### SUCCESS

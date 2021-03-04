@@ -17,11 +17,15 @@ NEW
 STRUCT 
 ID(person)
 SEMI 
-STRUCTMEM
+ID(p1)
+DOT
+ID(name)
 ASSIGN 
 STRLIT(Hello /n world)
 SEMI 
-STRUCTMEM
+ID(p1)
+DOT
+ID(age)
 ASSIGN 
 INTLIT(12)
 SEMI 
@@ -42,7 +46,11 @@ NEW
 STRUCT
 ID(person)
 SEMI 
-STRUCTMEM 
+ID(q1)
+DOT
+ID(p1)
+DOT
+ID(age)
 ASSIGN 
 INTLIT(14)
 SEMI
