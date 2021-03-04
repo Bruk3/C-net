@@ -1,0 +1,16 @@
+struct person{
+  string name;
+ int age;
+};
+
+struct person p1 = new struct person; 
+p1.name = "Hello /n world";
+p1.age = 12; 
+
+struct couple{
+  struct person p1;
+};
+
+struct couple q1 = new struct person; 
+
+q1.p1.age =14;
