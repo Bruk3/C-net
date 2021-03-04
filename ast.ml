@@ -186,7 +186,7 @@ let rec string_of_stmt = function
   | Return(expr) -> "return " ^ string_of_expr expr ^ ";\n"
   | If(e_s_l, s) -> 
       let string_of_if ((e, s))  = 
-        "if (" ^ string_of_expr e ^ "){\n"  ^ string_of_stmt s ^ "\n}\n" in 
+        "if (" ^ string_of_expr e ^ ")"  ^ string_of_stmt s in 
       String.concat "else " (List.map string_of_if e_s_l) ^ 
       "else " ^ string_of_stmt s
 (*  | If(e, s, Block([])) -> "if (" ^ string_of_expr e ^ ")\n" ^ string_of_stmt s
