@@ -9,7 +9,7 @@ let bslash = '\\'
 let octal_dig = ['0'-'7']
 let octal_triplet = (octal_dig)(octal_dig)(octal_dig)
 let integer = digit+
-let normal_id = (alpha | '_')(alpha | digit | '_')* 
+let normal_id = (alpha | '_')(alpha | digit | '_')*
 
 let print_char = [' '-'~']
 
@@ -58,8 +58,8 @@ rule tokenize = parse
 | "void" { VOID }
 | "struct" { STRUCT }
 | "socket" { SOCKET }
-| "TCP" {TCP}
-| "UDP" {UDP}
+(*| "TCP" {TCP}
+| "UDP" {UDP}*)
 (*Functions*)
 | "return" { RETURN }
 (*Memory*)
@@ -72,7 +72,7 @@ rule tokenize = parse
 | normal_id as lxm {ID(lxm)}
 
 | integer as lxm { INTLIT(int_of_string lxm) }
-| '"' ((print_char)* as str) '"' { STRLIT(str) } 
+| '"' ((print_char)* as str) '"' { STRLIT(str) }
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
 | squote bslash ('n' | 't' | '\\' | '0') squote { CHARLIT(0) } (* TODO replace special char with number *) (*Kingsley: what is this one for?*)
 | squote print_char squote as lxm               {CHARLIT(Char.code(lxm.[1]))} (*For chars like 'a'*)
@@ -148,14 +148,14 @@ and mcomment = parse
   | CHARLIT(x)            -> Printf.sprintf  "CHARLIT(%d)" (x)
   | FLOATLIT(x)           -> Printf.sprintf  "FLOATLIT(%f)" (x)
 
-  in 
+  in
 
   let lexbuf = Lexing.from_channel stdin in
   let token_string_list =
-    let rec next accu = 
-      match tokenize lexbuf with 
+    let rec next accu =
+      match tokenize lexbuf with
       | EOF -> List.rev (pretty_print EOF :: accu)
       | x   -> next (pretty_print x :: accu)
     in next []
-  in List.iter (fun x -> print_endline x) token_string_list 
+  in List.iter (fun x -> print_endline x) token_string_list
 } *)
