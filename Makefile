@@ -1,32 +1,60 @@
 
 # The "opam exec --" part is for compatiblity with github CI actions
 
+################ TEST TARGETS ######################
 test: test-scanner test-parser
 	@echo "SUCCESS"
 
-test-scanner: clean scannertest
+test-scanner: scanner_pp.native
 	./runtests.sh
+	
+## Old scanner "Not So pretty" printer
+scanner_pp.native: 
+	opam config exec -- \
+		ocamlbuild -use-ocamlfind scanner_pp.native
 
-# TODO
+## cnet top level - Currently just prints ast 
+cnet.native: 
+	opam config exec -- \
+		ocamlbuild -use-ocamlfind cnet.native
+
+
 test-parser: 
+	ocamlyacc -v parser.mly
 
-parser: 
-	ocamlyacc parser.mly
+############### END TEST TARGETS ###################
 
-scannertest: scanner.cmo 
-	ocamlc -o scannertest $^
+cnet: parser.cmo scanner.cmo
+	ocamlc -o final $^
 
-scanner.cmo : scanner.ml
-	ocamlc -c $^
 
-scanner.ml : scanner.mll
-	ocamllex $^
+%.cmo: %.ml
+	ocamlc -c $<
+
+%.cmi: %.mli
+	ocamlc -c $<
+
+scanner.ml: scanner.mll
+	ocamllex $<
+
+parser.ml parser.mli: parser.mly
+	ocamlyacc $^
+
+# Dependencies for opening modules
+scanner.cmo: scanner.ml parser.cmi
+	ocamlc -c $<
+
+parser.cmo: parser.ml parser.cmi ast.cmo
+	ocamlc -c $<
+
+parser.cmi: parser.mli ast.cmo
 
 .PHONY: clean
 clean:
-	rm -f parser.ml parser.mli scanner.ml \
-	scannertest scannertest.out *cmi *cmo \
-	*.log *.diff 
+	ocamlbuild -clean
+	rm -f final parser.ml parser.mli scanner.ml parser.output \
+	scanner.ml scannertest scannertest.out *cmi *cmo \
+	*.log *.diff *.out *.err 
 
 .PHONY: all
 all: clean parser
@@ -39,5 +67,5 @@ all: clean parser
 ci-parser:
 	opam exec -- ocamlyacc parser.mly
 
-ci-test: clean ci-parser
+ci-test: ci-parser
 

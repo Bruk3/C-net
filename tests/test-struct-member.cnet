@@ -1,0 +1,10 @@
+struct animal {
+  string name; 
+  string color; 
+  int weight; 
+}; 
+struct animal my_animal = new struct animal; 
+
+animal.name  = "goat";
+animal.color = "brown";
+animal.weight = 200.40; 

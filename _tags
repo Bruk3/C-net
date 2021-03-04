@@ -1,0 +1,3 @@
+# Enable almost all compiler warnings
+# TODO: Fix warning 42
+true : warn(+a-4-42)

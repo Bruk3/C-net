@@ -1,99 +1,7 @@
-{
-    open Parser;;
-}
+open Parser
 
-let alpha = ['a'-'z' 'A'-'Z']
-let digit = ['0'-'9']
-let squote = '\''
-let bslash = '\\'
-let octal_dig = ['0'-'7']
-let octal_triplet = (octal_dig)(octal_dig)(octal_dig)
-let integer = digit+
-let normal_id = (alpha | '_')(alpha | digit | '_')* 
+let () = 
 
-let print_char = [' '-'~']
-
-rule tokenize = parse
-  [' ' '\t' '\r' '\n'] { tokenize lexbuf }
-| '('  { LPAREN }
-| ')'  { RPAREN }
-| '{'  { LBRACE }
-| '}'  { RBRACE }
-| '['  { LBRACKET }
-| ']'  { RBRACKET }
-| ','  { COMMA }
-| ';'  { SEMI }
-| '\'' {SQUOTE}
-(* Operators *)
-| '+' { PLUS }
-| '-' { MINUS }
-| '*' { TIMES }
-| '/' { DIVIDE }
-| '=' { ASSIGN }
-| '%' { MOD }
-| "+=" { PLUSEQ }
-| "-=" { MINUSEQ }
-| "==" { EQ }
-| "!=" { NEQ }
-| '<' { LT }
-| "<=" { LEQ }
-| ">" { GT }
-| ">=" { GEQ }
-| "&&" { AND }
-| "||" { OR }
-| "!" { NOT }
-| '.' { DOT }
-(*Control flow*)
-| "if" { IF }
-| "else" { ELSE }
-| "for" { FOR }
-| "while" { WHILE }
-| "break" { BREAK }
-| "continue" { CONTINUE }
-(*Types*)
-| "int" { INT }
-| "float" { FLOAT }
-| "char" { CHAR }
-| "string" { STRING }
-| "void" { VOID }
-| "struct" { STRUCT }
-| "socket" { SOCKET }
-| "TCP" {TCP}
-| "UDP" {UDP}
-(*Functions*)
-| "return" { RETURN }
-(*Memory*)
-| "new" { NEW }
-| "delete" { DELETE }
-
-(* Now the tokens that have to be matched with regex *)
-| "//" { scomment lexbuf }
-| "/*" { mcomment lexbuf }
-| normal_id as lxm {ID(lxm)}
-
-| integer as lxm { INTLIT(int_of_string lxm) }
-| '"' ((print_char)* as str) '"' { STRLIT(str) } 
-| squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
-| squote bslash ('n' | 't' | '\\' | '0') squote { CHARLIT(0) } (* TODO replace special char with number *) (*Kingsley: what is this one for?*)
-| squote print_char squote as lxm               {CHARLIT(Char.code(lxm.[1]))} (*For chars like 'a'*)
-| digit+ '.' digit* as flt { FLOATLIT(float_of_string flt) } (* TODO Optional negative sign *)
-| '"'  { raise (Failure("Unmatched double quote"))}
-| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
-
-| eof { EOF }
-
-
-and scomment = parse
-'\n' { tokenize lexbuf }
-| eof { tokenize lexbuf }
-| _ { scomment lexbuf }
-
-and mcomment = parse
-"*/" { tokenize lexbuf }
-| eof { raise (Failure("Unmatched multiline comment"))}
-| _ { mcomment lexbuf }
-
-(* {
   let pretty_print = function
   | LPAREN                -> Printf.sprintf "LPAREN"
   | RPAREN                -> Printf.sprintf "RPAREN"
@@ -153,9 +61,8 @@ and mcomment = parse
   let lexbuf = Lexing.from_channel stdin in
   let token_string_list =
     let rec next accu = 
-      match tokenize lexbuf with 
+      match Scanner.tokenize lexbuf with 
       | EOF -> List.rev (pretty_print EOF :: accu)
       | x   -> next (pretty_print x :: accu)
     in next []
   in List.iter (fun x -> print_endline x) token_string_list 
-} *)
