@@ -13,7 +13,7 @@
 %token AND OR NOT
 %token IF ELSE FOR WHILE RETURN BREAK CONTINUE
 %token INT FLOAT CHAR STRING VOID STRUCT SOCKET
-%token TCP UDP
+/* %token TCP UDP */
 %token NEW DELETE
 %token <int> INTLIT CHARLIT
 %token <float> FLOATLIT
@@ -27,6 +27,7 @@
 
 %nonassoc NOELSE
 %nonassoc ELSE
+%left ELIF
 %nonassoc PLUSEQ MINUSEQ
 %right ASSIGN
 %left OR
@@ -51,7 +52,7 @@ decls :
     | decl { [$1] }
 
 decl:
-   | vdecl { GVdecl($1) } 
+   | vdecl { GVdecl($1) }
    | sdecl { Sdecl($1) }
    | fdecl { Fdecl($1) }
 
@@ -102,15 +103,20 @@ vdecl_assign:
     /* became redundant because expr handles array literals */
 
 stmt:
-    expr SEMI { Expr($1) }
+    opt_expr SEMI { Expr($1) }
     | RETURN opt_expr SEMI { Return($2) }
-    | IF LPAREN expr RPAREN stmt ELSE stmt    { If($3, $5, $7) }
-    | IF LPAREN expr RPAREN stmt %prec NOELSE { If($3, $5, Block([])) }
+    | ifstmt ELSE stmt    { If($1, $3)}
+    | ifstmt %prec NOELSE { If($1,Expr(Noexpr))}
     | FOR LPAREN opt_expr SEMI opt_expr SEMI opt_expr RPAREN stmt { For($3, $5, $7, $9) }
     | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
     | vdecl { Vdecl($1) }
     | vdecl_assign { $1 }
     | LBRACE stmts RBRACE { Block(List.rev $2) }
+
+ifstmt:
+    IF LPAREN expr RPAREN stmt %prec ELIF { [ ($3,$5) ] }
+    | IF LPAREN expr RPAREN stmt ELSE ifstmt { ($3,$5)::$7 }
+
 
 opt_expr:
     { Noexpr }
