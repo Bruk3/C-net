@@ -65,5 +65,5 @@ all: clean parser
 ci-parser:
 	opam exec -- ocamlyacc parser.mly
 
-ci-test: ci-parser test-scanner
+ci-test: ci-parser clean test-scanner
 
