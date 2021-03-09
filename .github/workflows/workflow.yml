@@ -22,6 +22,8 @@ jobs:
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
 
+      - run: opam install ocamlbuild
+
       - run: make ci-test && echo SUCCESS
 
   slack-workflow-status:
