@@ -111,7 +111,7 @@ stmt:
     | FOR LPAREN opt_expr SEMI opt_expr SEMI opt_expr RPAREN stmt { For($3, $5, $7, $9) }
     | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
     | vdecl { Vdecl($1) }
-    | vdecl_assign { Vdecl_assign(fst $1, snd $1) }
+    | vdecl_assign { Vdecl_ass(fst $1, snd $1) }
     | LBRACE stmts RBRACE { Block(List.rev $2) }
 
 ifstmt:

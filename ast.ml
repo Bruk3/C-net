@@ -78,7 +78,7 @@ type stmt =
   | For               of expr  * expr * expr * stmt
   | While             of expr  * stmt
   | Vdecl             of vdecl
-  | Vdecl_assign      of vdecl * expr
+  | Vdecl_ass      of vdecl * expr
   | Block   of stmt list
 
                                 (* Functions *)
@@ -141,7 +141,7 @@ let rec string_of_typ = function
 let string_of_nid = function
     Nid(id) -> id
 let string_of_id = function
-  | Id(t, n) -> "" ^ string_of_typ t ^ n
+  | Id(t, n) -> string_of_typ t ^ " " ^ n
 let rec string_of_rid = function
   | FinalID(id) -> string_of_nid id
   | RID(r, final) -> string_of_rid r ^ "." ^ final
@@ -159,7 +159,7 @@ let rec string_of_expr = function
   | Binop(e1, o, e2) ->
     string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Unop(o, e) -> string_of_uop o ^ string_of_expr e
-  | Binassop(id, op, r) -> string_of_rid id ^ string_of_binassop op ^ " " ^ string_of_expr r
+  | Binassop(id, op, r) -> string_of_rid id ^ " " ^ string_of_binassop op ^ " " ^ string_of_expr r
   | Delete(id) -> "delete " ^ string_of_rid id
   | New(n) -> "new " ^  string_of_newable n
   | ArrayLit(t, e, el) ->
@@ -170,39 +170,60 @@ let rec string_of_expr = function
     string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
 
 
-let string_of_vdecl vdecl  = string_of_typ vdecl.vtyp ^ " " ^ vdecl.vname ^ ";\n"
-let string_of_vdecl_assign (t, id, e)
-  = string_of_typ t ^ " " ^ id ^ " = " ^ string_of_expr e ^ ";\n"
+let string_of_vdecl vdecl  =
+  string_of_typ vdecl.vtyp ^ " " ^ vdecl.vname ^ ";\n"
+let string_of_vdecl_assign (t, id, e) =
+  string_of_typ t ^ " " ^ id ^ " = " ^ string_of_expr e ^ ";\n"
 let string_of_strct (name, members) =
-  "struct " ^ name ^ "{\n\t" ^
-  String.concat "\t" (List.map string_of_vdecl members) ^ "\n};\n"
+  "struct " ^ name ^ " {\n\t" ^
+  String.concat "\t" (List.map string_of_vdecl members) ^ "\n};\n\n"
+
+let tabs num = (* tabs 5 returns "\t\t\t\t\t" *)
+  let rec helper s =  function
+    | 1 -> "\t" ^ s
+    | n when n > 1 -> helper (s ^ "\t") (n-1)
+    | _ -> ""
+  in helper "" num;;
 
 (* TODO *)
-let rec string_of_stmt = function
-    Block(stmts) ->
-    "{\n" ^ String.concat "\t" (List.map string_of_stmt stmts) ^ "}\n"
-  | Expr(expr) -> string_of_expr expr ^ ";\n"
-  | Return(expr) -> "return " ^ string_of_expr expr ^ ";\n"
-  | If(e_s_l, s) ->
-    let string_of_if ((e, s))  =
-      "if (" ^ string_of_expr e ^ ")"  ^ string_of_stmt s in
-    String.concat "else " (List.map string_of_if e_s_l) ^
-    "else " ^ string_of_stmt s
-  (*  | If(e, s, Block([])) -> "if (" ^ string_of_expr e ^ ")\n" ^ string_of_stmt s
-      | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
-        string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2 *)
-  | For(e1, e2, e3, s) ->
-    "for (" ^ string_of_expr e1  ^ " ; " ^ string_of_expr e2 ^ " ; " ^
-    string_of_expr e3  ^ ") " ^ string_of_stmt s
-  | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
-  | Vdecl(v) -> string_of_vdecl v
-  | Vdecl_assign({vtyp; vname}, e) -> string_of_vdecl_assign(vtyp, vname, e)
+let rec string_of_stmt (main_stmt, main_indent) =
+  let print_block b ind = match b with
+      Block(_)    -> string_of_stmt (b, ind)
+    | _           -> "{" ^ string_of_stmt (b, ind + 1) ^ "}"
+  in
+  let helper (stmt, indent) = match stmt with
+      Block(stmts)       -> "{\n" ^ String.concat ""
+                              (List.map string_of_stmt
+                                 (List.map
+                                    (fun stmt -> (stmt, indent + 1))
+                                    stmts
+                                 )
+                              )
+                            ^ (tabs indent) ^ "}\n"
+    | Expr(expr)         -> string_of_expr expr ^ ";\n"
+    | Return(expr)       -> "return " ^ string_of_expr expr ^ ";\n"
+    | If(e_s_l, s)       ->
+      let string_of_if ((e, s))  = "if (" ^ string_of_expr e ^ ")"  ^ string_of_stmt (s,indent + 1) in
+      String.concat "else " (List.map string_of_if e_s_l) ^ "else " ^ string_of_stmt (s, indent + 1)
+    | For(e1, e2, e3, s) -> "for (" ^ string_of_expr e1  ^ " ; " ^
+                            string_of_expr e2 ^ " ; " ^ string_of_expr e3  ^ ") "
+                            ^ (string_of_stmt (s, indent + 1))
+    | While(e, s)        -> "while (" ^ string_of_expr e ^ ")\n"
+                            ^ (print_block s indent)
+    | Vdecl(v)           -> string_of_vdecl v
+    | Vdecl_ass({vtyp; vname}, e)
+      -> string_of_vdecl_assign(vtyp, vname, e)
+
+  in (tabs main_indent) ^ helper (main_stmt, main_indent)
+
 
 let string_of_func (t, n, p, b) =
   string_of_typ t ^ " " ^ n ^ "(" ^ String.concat "," (List.map string_of_id p) ^
-  ")\n{\n\t" ^
-  String.concat "\t" (List.map string_of_stmt b ) ^
-  "}\n\n"
+  ")\n{\n" ^ String.concat ""
+    (List.map
+       string_of_stmt
+       (List.map (fun stmt -> (stmt, 1)) b)
+    ) ^ "}\n\n"
 
 let string_of_decl = function
     GVdecl(vdecl) -> string_of_vdecl vdecl
