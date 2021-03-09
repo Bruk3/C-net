@@ -1,6 +1,6 @@
-open Parser
+open Parser;;
 
-  let pretty_print = function
+let pretty_print = function
   | LPAREN                -> Printf.sprintf "LPAREN"
   | RPAREN                -> Printf.sprintf "RPAREN"
   | LBRACE                -> Printf.sprintf "LBRACE"
@@ -43,22 +43,21 @@ open Parser
   | SOCKET                -> Printf.sprintf "SOCKET"
   | STRUCT                -> Printf.sprintf "STRUCT"
   | VOID                  -> Printf.sprintf "VOID"
-  (* | TCP                   -> Printf.sprintf "TCP"
   | UDP                   -> Printf.sprintf "UDP" *)
-  | RETURN                -> Printf.sprintf "RETURN"
-  | NEW                   -> Printf.sprintf "NEW"
-  | DELETE                -> Printf.sprintf "DELETE"
-  | ID(x)                 -> Printf.sprintf  "ID(%s)" (x)
-  | INTLIT(x)             -> Printf.sprintf  "INTLIT(%d)" (x)
-  | STRLIT(x)             -> Printf.sprintf  "STRLIT(%s)" (x)
-  | CHARLIT(x)            -> Printf.sprintf  "CHARLIT(%d)" (x)
-  | FLOATLIT(x)           -> Printf.sprintf  "FLOATLIT(%f)" (x)
+| RETURN                -> Printf.sprintf "RETURN"
+| NEW                   -> Printf.sprintf "NEW"
+| DELETE                -> Printf.sprintf "DELETE"
+| ID(x)                 -> Printf.sprintf  "ID(%s)" (x)
+| INTLIT(x)             -> Printf.sprintf  "INTLIT(%d)" (x)
+| STRLIT(x)             -> Printf.sprintf  "STRLIT(%s)" (x)
+| CHARLIT(x)            -> Printf.sprintf  "CHARLIT(%d)" (x)
+| FLOATLIT(x)           -> Printf.sprintf  "FLOATLIT(%f)" (x)
 
-  (* let lexbuf = Lexing.from_channel stdin in
-  let token_string_list =
-    let rec next accu = 
-      match Scanner.tokenize lexbuf with 
-      | EOF -> List.rev (pretty_print EOF :: accu)
-      | x   -> next (pretty_print x :: accu)
-    in next []
-  in List.iter (fun x -> print_endline x) token_string_list  *)
+(* let lexbuf = Lexing.from_channel stdin in
+   let token_string_list =
+   let rec next accu =
+    match Scanner.tokenize lexbuf with
+    | EOF -> List.rev (pretty_print EOF :: accu)
+    | x   -> next (pretty_print x :: accu)
+   in next []
+   in List.iter (fun x -> print_endline x) token_string_list  *)

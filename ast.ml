@@ -34,7 +34,7 @@ and id =
   Id of typ * string
 
 and rid =
-    FinalID of nid (* An id always has a type and a name *)
+    FinalID of nid
   | RID of rid * string
 
                               (* types in C-net *)
@@ -88,128 +88,127 @@ type func = {t: typ ; name : string ; parameters : id list ; body : stmt list }
 type strct = { name : string ; members : vdecl list }
 
                                  (* Program *)
-
-
 type decl =
     GVdecl of vdecl (* Renamed to GVdecl to avoid collision with Vdecl of stmt which was giving errors*)
+  | GVdecl_ass of (vdecl * expr)
   | Sdecl of strct
   | Fdecl of func
 
 type program =
-  Program of decl list
+    Program of decl list
 
 
-  (* Pretty-printing functions *)
-  let string_of_op = function
-      Add -> "+"
-    | Sub -> "-"
-    | Mul -> "*"
-    | Div -> "/"
-    | Eq -> "=="
-    | Neq -> "!="
-    | Lt -> "<"
-    | Leq -> "<="
-    | Gt -> ">"
-    | Geq -> ">="
-    | And -> "&&"
-    | Or -> "||"
-    | Mod -> "%"
+                        (* Pretty-printing functions *)
+let string_of_op = function
+    Add -> "+"
+  | Sub -> "-"
+  | Mul -> "*"
+  | Div -> "/"
+  | Eq -> "=="
+  | Neq -> "!="
+  | Lt -> "<"
+  | Leq -> "<="
+  | Gt -> ">"
+  | Geq -> ">="
+  | And -> "&&"
+  | Or -> "||"
+  | Mod -> "%"
 
-  let string_of_uop = function
-      Minus -> "-"
-    | Not -> "!"
+let string_of_uop = function
+    Minus -> "-"
+  | Not -> "!"
 
-  let string_of_binassop = function
+let string_of_binassop = function
     Assign -> "="
-    | PlusEq -> "+="
-    | MinusEq -> "-="
+  | PlusEq -> "+="
+  | MinusEq -> "-="
 
 
 
-  (* // TODO  *)
+(* // TODO  *)
 
 
-  let rec string_of_typ = function
-    Char        -> "char"
-    | Int       -> "int"
-    | Float     -> "float"
-    | Socket    -> "socket"
-    | String    -> "string"
-    | Struct(t)    -> "struct " ^ t
-    | Void      -> "void"
-    | Array(t) ->  "" ^ string_of_typ t ^ "[]"
+let rec string_of_typ = function
+    Char      -> "char"
+  | Int       -> "int"
+  | Float     -> "float"
+  | Socket    -> "socket"
+  | String    -> "string"
+  | Struct(t) -> "struct " ^ t
+  | Void      -> "void"
+  | Array(t)  ->  "" ^ string_of_typ t ^ "[]"
 
-  let string_of_nid = function
+let string_of_nid = function
     Nid(id) -> id
-  let string_of_id = function
+let string_of_id = function
   | Id(t, n) -> "" ^ string_of_typ t ^ n
-  let rec string_of_rid = function
+let rec string_of_rid = function
   | FinalID(id) -> string_of_nid id
   | RID(r, final) -> string_of_rid r ^ "." ^ final
 
-  let string_of_newable = function
+let string_of_newable = function
     NStruct(n)  -> "struct " ^ n
 
-    let rec string_of_expr = function
-      | Noexpr -> ""
-      | Intlit(id) -> string_of_int id
-      | Charlit(id) -> "" ^ (Char.escaped(Char.chr(id)))
-      | Floatlit(id) -> string_of_float id
-      | Strlit(id) -> id
-      | Rid(id) -> string_of_rid id (* TODO *)
-      | Binop(e1, o, e2) ->
-          string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
-      | Unop(o, e) -> string_of_uop o ^ string_of_expr e
-      | Binassop(id, op, r) -> string_of_rid id ^ string_of_binassop op ^ " " ^ string_of_expr r
-      | Delete(id) -> "delete " ^ string_of_rid id
-      | New(n) -> "new " ^  string_of_newable n
-      | ArrayLit(t, e, el) ->
-         "new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^ "] = {" ^
-         String.concat ", " (List.map string_of_expr el) ^ "}"
-      | Index(id, e) -> string_of_rid id ^ "[" ^ string_of_expr e ^ "]"
-      | Call(f, el) ->
-          string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+let rec string_of_expr = function
+  | Noexpr -> ""
+  | Intlit(id) -> string_of_int id
+  | Charlit(id) -> "" ^ (Char.escaped(Char.chr(id)))
+  | Floatlit(id) -> string_of_float id
+  | Strlit(id) -> "\"" ^ id ^ "\""
+  | Rid(id) -> string_of_rid id (* TODO *)
+  | Binop(e1, o, e2) ->
+    string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
+  | Unop(o, e) -> string_of_uop o ^ string_of_expr e
+  | Binassop(id, op, r) -> string_of_rid id ^ string_of_binassop op ^ " " ^ string_of_expr r
+  | Delete(id) -> "delete " ^ string_of_rid id
+  | New(n) -> "new " ^  string_of_newable n
+  | ArrayLit(t, e, el) ->
+    "new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^ "] = {" ^
+    String.concat ", " (List.map string_of_expr el) ^ "}"
+  | Index(id, e) -> string_of_rid id ^ "[" ^ string_of_expr e ^ "]"
+  | Call(f, el) ->
+    string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
 
 
 let string_of_vdecl vdecl  = string_of_typ vdecl.vtyp ^ " " ^ vdecl.vname ^ ";\n"
 let string_of_vdecl_assign (t, id, e)
-= string_of_typ t ^ " " ^ id ^ " = " ^ string_of_expr e ^ ";\n"
+  = string_of_typ t ^ " " ^ id ^ " = " ^ string_of_expr e ^ ";\n"
 let string_of_strct (name, members) =
-  "struct " ^ name ^ "{\n" ^
-  String.concat "" (List.map string_of_vdecl members) ^ "\n}\n"
+  "struct " ^ name ^ "{\n\t" ^
+  String.concat "\t" (List.map string_of_vdecl members) ^ "\n};\n"
 
 (* TODO *)
 let rec string_of_stmt = function
     Block(stmts) ->
-      "{\n" ^ String.concat "" (List.map string_of_stmt stmts) ^ "}\n"
+    "{\n" ^ String.concat "\t" (List.map string_of_stmt stmts) ^ "}\n"
   | Expr(expr) -> string_of_expr expr ^ ";\n"
   | Return(expr) -> "return " ^ string_of_expr expr ^ ";\n"
   | If(e_s_l, s) ->
-      let string_of_if ((e, s))  =
-        "if (" ^ string_of_expr e ^ ")"  ^ string_of_stmt s in
-      String.concat "else " (List.map string_of_if e_s_l) ^
-      "else " ^ string_of_stmt s
-(*  | If(e, s, Block([])) -> "if (" ^ string_of_expr e ^ ")\n" ^ string_of_stmt s
-  | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
-      string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2 *)
+    let string_of_if ((e, s))  =
+      "if (" ^ string_of_expr e ^ ")"  ^ string_of_stmt s in
+    String.concat "else " (List.map string_of_if e_s_l) ^
+    "else " ^ string_of_stmt s
+  (*  | If(e, s, Block([])) -> "if (" ^ string_of_expr e ^ ")\n" ^ string_of_stmt s
+      | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
+        string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2 *)
   | For(e1, e2, e3, s) ->
-      "for (" ^ string_of_expr e1  ^ " ; " ^ string_of_expr e2 ^ " ; " ^
-      string_of_expr e3  ^ ") " ^ string_of_stmt s
+    "for (" ^ string_of_expr e1  ^ " ; " ^ string_of_expr e2 ^ " ; " ^
+    string_of_expr e3  ^ ") " ^ string_of_stmt s
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
   | Vdecl(v) -> string_of_vdecl v
   | Vdecl_assign({vtyp; vname}, e) -> string_of_vdecl_assign(vtyp, vname, e)
 
 let string_of_func (t, n, p, b) =
   string_of_typ t ^ " " ^ n ^ "(" ^ String.concat "," (List.map string_of_id p) ^
-  ")\n{\n" ^
-  String.concat "" (List.map string_of_stmt b ) ^
-  "}\n"
+  ")\n{\n\t" ^
+  String.concat "\t" (List.map string_of_stmt b ) ^
+  "}\n\n"
 
 let string_of_decl = function
-  GVdecl(vdecl) -> string_of_vdecl vdecl
+    GVdecl(vdecl) -> string_of_vdecl vdecl
+  | GVdecl_ass({vtyp; vname}, e) -> string_of_vdecl_assign(vtyp, vname, e)
   | Sdecl({name; members}) -> string_of_strct(name, members)
   | Fdecl({t; name; parameters; body}) -> string_of_func(t, name, parameters, body)
 
-let string_of_program  = function   
+let string_of_program  = function
   Program(decls) -> String.concat "" (List.map string_of_decl decls) ^ "\n"
-
