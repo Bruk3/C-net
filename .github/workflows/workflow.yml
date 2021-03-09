@@ -22,7 +22,7 @@ jobs:
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
 
-      - run: opam install ocamlbuild
+      - run: opam install ocamlbuild ocamlfind
 
       - run: make ci-test && echo SUCCESS
 
