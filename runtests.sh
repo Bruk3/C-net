@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# Regression testing script for C-net. 
-# 
+# Regression testing script for C-net.
+#
 
 # Set time limit for all operations
 ulimit -t 30
@@ -11,7 +11,8 @@ rm -f $globallog
 error=0
 globalerror=0
 
-scannertest="scanner_pp.native"
+testfiles="tests/scanner/test-*.cnet tests/scanner/fail-*.cnet"
+scannertest="cnet.native"
 
 keep=0
 
@@ -78,7 +79,7 @@ Check() {
     generatedfiles="$generatedfiles ${basename}.out" &&
 
 
-    Run "./${scannertest}" < "$1" ">" "${basename}.out" &&
+    Run "./${scannertest}" -t < "$1" ">" "${basename}.out" &&
     Compare ${basename}.out ${reffile}.out ${basename}.diff
 
     # Run "$MICROC" "$1" ">" "${basename}.ll" &&
@@ -146,9 +147,8 @@ done
 
 shift `expr $OPTIND - 1`
 
-files="tests/test-*.cnet tests/fail-*.cnet"
 
-for file in $files
+for file in $testfiles
 do
     case $file in
 	*test-*)
