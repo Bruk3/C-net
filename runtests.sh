@@ -12,7 +12,7 @@ error=0
 globalerror=0
 
 testfiles="tests/scanner/test-*.cnet tests/scanner/fail-*.cnet"
-scannertest="cnet.native"
+scannertest="cnet.native -t"
 
 keep=0
 
