@@ -5,28 +5,24 @@
 test: test-scanner test-parser
 	@echo "SUCCESS"
 
-test-scanner: scanner_pp.native
+test-scanner: cnet.native
 	./runtests.sh
-	
-## Old scanner "Not So pretty" printer
-scanner_pp.native: 
-	opam config exec -- \
-		ocamlbuild -use-ocamlfind scanner_pp.native
 
-## cnet top level - Currently just prints ast 
-cnet.native: 
+
+## cnet top level - Currently supports two flags
+##  -a (ast pretty printing), -t (token pretty printing)
+cnet.native:
 	opam config exec -- \
 		ocamlbuild -use-ocamlfind cnet.native
 
 
-test-parser: 
+test-parser:
 	ocamlyacc -v parser.mly
 
 ############### END TEST TARGETS ###################
 
 cnet: parser.cmo scanner.cmo
 	ocamlc -o final $^
-
 
 %.cmo: %.ml
 	ocamlc -c $<
@@ -40,6 +36,8 @@ scanner.ml: scanner.mll
 parser.ml parser.mli: parser.mly
 	ocamlyacc $^
 
+scanner_pp.cmo: scanner_pp.ml scanner.cmo
+
 # Dependencies for opening modules
 scanner.cmo: scanner.ml parser.cmi
 	ocamlc -c $<
@@ -51,10 +49,10 @@ parser.cmi: parser.mli ast.cmo
 
 .PHONY: clean
 clean:
-	ocamlbuild -clean
+	opam config exec -- ocamlbuild -clean
 	rm -f final parser.ml parser.mli scanner.ml parser.output \
 	scanner.ml scannertest scannertest.out *cmi *cmo \
-	*.log *.diff *.out *.err 
+	*.log *.diff *.out *.err
 
 .PHONY: all
 all: clean parser
@@ -67,5 +65,5 @@ all: clean parser
 ci-parser:
 	opam exec -- ocamlyacc parser.mly
 
-ci-test: ci-parser
+ci-test: ci-parser clean test-scanner
 

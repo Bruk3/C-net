@@ -210,6 +210,6 @@ let string_of_decl = function
   | Sdecl({name; members}) -> string_of_strct(name, members)
   | Fdecl({t; name; parameters; body}) -> string_of_func(t, name, parameters, body)
 
-let string_of_program  = function
+let string_of_program  = function   
   Program(decls) -> String.concat "" (List.map string_of_decl decls) ^ "\n"
 

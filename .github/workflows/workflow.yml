@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     strategy:
-      fail-fast: true 
+      fail-fast: true
       matrix:
         os:
           - ubuntu-latest
@@ -21,6 +21,8 @@ jobs:
         uses: avsm/setup-ocaml@v1
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
+
+      - run: opam install ocamlbuild ocamlfind
 
       - run: make ci-test && echo SUCCESS
 
