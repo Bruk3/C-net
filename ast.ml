@@ -189,7 +189,9 @@ let tabs num = (* tabs 5 returns "\t\t\t\t\t" *)
 let rec string_of_stmt (main_stmt, main_indent) =
   let print_block b ind = match b with
       Block(_)    -> string_of_stmt (b, ind)
-    | _           -> "{" ^ string_of_stmt (b, ind + 1) ^ "}"
+    | _           -> (tabs ind) ^
+                     "{\n" ^ string_of_stmt (b, ind + 1) ^
+                     (tabs ind) ^ "}\n"
   in
   let helper (stmt, indent) = match stmt with
       Block(stmts)       -> "{\n" ^ String.concat ""
@@ -203,11 +205,13 @@ let rec string_of_stmt (main_stmt, main_indent) =
     | Expr(expr)         -> string_of_expr expr ^ ";\n"
     | Return(expr)       -> "return " ^ string_of_expr expr ^ ";\n"
     | If(e_s_l, s)       ->
-      let string_of_if ((e, s))  = "if (" ^ string_of_expr e ^ ")"  ^ string_of_stmt (s,indent + 1) in
-      String.concat "else " (List.map string_of_if e_s_l) ^ "else " ^ string_of_stmt (s, indent + 1)
+      let string_of_if ((e, s))  =
+        "\n" ^ (tabs indent) ^ "if (" ^ string_of_expr e ^ ")\n"  ^ (print_block s indent)
+      in String.concat (tabs indent ^ "else ") (List.map string_of_if e_s_l) ^
+         (tabs indent) ^ "else\n" ^ (print_block s indent)
     | For(e1, e2, e3, s) -> "for (" ^ string_of_expr e1  ^ " ; " ^
                             string_of_expr e2 ^ " ; " ^ string_of_expr e3  ^ ") "
-                            ^ (string_of_stmt (s, indent + 1))
+                            ^ (print_block s indent)
     | While(e, s)        -> "while (" ^ string_of_expr e ^ ")\n"
                             ^ (print_block s indent)
     | Vdecl(v)           -> string_of_vdecl v

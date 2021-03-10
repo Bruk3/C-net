@@ -16,7 +16,7 @@ test-parser:
 
 ## cnet top level - Currently supports two flags
 ##  -a (ast pretty printing), -t (token pretty printing)
-cnet.native: cnet.ml
+cnet.native: cnet
 	opam config exec -- \
 		ocamlbuild -use-ocamlfind cnet.native
 
@@ -25,7 +25,7 @@ cnet.native: cnet.ml
 
 .PHONY: scanner parser ast
 
-cnet.ml: scanner parser ast scanner_pp
+cnet: cnet.ml scanner parser ast scanner_pp
 
 scanner: scanner.mll parser.mly
 scanner_pp: scanner_pp.ml
