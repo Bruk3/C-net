@@ -1,0 +1,5 @@
+// test unclosed multi-line comment
+
+int main(int argc){
+    /* This is the beginning of the comment
+}
