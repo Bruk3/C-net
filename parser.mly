@@ -53,6 +53,7 @@ decls :
 
 decl:
    | vdecl { GVdecl($1) }
+   | vdecl_assign { GVdecl_ass(fst $1, snd $1) }
    | sdecl { Sdecl($1) }
    | fdecl { Fdecl($1) }
 
@@ -98,7 +99,7 @@ stmts:
     | stmt { [$1] }
 
 vdecl_assign:
-    typ ID ASSIGN expr SEMI { Vdecl_assign({vtyp = $1; vname = $2}, $4) }
+    typ ID ASSIGN expr SEMI { ({vtyp = $1; vname = $2}, $4) }
     /* | typ ID ASSIGN NEW typ LBRACKET INTLIT RBRACKET LBRACE INTLIT RBRACE SEMI { () } */
     /* became redundant because expr handles array literals */
 
@@ -110,7 +111,7 @@ stmt:
     | FOR LPAREN opt_expr SEMI opt_expr SEMI opt_expr RPAREN stmt { For($3, $5, $7, $9) }
     | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
     | vdecl { Vdecl($1) }
-    | vdecl_assign { $1 }
+    | vdecl_assign { Vdecl_ass(fst $1, snd $1) }
     | LBRACE stmts RBRACE { Block(List.rev $2) }
 
 ifstmt:

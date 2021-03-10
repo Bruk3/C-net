@@ -1,52 +1,39 @@
-
 # The "opam exec --" part is for compatiblity with github CI actions
-
-################ TEST TARGETS ######################
+############################# TEST TARGETS ####################################
 test: test-scanner test-parser
 	@echo "SUCCESS"
 
 test-scanner: cnet.native
 	./runtests.sh
 
+test-parser:
+	ocamlyacc -v parser.mly
+	rm parser.ml parser.mli
+
+
+
+############################# cnet top level ##################################
 
 ## cnet top level - Currently supports two flags
 ##  -a (ast pretty printing), -t (token pretty printing)
-cnet.native:
+cnet.native: cnet
 	opam config exec -- \
 		ocamlbuild -use-ocamlfind cnet.native
 
 
-test-parser:
-	ocamlyacc -v parser.mly
+####################### Dependencies for ocamlbuild ###########################
 
-############### END TEST TARGETS ###################
+.PHONY: scanner parser ast
 
-cnet: parser.cmo scanner.cmo
-	ocamlc -o final $^
+cnet: cnet.ml scanner parser ast scanner_pp
 
-%.cmo: %.ml
-	ocamlc -c $<
+scanner: scanner.mll parser.mly
+scanner_pp: scanner_pp.ml
+parser: parser.mly ast.ml
+ast: ast.ml
 
-%.cmi: %.mli
-	ocamlc -c $<
 
-scanner.ml: scanner.mll
-	ocamllex $<
-
-parser.ml parser.mli: parser.mly
-	ocamlyacc $^
-
-scanner_pp.cmo: scanner_pp.ml scanner.cmo
-
-# Dependencies for opening modules
-scanner.cmo: scanner.ml parser.cmi
-	ocamlc -c $<
-
-parser.cmo: parser.ml parser.cmi ast.cmo
-	ocamlc -c $<
-
-parser.cmi: parser.mli ast.cmo
-
+#############################  Other targets  #################################
 .PHONY: clean
 clean:
 	opam config exec -- ocamlbuild -clean

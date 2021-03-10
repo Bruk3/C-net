@@ -14,13 +14,13 @@ let () =
   let lexbuf = Lexing.from_channel !channel in
   match !action with
     Ast ->
-      let ast = Parser.program Scanner.tokenize lexbuf in
-      print_string (Ast.string_of_program ast)
-    | Scanner ->
-        let token_string_list =
-          let rec next accu =
-            match Scanner.tokenize lexbuf with
-            | Parser.EOF -> List.rev (Scanner_pp.pretty_print Parser.EOF :: accu)
-            | x   -> next (Scanner_pp.pretty_print x :: accu)
-          in next []
-        in List.iter (fun x -> print_endline x) token_string_list
+    let ast = Parser.program Scanner.tokenize lexbuf in
+    print_string (Ast.string_of_program ast)
+  | Scanner ->
+    let token_string_list =
+      let rec next accu =
+        match Scanner.tokenize lexbuf with
+        | Parser.EOF -> List.rev (Scanner_pp.pretty_print Parser.EOF :: accu)
+        | x   -> next (Scanner_pp.pretty_print x :: accu)
+      in next []
+    in List.iter (fun x -> print_endline x) token_string_list
