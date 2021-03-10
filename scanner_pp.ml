@@ -43,15 +43,14 @@ let pretty_print = function
   | SOCKET                -> Printf.sprintf "SOCKET"
   | STRUCT                -> Printf.sprintf "STRUCT"
   | VOID                  -> Printf.sprintf "VOID"
-  | UDP                   -> Printf.sprintf "UDP" *)
-| RETURN                -> Printf.sprintf "RETURN"
-| NEW                   -> Printf.sprintf "NEW"
-| DELETE                -> Printf.sprintf "DELETE"
-| ID(x)                 -> Printf.sprintf  "ID(%s)" (x)
-| INTLIT(x)             -> Printf.sprintf  "INTLIT(%d)" (x)
-| STRLIT(x)             -> Printf.sprintf  "STRLIT(%s)" (x)
-| CHARLIT(x)            -> Printf.sprintf  "CHARLIT(%d)" (x)
-| FLOATLIT(x)           -> Printf.sprintf  "FLOATLIT(%f)" (x)
+  | RETURN                -> Printf.sprintf "RETURN"
+  | NEW                   -> Printf.sprintf "NEW"
+  | DELETE                -> Printf.sprintf "DELETE"
+  | ID(x)                 -> Printf.sprintf  "ID(%s)" (x)
+  | INTLIT(x)             -> Printf.sprintf  "INTLIT(%d)" (x)
+  | STRLIT(x)             -> Printf.sprintf  "STRLIT(%s)" (x)
+  | CHARLIT(x)            -> Printf.sprintf  "CHARLIT(%d)" (x)
+  | FLOATLIT(x)           -> Printf.sprintf  "FLOATLIT(%f)" (x)
 
 (* let lexbuf = Lexing.from_channel stdin in
    let token_string_list =
