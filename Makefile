@@ -8,11 +8,11 @@ test-scanner: cnet.native
 
 test-parser:
 	ocamlyacc -v parser.mly
+	rm parser.ml parser.mli
+
 
 
 ############################# cnet top level ##################################
-#			   currently just prints ast                 	      #
-###############################################################################
 
 ## cnet top level - Currently supports two flags
 ##  -a (ast pretty printing), -t (token pretty printing)
@@ -33,6 +33,7 @@ parser: parser.mly ast.ml
 ast: ast.ml
 
 
+#############################  Other targets  #################################
 .PHONY: clean
 clean:
 	opam config exec -- ocamlbuild -clean
