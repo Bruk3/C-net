@@ -11,8 +11,9 @@ rm -f $globallog
 error=0
 globalerror=0
 
-testfiles="tests/scanner/test-*.cnet tests/scanner/fail-*.cnet"
-scannertest="cnet.native -t"
+parsertests="tests/parser/test-*.cnet tests/parser/fail-*.cnet"
+
+scannertests="tests/scanner/test-*.cnet tests/scanner/fail-*.cnet"
 
 keep=0
 
@@ -79,7 +80,7 @@ Check() {
     generatedfiles="$generatedfiles ${basename}.out" &&
 
 
-    Run "./${scannertest}" -t < "$1" ">" "${basename}.out" &&
+    Run $2 < "$1" ">" "${basename}.out" &&
     Compare ${basename}.out ${reffile}.out ${basename}.diff
 
     # Run "$MICROC" "$1" ">" "${basename}.ll" &&
@@ -117,7 +118,7 @@ CheckFail() {
 
     generatedfiles="$generatedfiles ${basename}.err ${basename}.diff" &&
     # RunFail "$MICROC" "<" $1 "2>" "${basename}.err" ">>" $globallog &&
-    RunFail "./${scannertest}" "<" $1 "2>" "${basename}.err" ">>" $globallog &&
+    RunFail $2 "<" $1 "2>" "${basename}.err" ">>" $globallog &&
     Compare ${basename}.err ${reffile}.err ${basename}.diff
 
     # Report the status and clean up the generated files
@@ -148,14 +149,30 @@ done
 shift `expr $OPTIND - 1`
 
 
-for file in $testfiles
+for file in $scannertests
 do
     case $file in
 	*test-*)
-	    Check $file 2>> $globallog
+	    Check $file './cnet.native -t' 2>> $globallog
 	    ;;
 	*fail-*)
-	    CheckFail $file 2>> $globallog
+	    CheckFail $file './cnet.native -t' 2>> $globallog
+	    ;;
+	*)
+	    echo "unknown file type $file"
+	    globalerror=1
+	    ;;
+    esac
+done
+
+for file in $parsertests
+do
+    case $file in
+	*test-*)
+	    Check $file './cnet.native -a' 2>> $globallog
+	    ;;
+	*fail-*)
+	    CheckFail $file './cnet.native -a' 2>> $globallog
 	    ;;
 	*)
 	    echo "unknown file type $file"
