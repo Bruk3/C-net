@@ -206,7 +206,7 @@ let rec string_of_stmt (main_stmt, main_indent) =
     | Return(expr)       -> "return " ^ string_of_expr expr ^ ";\n"
     | If(e_s_l, s)       ->
       let string_of_if ((e, s))  =
-        "\n" ^ (tabs indent) ^ "if (" ^ string_of_expr e ^ ")\n"  ^ (print_block s indent)
+        "if (" ^ string_of_expr e ^ ")\n"  ^ (print_block s indent)
       in String.concat (tabs indent ^ "else ") (List.map string_of_if e_s_l) ^
          (tabs indent) ^ "else\n" ^ (print_block s indent)
     | For(e1, e2, e3, s) -> "for (" ^ string_of_expr e1  ^ " ; " ^
