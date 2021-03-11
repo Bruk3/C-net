@@ -74,6 +74,8 @@ type vdecl = {vtyp : typ ; vname : string}
 type stmt =
     Expr of expr
   | Return            of expr
+  | Break
+  | Continue
   | If                of (expr  * stmt) list * stmt
   | For               of expr  * expr * expr * stmt
   | While             of expr  * stmt
@@ -204,6 +206,8 @@ let rec string_of_stmt (main_stmt, main_indent) =
                             ^ (tabs indent) ^ "}\n"
     | Expr(expr)         -> string_of_expr expr ^ ";\n"
     | Return(expr)       -> "return " ^ string_of_expr expr ^ ";\n"
+    | Break              -> "break;"
+    | Continue           -> "continue;"
     | If(e_s_l, s)       ->
       let string_of_if ((e, s))  =
         "if (" ^ string_of_expr e ^ ")\n"  ^ (print_block s indent)
