@@ -32,6 +32,7 @@ let pretty_print = function
   | MOD                   -> Printf.sprintf "MOD"
   | IF                    -> Printf.sprintf "IF"
   | ELSE                  -> Printf.sprintf "ELSE"
+  | ELIF                  -> Printf.sprintf "ELIF"
   | FOR                   -> Printf.sprintf "FOR"
   | WHILE                 -> Printf.sprintf "WHILE"
   | BREAK                 -> Printf.sprintf "BREAK"

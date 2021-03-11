@@ -10,11 +10,12 @@ let octal_dig = ['0'-'7']
 let octal_triplet = (octal_dig)(octal_dig)(octal_dig)
 let integer = digit+
 let normal_id = (alpha | '_')(alpha | digit | '_')*
+let whitespace = [' ' '\t' '\r' '\n']
 
 let print_char = [' '-'~']
 
 rule tokenize = parse
-  [' ' '\t' '\r' '\n'] { tokenize lexbuf }
+  whitespace { tokenize lexbuf }
 | '('  { LPAREN }
 | ')'  { RPAREN }
 | '{'  { LBRACE }
@@ -46,6 +47,7 @@ rule tokenize = parse
 (*Control flow*)
 | "if" { IF }
 | "else" { ELSE }
+| "else" whitespace+ "if" { ELIF }
 | "for" { FOR }
 | "while" { WHILE }
 | "break" { BREAK }

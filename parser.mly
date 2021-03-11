@@ -11,7 +11,7 @@
 %token DOT
 %token EQ NEQ LT LEQ GT GEQ
 %token AND OR NOT
-%token IF ELSE FOR WHILE RETURN BREAK CONTINUE
+%token IF ELSE ELIF FOR WHILE RETURN BREAK CONTINUE
 %token INT FLOAT CHAR STRING VOID STRUCT SOCKET
 /* %token TCP UDP */
 %token NEW DELETE
@@ -115,9 +115,8 @@ stmt:
     | LBRACE stmts RBRACE { Block(List.rev $2) }
 
 ifstmt:
-    IF LPAREN expr RPAREN stmt %prec ELIF { [ ($3,$5) ] }
-    | IF LPAREN expr RPAREN stmt ELSE ifstmt { ($3,$5)::$7 }
-
+    IF LPAREN expr RPAREN stmt            { [ ($3,$5) ] }
+    | ifstmt ELIF LPAREN expr RPAREN stmt { ($4,$6)::$1 }
 
 opt_expr:
     { Noexpr }
