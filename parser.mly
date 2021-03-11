@@ -106,6 +106,8 @@ vdecl_assign:
 stmt:
     opt_expr SEMI { Expr($1) }
     | RETURN opt_expr SEMI { Return($2) }
+    | BREAK SEMI  { Break }
+    | CONTINUE SEMI { Continue }
     | ifstmt ELSE stmt    { If($1, $3)}
     | ifstmt %prec NOELSE { If($1,Expr(Noexpr))}
     | FOR LPAREN opt_expr SEMI opt_expr SEMI opt_expr RPAREN stmt { For($3, $5, $7, $9) }
