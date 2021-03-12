@@ -146,6 +146,8 @@ expr:
     | expr TIMES expr     { Binop($1, Mul, $3) }
     | expr DIVIDE expr    { Binop($1, Div, $3) }
     | expr MOD expr       { Binop($1, Mod, $3) }
+    | expr AND expr       { Binop($1, And, $3) }  
+    | expr OR expr        { Binop($1, Or, $3) }  
     | id ASSIGN expr      { Binassop($1, Assign, $3) }
     | id PLUSEQ expr      { Binassop($1, PlusEq, $3) }
     | id MINUSEQ expr     { Binassop($1, MinusEq, $3) }
@@ -154,8 +156,12 @@ expr:
     | NEW STRUCT ID { New(NStruct($3)) }
     | NEW typ LBRACKET expr RBRACKET opt_arraylit { ArrayLit($2, $4, $6) }
     | DELETE id { Delete($2) }
-    | id LBRACKET expr RBRACKET { Index($1, $3) }
-    | id LPAREN opt_args RPAREN { Call($1, $3) }
+    | id LBRACKET expr RBRACKET opt_indices{ Index($1, ($3 :: $5)) }
+    | ID LPAREN opt_args RPAREN { Call(FinalID(Nid($1)), $3) } /*changed id to ID to prevent stuff like rr.dd.dd()*/
+
+opt_indices :
+     {[]}
+    | opt_indices LBRACKET expr RBRACKET { List.rev ($3 :: $1)}
 
 id :
     ID { FinalID(Nid($1)) }
