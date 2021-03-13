@@ -106,6 +106,7 @@ vdecl_assign:
 stmt:
     opt_expr SEMI { Expr($1) }
     | RETURN opt_expr SEMI { Return($2) }
+    | DELETE id SEMI { Delete($2) }
     | BREAK SEMI  { Break }
     | CONTINUE SEMI { Continue }
     | ifstmt ELSE stmt    { If($1, $3)}
@@ -153,7 +154,6 @@ expr:
     | NOT expr { Unop(Not, $2) }
     | NEW STRUCT ID { New(NStruct($3)) }
     | NEW typ LBRACKET expr RBRACKET opt_arraylit { ArrayLit($2, $4, $6) }
-    | DELETE id { Delete($2) }
     | id LBRACKET expr RBRACKET { Index($1, $3) }
     | id LPAREN opt_args RPAREN { Call($1, $3) }
 
