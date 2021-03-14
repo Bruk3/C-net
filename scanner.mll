@@ -24,7 +24,6 @@ rule tokenize = parse
 | ']'  { RBRACKET }
 | ','  { COMMA }
 | ';'  { SEMI }
-| '\'' {SQUOTE}
 (* Operators *)
 | '+' { PLUS }
 | '-' { MINUS }
@@ -76,7 +75,7 @@ rule tokenize = parse
 | integer as lxm { INTLIT(int_of_string lxm) }
 | '"' ((print_char)* as str) '"' { STRLIT(str) }
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
-| squote bslash ('n' | 't' | '\\' | '0') squote { CHARLIT(0) } (* TODO replace special char with number *) (*Kingsley: what is this one for?*)
+| squote bslash ('n' | 't' | '\\' | '0'| squote) squote { CHARLIT(0) } (* TODO replace special char with number *) (*Kingsley: what is this one for?*)
 | squote print_char squote as lxm               {CHARLIT(Char.code(lxm.[1]))} (*For chars like 'a'*)
 | digit+ '.' digit* as flt { FLOATLIT(float_of_string flt) } (* TODO Optional negative sign *)
 | '"'  { raise (Failure("Unmatched double quote"))}

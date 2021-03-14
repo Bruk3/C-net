@@ -10,8 +10,6 @@ let pretty_print = function
   | EOF                   -> Printf.sprintf "EOF"
   | COMMA                 -> Printf.sprintf "COMMA"
   | SEMI                  -> Printf.sprintf "SEMI"
-  | SQUOTE                -> Printf.sprintf "SQUOTE"
-  | DQUOTE                -> Printf.sprintf "DQUOTE"
   | PLUS                  -> Printf.sprintf "PLUS"
   | MINUS                 -> Printf.sprintf "MINUS"
   | TIMES                 -> Printf.sprintf "TIMES"

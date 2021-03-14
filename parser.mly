@@ -4,7 +4,7 @@
     open Ast
 %}
 
-%token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET COMMA SEMI SQUOTE DQUOTE
+%token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET COMMA SEMI
 %token MOD ASSIGN
 %token PLUS MINUS TIMES DIVIDE
 %token PLUSEQ MINUSEQ
@@ -21,15 +21,10 @@
 %token <string> ID
 %token EOF
 
-%start program
-
-%type <Ast.program> program
-
 %nonassoc NOELSE
 %nonassoc ELSE
 %left ELIF
-%nonassoc PLUSEQ MINUSEQ
-%right ASSIGN
+%right PLUSEQ MINUSEQ ASSIGN
 %left OR
 %left AND
 %left EQ NEQ
@@ -38,7 +33,11 @@
 %left TIMES DIVIDE
 %left MOD
 %right NOT
-%left DOT
+
+%start program
+
+%type <Ast.program> program
+
 
 
 
@@ -142,12 +141,20 @@ expr:
     | expr LEQ expr       { Binop($1, Leq, $3)}
     | expr GT expr        { Binop($1, Gt, $3) }
     | expr GEQ expr       { Binop($1, Geq, $3) }
+    | expr AND expr       { Binop($1, And, $3) }
+    | expr OR expr        { Binop($1, Or, $3) }
     | expr PLUS expr      { Binop($1, Add, $3) }
     | expr MINUS expr     { Binop($1, Sub, $3) }
     | expr TIMES expr     { Binop($1, Mul, $3) }
     | expr DIVIDE expr    { Binop($1, Div, $3) }
     | expr MOD expr       { Binop($1, Mod, $3) }
-    | id ASSIGN expr      { Binassop($1, Assign, $3) }
+    /* | id ASSIGN expr  %prec ASSIGN    { Binassop($1, Assign, $3) } */
+    | expr ASSIGN expr %prec ASSIGN   {
+                                        let f = match $1 with
+                                           Rid(rid) -> Binassop(rid, Assign, $3)
+                                           | _        -> raise (Failure("Illegal assignment"))
+                                        in f
+                                      }
     | id PLUSEQ expr      { Binassop($1, PlusEq, $3) }
     | id MINUSEQ expr     { Binassop($1, MinusEq, $3) }
     | MINUS expr %prec NOT { Unop(Minus, $2) }
