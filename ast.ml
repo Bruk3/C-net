@@ -208,6 +208,9 @@ let rec string_of_stmt (main_stmt, main_indent) =
     | Delete(id)         -> "delete " ^ string_of_rid id ^ ";"
     | Break              -> "break;"
     | Continue           -> "continue;"
+    | If(e_s_l,Expr(Noexpr)) -> let string_of_if ((e, s))  =
+        "if (" ^ string_of_expr e ^ ")\n"  ^ (print_block s indent)
+      in String.concat (tabs indent ^ "else ") (List.map string_of_if e_s_l) 
     | If(e_s_l, s)       ->
       let string_of_if ((e, s))  =
         "if (" ^ string_of_expr e ^ ")\n"  ^ (print_block s indent)
