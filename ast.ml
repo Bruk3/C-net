@@ -60,7 +60,6 @@ and expr =
   | Unop of unop * expr
   | Binassop of rid * bin_assign_op      * expr
   (* Arrays and new/delete *)
-  | Delete of rid
   | New of newable
   | ArrayLit of typ * expr * expr list (* expr:length and expr list:array literal *)
   | Index  of rid * expr
@@ -74,6 +73,7 @@ type vdecl = {vtyp : typ ; vname : string}
 type stmt =
     Expr of expr
   | Return            of expr
+  | Delete of rid
   | Break
   | Continue
   | If                of (expr  * stmt) list * stmt
@@ -162,7 +162,6 @@ let rec string_of_expr = function
     string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Unop(o, e) -> string_of_uop o ^ string_of_expr e
   | Binassop(id, op, r) -> string_of_rid id ^ " " ^ string_of_binassop op ^ " " ^ string_of_expr r
-  | Delete(id) -> "delete " ^ string_of_rid id
   | New(n) -> "new " ^  string_of_newable n
   | ArrayLit(t, e, el) ->
     "new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^ "] = {" ^
@@ -206,6 +205,7 @@ let rec string_of_stmt (main_stmt, main_indent) =
                             ^ (tabs indent) ^ "}\n"
     | Expr(expr)         -> string_of_expr expr ^ ";\n"
     | Return(expr)       -> "return " ^ string_of_expr expr ^ ";\n"
+    | Delete(id)         -> "delete " ^ string_of_rid id ^ ";"
     | Break              -> "break;"
     | Continue           -> "continue;"
     | If(e_s_l, s)       ->
