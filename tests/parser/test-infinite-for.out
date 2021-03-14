@@ -1,0 +1,8 @@
+int main()
+{
+	for ( ;  ; ) 	{
+		printf("%d ", 0);
+	}
+}
+
+
