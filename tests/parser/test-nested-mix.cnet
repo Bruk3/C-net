@@ -1,0 +1,40 @@
+int main()
+{
+    int x;
+    int y;
+    int c;
+    int b;
+    b = 0;
+    c = 100;
+    while(x == y) 
+    {
+        while(b == 0) 
+        {
+            for (b; b < 101; b = b + 1) 
+            {
+                if (b == c) 
+                {
+                    if (x == y) 
+                    {
+                        printf("true");
+                    }
+                    printf(10); 
+                }
+                else 
+                {
+                    printf(5); 
+                    if (x != y) 
+                    {
+                        printf("");
+                    }
+                    else 
+                    {
+                        printf("false");
+                    }
+                }
+            }
+            for (; b < 101;) {printf("no");}
+        }
+
+    }
+}
