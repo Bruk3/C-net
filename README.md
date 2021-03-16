@@ -1,6 +1,6 @@
 # C-net
 __C-net programming language__ - Network programming never got easier
-
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/bruk3/C-net/cnet-ci/main)
 
 ## Environment setup 
 
