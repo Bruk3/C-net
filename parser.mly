@@ -126,7 +126,7 @@ opt_expr:
 
 opt_arraylit:
         { [] }
-    | LBRACE args RBRACE { $2 }
+    | LBRACE args RBRACE { List.rev $2 }
 
 expr:
     INTLIT                { Intlit($1) }
