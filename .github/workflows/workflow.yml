@@ -2,6 +2,7 @@ name: cnet-ci
 
 on:
   - pull_request
+  - main
 
 jobs:
   build:
