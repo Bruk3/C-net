@@ -44,6 +44,7 @@ type sstmt =
 *)
 type sfunc = {fid: sid; formals: sid list; fbody: sstmt list}
 
+(* here the sid list is typ * name so its the variable declarations *)
 type strct = {sname: string; smembers: sid list}
 
 type sdecl =
