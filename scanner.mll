@@ -10,12 +10,14 @@ let octal_dig = ['0'-'7']
 let octal_triplet = (octal_dig)(octal_dig)(octal_dig)
 let integer = digit+
 let normal_id = (alpha | '_')(alpha | digit | '_')*
+
 let whitespace = [' ' '\t' '\r' '\n']
 
 let print_char = [' '-'~']
 
 rule tokenize = parse
-  whitespace { tokenize lexbuf }
+[' ' '\t' '\r'] { tokenize lexbuf }
+| '\n' { Lexing.new_line lexbuf; tokenize lexbuf }
 | '('  { LPAREN }
 | ')'  { RPAREN }
 | '{'  { LBRACE }

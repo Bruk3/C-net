@@ -13,10 +13,7 @@ let () =
 
   let lexbuf = Lexing.from_channel !channel in
   match !action with
-    Ast ->
-    let ast = Parser.program Scanner.tokenize lexbuf in
-    print_string (Ast.string_of_program ast)
-  | Scanner ->
+    Scanner ->
     let token_string_list =
       let rec next accu =
         match Scanner.tokenize lexbuf with
@@ -24,3 +21,41 @@ let () =
         | x   -> next (Scanner_pp.pretty_print x :: accu)
       in next []
     in List.iter (fun x -> print_endline x) token_string_list
+  | Ast ->
+    match
+      let ast = Parser.program Scanner.tokenize lexbuf in
+      print_string (Ast.string_of_program ast)
+
+    with
+    exception (Parsing.Parse_error)  ->
+      let tok_str position =
+        Printf.sprintf "%c" (Lexing.lexeme_char lexbuf position)
+      in
+      let err_line = lexbuf.lex_curr_p.pos_lnum in
+      let spec_char = Lexing.lexeme lexbuf in
+      let rec print_range start_pos end_pos =
+        match start_pos with
+          i when i < end_pos && ((tok_str i) <> spec_char)  ->
+          Printf.printf "%s" (tok_str i); print_range (i+1) end_pos; ()
+
+        | i when i < end_pos                                       ->
+          Printf.printf  "%s" ("->" ^ spec_char ^ "<-"); print_range (i+1) end_pos
+
+        | _  -> ()
+
+
+      in
+      let first_tok = Parsing.symbol_start () in
+      let last_tok  = lexbuf.lex_last_action in
+      let _  = Printf.printf "Syntax error on line %d near %s\n..." err_line spec_char;
+        print_range first_tok (first_tok + 1) in
+      Printf.printf "\n...\n"; exit 1
+    (* let x = Lexing.lexeme_char lexbuf first_tok in *)
+    (* let curr = lexbuf.lex_curr_p in *)
+    (* let line = curr.Lexing.pos_lnum in *)
+    (* let cnum = curr.Lexing.pos_cnum - curr.Lexing.pos_bol in *)
+    (* let tok = Lexing.lexeme lexbuf in *)
+    (* raise (Failure(tok ^ (string_of_int line) ^ " " ^ *)
+    (*                Char.escaped x)) *)
+    | _ -> ()
+
