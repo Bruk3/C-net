@@ -28,28 +28,10 @@ let () =
 
     with
     exception (Parsing.Parse_error)  ->
-      let tok_str position =
-        Printf.sprintf "%c" (Lexing.lexeme_char lexbuf position)
-      in
-      let err_line = lexbuf.lex_curr_p.pos_lnum in
+      let err_line = lexbuf.lex_curr_p.pos_lnum + 2 in
       let spec_char = Lexing.lexeme lexbuf in
-      let rec print_range start_pos end_pos =
-        match start_pos with
-          i when i < end_pos && ((tok_str i) <> spec_char)  ->
-          Printf.printf "%s" (tok_str i); print_range (i+1) end_pos; ()
-
-        | i when i < end_pos                                       ->
-          Printf.printf  "%s" ("->" ^ spec_char ^ "<-"); print_range (i+1) end_pos
-
-        | _  -> ()
-
-
-      in
-      let first_tok = Parsing.symbol_start () in
-      let last_tok  = lexbuf.lex_last_action in
       let _  = Printf.printf "Syntax error on line %d near %s\n..." err_line spec_char;
-        print_range first_tok (first_tok + 1) in
-      Printf.printf "\n...\n"; exit 1
+      in exit 1;
     (* let x = Lexing.lexeme_char lexbuf first_tok in *)
     (* let curr = lexbuf.lex_curr_p in *)
     (* let line = curr.Lexing.pos_lnum in *)
