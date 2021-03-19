@@ -28,7 +28,7 @@ let () =
 
     with
     exception (Parsing.Parse_error)  ->
-      let err_line = lexbuf.lex_curr_p.pos_lnum + 2 in
+      let err_line = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum + 2 in
       let spec_char = Lexing.lexeme lexbuf in
       let _  = Printf.printf "Syntax error on line %d near %s\n..." err_line spec_char;
       in exit 1;
