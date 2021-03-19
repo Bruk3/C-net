@@ -128,6 +128,10 @@ opt_arraylit:
         { [] }
     | LBRACE args RBRACE { List.rev $2 }
 
+assignment_op:
+        ASSIGN { Assign }
+        | PLUSEQ { PlusEq }
+        | MINUSEQ { MinusEq }
 expr:
     INTLIT                { Intlit($1) }
     | CHARLIT             { Charlit($1) }
@@ -149,14 +153,13 @@ expr:
     | expr DIVIDE expr    { Binop($1, Div, $3) }
     | expr MOD expr       { Binop($1, Mod, $3) }
     /* | id ASSIGN expr  %prec ASSIGN    { Binassop($1, Assign, $3) } */
-    | expr ASSIGN expr %prec ASSIGN   {
+    | expr assignment_op expr %prec ASSIGN   {
                                         let f = match $1 with
-                                           Rid(rid) -> Binassop(rid, Assign, $3)
-                                           | _        -> raise (Failure("Illegal assignment"))
+                                           Rid(rid) -> Binassop(rid, $2, $3)
+                                           | _        -> raise
+                                           (Parsing.Parse_error)
                                         in f
                                       }
-    | id PLUSEQ expr      { Binassop($1, PlusEq, $3) }
-    | id MINUSEQ expr     { Binassop($1, MinusEq, $3) }
     | MINUS expr %prec NOT { Unop(Minus, $2) }
     | NOT expr { Unop(Not, $2) }
     | NEW STRUCT ID { New(NStruct($3)) }
