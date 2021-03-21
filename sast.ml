@@ -16,13 +16,13 @@ and sx =
   | SStrlit of string
   | Sid of sid
   (* Operators *)
-  | SBinop of sexpr * binop * expr
+  | SBinop of sexpr * binop * sexpr
   | SBinassor of sid * bin_assign_op * sexpr
   | SUnop of unop * sexpr
   | SNew of newable
   | SArrayLit of typ * sexpr * sexpr list
-  | SIndex of sid * expr
-  | SCall of rid * expr list
+  | SIndex of sid * sexpr
+  | SCall of rid * sexpr list
 
 type sstmt =
     SExpr of sexpr
@@ -33,8 +33,7 @@ type sstmt =
   | SIf of (sexpr * sstmt) list * sstmt
   | SFor of sexpr * sexpr * sexpr * sstmt
   | SWhile of sexpr * sstmt
-  | SVdecl of sid
-  | SVdecl_ass of sid * sexpr
+  | SVdecl of sid * sexpr
   | SBlock of sstmt list
 
 (*
@@ -53,5 +52,13 @@ type sdecl =
   | SSdecl of sstrct
   | SFdecl of sfunc
 
-type sprogram =
-  Program of sdecl list
+  type sprogram = {
+    vdecls : (vdecl * expr) list ; 
+    (* If it's just a decl, expr can  
+     * be assigned to a default corresponding
+     * to the vdecl typ *)
+    strct_decls : strct list ;
+    fdecls : func list ;
+    (* main : func ; *)
+    (* Deal with main later *)
+  }
