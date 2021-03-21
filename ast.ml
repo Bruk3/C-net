@@ -177,7 +177,7 @@ let string_of_vdecl_assign (t, id, e) =
   string_of_typ t ^ " " ^ id ^ " = " ^ string_of_expr e ^ ";\n"
 let string_of_strct (name, members) =
   "struct " ^ name ^ " {\n\t" ^
-  String.concat "\t" (List.map string_of_vdecl members) ^ "\n};\n\n"
+  String.concat "\t" (List.map string_of_vdecl members) ^ "};\n\n"
 
 let tabs num = (* tabs 5 returns "\t\t\t\t\t" *)
   let rec helper s =  function
