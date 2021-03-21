@@ -1,5 +1,6 @@
 {
     open Parser;;
+    open Utils;;
 }
 
 let alpha = ['a'-'z' 'A'-'Z']
@@ -48,7 +49,7 @@ rule tokenize = parse
 (*Control flow*)
 | "if" { IF }
 | "else" { ELSE }
-| "else" whitespace+ "if" { ELIF }
+| "else" whitespace+ as ws "if" {count_new_lines ws lexbuf; ELIF }
 | "for" { FOR }
 | "while" { WHILE }
 | "break" { BREAK }

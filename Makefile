@@ -27,7 +27,7 @@ cnet.native: cnet
 
 cnet: cnet.ml scanner parser ast scanner_pp
 
-scanner: scanner.mll parser.mly
+scanner: scanner.mll parser.mly utils.ml
 scanner_pp: scanner_pp.ml
 parser: parser.mly ast.ml
 ast: ast.ml
