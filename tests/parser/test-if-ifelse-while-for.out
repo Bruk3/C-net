@@ -1,0 +1,29 @@
+int main()
+{
+        int c;
+        c = 10;
+        int b;
+        if (c > 9)
+        {
+                printf("%d", c);
+        }
+        if (c > 10)
+        {
+                a = 200;
+        }
+        else
+        {
+                b = 10;
+                c = 30;
+        }
+        while (b * 2.5 < c)
+        {
+                b = b + 2;
+                printf(b + 5);
+        }
+        for (i = 1 ; i < 11 ; i = i + 1)        {
+                printf("%d ", i);
+        }
+}
+
+

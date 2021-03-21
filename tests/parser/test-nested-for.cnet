@@ -1,0 +1,17 @@
+int main()
+{
+    int a;
+    int b;
+    int res;
+    a = 1;
+    b = 1;
+    res = 0;
+
+    for(a; a < 15; a = a+1)
+    {
+        for(b; b < 15; b = b + 1) 
+        {
+            res = res + b;
+        }
+    }
+}

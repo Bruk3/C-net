@@ -1,0 +1,17 @@
+int main ()
+{
+    int x; 
+    x = 0;
+    while (x < 5)
+    {
+        if (x == 4) 
+        {
+            break;
+        }
+        if (x == 0) {
+            continue; 
+        }
+        x = x + 1;
+    }
+    printf("%d", x);
+}
