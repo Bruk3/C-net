@@ -73,7 +73,6 @@ rule tokenize = parse
 | "//" { scomment lexbuf }
 | "/*" { mcomment lexbuf }
 | normal_id as lxm {ID(lxm)}
-
 | integer as lxm { INTLIT(int_of_string lxm) }
 | '"' ((print_char)* as str) '"' { STRLIT(str) }
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
@@ -87,11 +86,12 @@ rule tokenize = parse
 
 
 and scomment = parse
-'\n' { tokenize lexbuf }
+'\n' { Lexing.new_line lexbuf; tokenize lexbuf }
 | eof { tokenize lexbuf }
 | _ { scomment lexbuf }
 
 and mcomment = parse
 "*/" { tokenize lexbuf }
+| '\n' { Lexing.new_line lexbuf; mcomment lexbuf }
 | eof { raise (Failure("Unmatched multiline comment"))}
 | _ { mcomment lexbuf }
