@@ -13,10 +13,7 @@ let () =
 
   let lexbuf = Lexing.from_channel !channel in
   match !action with
-    Ast ->
-    let ast = Parser.program Scanner.tokenize lexbuf in
-    print_string (Ast.string_of_program ast)
-  | Scanner ->
+    Scanner ->
     let token_string_list =
       let rec next accu =
         match Scanner.tokenize lexbuf with
@@ -24,3 +21,15 @@ let () =
         | x   -> next (Scanner_pp.pretty_print x :: accu)
       in next []
     in List.iter (fun x -> print_endline x) token_string_list
+  | Ast ->
+    match
+      let ast = Parser.program Scanner.tokenize lexbuf in
+      print_string (Ast.string_of_program ast)
+    with
+    exception (Parsing.Parse_error)  ->
+      let err_line = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum in
+      let spec_char = Lexing.lexeme lexbuf in
+      let _  = Printf.printf "Syntax error on line %d near %s\n" err_line spec_char;
+      in exit 1;
+    | _ -> ()
+

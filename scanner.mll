@@ -1,5 +1,6 @@
 {
     open Parser;;
+    open Utils;;
 }
 
 let alpha = ['a'-'z' 'A'-'Z']
@@ -10,12 +11,14 @@ let octal_dig = ['0'-'7']
 let octal_triplet = (octal_dig)(octal_dig)(octal_dig)
 let integer = digit+
 let normal_id = (alpha | '_')(alpha | digit | '_')*
+
 let whitespace = [' ' '\t' '\r' '\n']
 
 let print_char = [' '-'~']
 
 rule tokenize = parse
-  whitespace { tokenize lexbuf }
+[' ' '\t' '\r'] { tokenize lexbuf }
+| '\n' { Lexing.new_line lexbuf; tokenize lexbuf }
 | '('  { LPAREN }
 | ')'  { RPAREN }
 | '{'  { LBRACE }
@@ -46,7 +49,7 @@ rule tokenize = parse
 (*Control flow*)
 | "if" { IF }
 | "else" { ELSE }
-| "else" whitespace+ "if" { ELIF }
+| "else" whitespace+ as ws "if" {count_new_lines ws lexbuf; ELIF }
 | "for" { FOR }
 | "while" { WHILE }
 | "break" { BREAK }
@@ -71,7 +74,6 @@ rule tokenize = parse
 | "//" { scomment lexbuf }
 | "/*" { mcomment lexbuf }
 | normal_id as lxm {ID(lxm)}
-
 | integer as lxm { INTLIT(int_of_string lxm) }
 | '"' ((print_char)* as str) '"' { STRLIT(str) }
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
@@ -85,11 +87,12 @@ rule tokenize = parse
 
 
 and scomment = parse
-'\n' { tokenize lexbuf }
+'\n' { Lexing.new_line lexbuf; tokenize lexbuf }
 | eof { tokenize lexbuf }
 | _ { scomment lexbuf }
 
 and mcomment = parse
 "*/" { tokenize lexbuf }
+| '\n' { Lexing.new_line lexbuf; mcomment lexbuf }
 | eof { raise (Failure("Unmatched multiline comment"))}
 | _ { mcomment lexbuf }
