@@ -99,13 +99,13 @@ let translate (vdecls, strct_decls, fdecls) =
         let formals = List.fold_left2 add_formal StringMap.empty fdecl.formals
             (Array.to_list (L.params the_function)) in
         (* List.fold_left add_local formals fdecl.slocals  *)
-      in
+      
 
       (* Return the value for a variable or formal argument.
        Check local names first, then global names.
        Will change this later. Doesn't fit what we are trying to do *)
       let lookup n = try StringMap.find n local_vars
-                      with Not_found -> StringMap.find n global_vars
+                      with Not_found -> StringMap.find n global_decls
   in
 
 (* Construct code for an expression; return its value *)
@@ -118,8 +118,8 @@ let rec expr builder ((_, e) : sexpr) = match e with
     | Sid s       -> L.build_load (lookup s.rid) s.rid builder
     | SBinassor (s,op,e) -> let e' =  match op with
                                       Assign -> expr builder e
-                                    | PlusEq -> expr builder Sexpr(_,SBinop(s,A.Add,e))
-                                    | MinusEq -> expr builder Sexpr(_,SBinop(s,A.Sub,e))
+                                    | PlusEq -> expr builder Sexpr(s.typ,SBinop(s,A.Add,e))
+                                    | MinusEq -> expr builder Sexpr(s.typ,SBinop(s,A.Sub,e))
                                   (* I'm assuming that e to be passed in as s+e or s-e 
                                      if op is PlusEq or MinusEq *)
                                    in ignore(L.build_store e' (lookup s) builder); e'
@@ -195,7 +195,7 @@ let rec expr builder ((_, e) : sexpr) = match e with
   
       let rec stmt builder = function
       SBlock sl -> List.fold_left stmt builder sl
-    | SVdecl(svdcl,e) -> add_local formals svdcl; expr builder Sexpr(_,SBinassor(svdcl.rid,A.Assign,e))
+    | SVdecl(svdcl,e) -> add_local formals svdcl; expr builder Sexpr(svdcl.typ, SBinassor(svdcl,A.Assign,e))
     | SExpr e -> ignore(expr builder e); builder 
     | SReturn e -> ignore(match fdecl.styp with
                                 (* Special "return nothing" instr *)
@@ -248,7 +248,5 @@ let rec expr builder ((_, e) : sexpr) = match e with
         | t -> L.build_ret (L.const_int (ltype_of_typ t) 0))
     in
   
-    List.iter build_function_body functions;
+    List.iter build_function_body fdecls in
     the_module
-
-
