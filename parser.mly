@@ -156,6 +156,7 @@ expr:
     | expr assignment_op expr %prec ASSIGN   {
                                         let f = match $1 with
                                            Rid(rid) -> Binassop(rid, $2, $3)
+                                           | Index(rid, expr) -> Idxassop(rid, expr, $2, $3 )
                                            | _        -> raise
                                            (Parsing.Parse_error)
                                         in f

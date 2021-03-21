@@ -59,6 +59,7 @@ and expr =
   | Binop of expr * binop * expr
   | Unop of unop * expr
   | Binassop of rid * bin_assign_op      * expr
+  | Idxassop of rid * expr * bin_assign_op * expr (* rid[expr] =/+=/-= expr *)
   (* Arrays and new/delete *)
   | New of newable
   | ArrayLit of typ * expr * expr list (* expr:length and expr list:array literal *)
@@ -162,6 +163,9 @@ let rec string_of_expr = function
     string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Unop(o, e) -> string_of_uop o ^ string_of_expr e
   | Binassop(id, op, r) -> string_of_rid id ^ " " ^ string_of_binassop op ^ " " ^ string_of_expr r
+  | Idxassop(id, exp1, op, exp2) ->
+    string_of_rid id ^ "[" ^ string_of_expr exp1 ^ "]" ^ " " ^
+    string_of_binassop op ^ " " ^ string_of_expr exp2
   | New(n) -> "new " ^  string_of_newable n
   | ArrayLit(t, e, el) ->
     "new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^ "] = {" ^
