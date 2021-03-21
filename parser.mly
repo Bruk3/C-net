@@ -148,25 +148,24 @@ expr:
     | expr TIMES expr     { Binop($1, Mul, $3) }
     | expr DIVIDE expr    { Binop($1, Div, $3) }
     | expr MOD expr       { Binop($1, Mod, $3) }
-    | expr AND expr       { Binop($1, And, $3) }  
-    | expr OR expr        { Binop($1, Or, $3) }  
-    /* | id ASSIGN expr  %prec ASSIGN    { Binassop($1, Assign, $3) } */
-    | expr ASSIGN expr %prec ASSIGN   {
+    | expr assign_operator expr %prec ASSIGN   {
                                         let f = match $1 with
-                                           Rid(rid) -> Binassop(rid, Assign, $3)
+                                           Rid(rid) -> Binassop(rid, $2, $3)
                                            | _        -> raise (Failure("Illegal assignment"))
                                         in f
                                       }
-    | id PLUSEQ expr      { Binassop($1, PlusEq, $3) }
-    | id MINUSEQ expr     { Binassop($1, MinusEq, $3) }
     | MINUS expr %prec NOT { Unop(Minus, $2) }
     | NOT expr { Unop(Not, $2) }
     | NEW STRUCT ID { New(NStruct($3)) }
     | NEW typ LBRACKET expr RBRACKET opt_arraylit { ArrayLit($2, $4, $6) }
-    | DELETE id { Delete($2) }
     | id LBRACKET expr RBRACKET opt_indices{ Index($1, ($3 :: $5)) }
     | id LPAREN opt_args RPAREN { Call($1, $3) }
-    
+
+assign_operator:
+    ASSIGN { Assign }
+    | PLUSEQ { PlusEq }
+    | MINUSEQ { MinusEq }
+
 opt_indices :
      {[]}
     | opt_indices LBRACKET expr RBRACKET { List.rev ($3 :: $1)}

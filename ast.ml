@@ -165,7 +165,6 @@ let rec string_of_expr = function
     "( " ^ string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2 ^ " )"
   | Unop(o, e) -> string_of_uop o ^ "(" ^ string_of_expr e ^ ")"
   | Binassop(id, op, r) -> "( " ^ string_of_rid id ^ " " ^ string_of_binassop op ^ " " ^ string_of_expr r ^ " )"
-  | Delete(id) -> "delete " ^ string_of_rid id
   | New(n) -> "new " ^  string_of_newable n
   | ArrayLit(t, e, el) ->
     "new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^ "] = {" ^
