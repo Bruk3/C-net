@@ -1,21 +1,21 @@
 int main()
 {
 	int c;
-	c = 10;
+	( c = 10 );
 	int b;
-	if (c > 10)
+	if (( c > 10 ))
 	{
-		a = 200;
+		( a = 200 );
 	}
 	else
 	{
-		b = 10;
-		while (b * 2.5 < c)
+		( b = 10 );
+		while (( ( b * 2.5 ) < c ))
 		{
-			b = b + 2;
-			printf(b + 5);
+			( b = ( b + 2 ) );
+			printf(( b + 5 ));
 		}
-		c = 30;
+		( c = 30 );
 	}
 }
 
