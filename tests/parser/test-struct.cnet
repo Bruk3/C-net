@@ -1,0 +1,10 @@
+struct person {
+    string name; 
+    int age;
+};
+
+int main(int argc) {
+    struct person jane; 
+    jane.age = 15;
+    jane.name = 2;
+}
