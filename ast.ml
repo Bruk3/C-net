@@ -58,11 +58,11 @@ and expr =
   (* Operators *)
   | Binop of expr * binop * expr
   | Unop of unop * expr
-  | Binassop of rid * bin_assign_op      * expr
+  | Binassop of rid * bin_assign_op * expr
   (* Arrays and new/delete *)
   | New of newable
   | ArrayLit of typ * expr * expr list (* expr:length and expr list:array literal *)
-  | Index  of rid * expr
+  | Index  of rid * expr list
   (* Function calls *)
   | Call of rid * expr list
 
@@ -151,6 +151,9 @@ let rec string_of_rid = function
 let string_of_newable = function
     NStruct(n)  -> "struct " ^ n
 
+let string_of_arr_index = function
+    e -> "[" ^ e ^ "]"
+
 let rec string_of_expr = function
   | Noexpr -> ""
   | Intlit(id) -> string_of_int id
@@ -166,11 +169,10 @@ let rec string_of_expr = function
   | ArrayLit(t, e, el) ->
     "new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^ "] = {" ^
     String.concat ", " (List.map string_of_expr el) ^ "}"
-  | Index(id, e) -> string_of_rid id ^ "[" ^ string_of_expr e ^ "]"
+  | Index(id, e) -> string_of_rid id ^ String.concat "" (List.map string_of_arr_index (List.map string_of_expr e))
   | Call(f, el) ->
     string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
-
-
+ 
 let string_of_vdecl vdecl  =
   string_of_typ vdecl.vtyp ^ " " ^ vdecl.vname ^ ";\n"
 let string_of_vdecl_assign (t, id, e) =
