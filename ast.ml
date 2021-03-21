@@ -58,11 +58,11 @@ and expr =
   (* Operators *)
   | Binop of expr * binop * expr
   | Unop of unop * expr
-  | Binassop of rid * bin_assign_op * expr
+  | Binassop of rid * bin_assign_op      * expr
   (* Arrays and new/delete *)
   | New of newable
   | ArrayLit of typ * expr * expr list (* expr:length and expr list:array literal *)
-  | Index  of rid * expr list
+  | Index  of rid * expr
   (* Function calls *)
   | Call of rid * expr list
 
@@ -151,9 +151,6 @@ let rec string_of_rid = function
 let string_of_newable = function
     NStruct(n)  -> "struct " ^ n
 
-let string_of_arr_index = function
-    e -> "[" ^ e ^ "]"
-
 let rec string_of_expr = function
   | Noexpr -> ""
   | Intlit(id) -> string_of_int id
@@ -162,17 +159,18 @@ let rec string_of_expr = function
   | Strlit(id) -> "\"" ^ id ^ "\""
   | Rid(id) -> string_of_rid id (* TODO *)
   | Binop(e1, o, e2) ->
-    "( " ^ string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2 ^ " )"
-  | Unop(o, e) -> string_of_uop o ^ "(" ^ string_of_expr e ^ ")"
-  | Binassop(id, op, r) -> "( " ^ string_of_rid id ^ " " ^ string_of_binassop op ^ " " ^ string_of_expr r ^ " )"
+    string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
+  | Unop(o, e) -> string_of_uop o ^ string_of_expr e
+  | Binassop(id, op, r) -> string_of_rid id ^ " " ^ string_of_binassop op ^ " " ^ string_of_expr r
   | New(n) -> "new " ^  string_of_newable n
   | ArrayLit(t, e, el) ->
     "new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^ "] = {" ^
     String.concat ", " (List.map string_of_expr el) ^ "}"
-  | Index(id, e) -> string_of_rid id ^ String.concat "" (List.map string_of_arr_index (List.map string_of_expr e))
+  | Index(id, e) -> string_of_rid id ^ "[" ^ string_of_expr e ^ "]"
   | Call(f, el) ->
     string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
- 
+
+
 let string_of_vdecl vdecl  =
   string_of_typ vdecl.vtyp ^ " " ^ vdecl.vname ^ ";\n"
 let string_of_vdecl_assign (t, id, e) =
