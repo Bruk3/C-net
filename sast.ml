@@ -41,7 +41,12 @@ type sstmt =
   formals : (typ * name) list : the formals of the function
   fbody: the statements in the body of the function
 *)
-type sfunc = {fid: sid; formals: sid list; fbody: sstmt list}
+type sfunc = {
+  fid: typ;
+  sname: string;
+  sparameters: sid list;
+  sbody: sstmt list
+}
 
 (* here the sid list is typ * name so its the variable declarations *)
 type strct = {sname: string; smembers: sid list}

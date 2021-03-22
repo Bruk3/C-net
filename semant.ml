@@ -38,11 +38,10 @@ let check (globals, functions) =
     let add_bind map (name, ty) = StringMap.add name {
       t = Void;
       name = name; 
-      parameters = [(ty, "x")];
+      parameters = [Id(ty, "x")];
       (*locals = [];*)
        body = [] } map
     in List.fold_left add_bind StringMap.empty [ ("print", Int);
-			                         ("printb", Bool);
 			                         ("printf", Float);
 			                         ("printbig", Int) ]
   in
@@ -162,9 +161,10 @@ let check (globals, functions) =
       | Break -> SBreak
       | Continue -> SContinue
       | If(p, b1, b2) -> SIf(check_bool_expr p, check_stmt b1, check_stmt b2)
-      | For(e1, e2, e3, st) ->
+      | For(e1, e2, e3, st) -> 
 	  SFor(expr e1, check_bool_expr e2, expr e3, check_stmt st)
       | While(p, s) -> SWhile(check_bool_expr p, check_stmt s)
+      | Vdecl (vd) ->  ()
       | Return e -> let (t, e') = expr e in
         if t = func.t then SReturn (t, e') 
         else raise (
@@ -183,10 +183,9 @@ let check (globals, functions) =
           in SBlock(check_stmt_list sl)
 
     in (* body of check_function *)
-    { styp = func.typ;
-      sfname = func.fname;
-      sformals = func.formals;
-      slocals  = func.locals;
+    { styp = func.t;
+      sname = func.name;
+      sparameters = func.parameters;
       sbody = match check_stmt (Block func.body) with
 	SBlock(sl) -> sl
       | _ -> raise (Failure ("internal error: block didn't become a block?"))
