@@ -17,7 +17,7 @@ and sx =
   | SId of sid
   (* Operators *)
   | SBinop of sexpr * binop * sexpr
-  | SBinassor of sid * bin_assign_op * sexpr
+  | SBinassop of sid * bin_assign_op * sexpr
   | SUnop of unop * sexpr
   | SNew of newable
   | SArrayLit of typ * sexpr * sexpr list
