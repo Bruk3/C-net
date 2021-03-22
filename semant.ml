@@ -85,7 +85,7 @@ let check (globals, functions) =
 
     (* Build local symbol table of variables for this function *)
     let symbols = List.fold_left (fun m (ty, name) -> StringMap.add name ty m)
-	                StringMap.empty (globals @ func.formals @ func.locals )
+	                StringMap.empty (globals @ func.parameters)
     in
 
     (* Return a variable from our local symbol table *)
@@ -101,17 +101,16 @@ let check (globals, functions) =
       | Floatlit l -> (Float, SFloatlit l)
       | Noexpr     -> (Void, SNoexpr)
       | Rid s       -> (type_of_identifier s, SId s)
-      | Assign(var, e) as ex -> 
-          let lt = type_of_identifier var
-          and (rt, e') = expr e in
+      | Binassop (var, op, e) as ex -> 
+        let lt = type_of_identifier var (* TODO *)
+        and (rt, e') = expr e in 
           let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^ 
             string_of_typ rt ^ " in " ^ string_of_expr ex
-          in (check_assign lt rt err, SAssign(var, (rt, e')))
+          in (check_assign lt rt err, SBinassop(var, op, (rt, e')))
       | Unop(op, e) as ex -> 
           let (t, e') = expr e in
           let ty = match op with
-            Neg when t = Int || t = Float -> t
-          | Not when t = Bool -> Bool
+            (Minus | Not) when t = Int || t = Float -> t
           | _ -> raise (Failure ("illegal unary operator " ^ 
                                  string_of_uop op ^ string_of_typ t ^
                                  " in " ^ string_of_expr ex))
@@ -123,8 +122,8 @@ let check (globals, functions) =
           let same = t1 = t2 in
           (* Determine expression type based on operator and operand types *)
           let ty = match op with
-            Add | Sub | Mult | Div when same && t1 = Int   -> Int
-          | Add | Sub | Mult | Div when same && t1 = Float -> Float
+            Add | Sub | Mul | Div when same && t1 = Int   -> Int
+          | Add | Sub | Mul | Div when same && t1 = Float -> Float
           | Eq | Neq            when same               -> Int
           | Lt | Leq | Gt | Geq
                      when same && (t1 = Int || t1 = Float) -> Int
@@ -136,7 +135,7 @@ let check (globals, functions) =
           in (ty, SBinop((t1, e1'), op, (t2, e2')))
       | Call(fname, args) as call -> 
           let fd = find_func fname in
-          let param_length = List.length fd.formals in
+          let param_length = List.length fd.parameters in
           if List.length args != param_length then
             raise (Failure ("expecting " ^ string_of_int param_length ^ 
                             " arguments in " ^ string_of_expr call))
@@ -146,7 +145,7 @@ let check (globals, functions) =
               " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e
             in (check_assign ft et err, e')
           in 
-          let args' = List.map2 check_call fd.formals args
+          let args' = List.map2 check_call fd.parameters args
           in (fd.typ, SCall(fname, args'))
     in
 
@@ -159,12 +158,15 @@ let check (globals, functions) =
     (* Return a semantically-checked statement i.e. containing sexprs *)
     let rec check_stmt = function
         Expr e -> SExpr (expr e)
+      | Delete n -> SDelete (expr n)
+      | Break -> SBreak
+      | Continue -> SContinue
       | If(p, b1, b2) -> SIf(check_bool_expr p, check_stmt b1, check_stmt b2)
       | For(e1, e2, e3, st) ->
 	  SFor(expr e1, check_bool_expr e2, expr e3, check_stmt st)
       | While(p, s) -> SWhile(check_bool_expr p, check_stmt s)
       | Return e -> let (t, e') = expr e in
-        if t = func.typ then SReturn (t, e') 
+        if t = func.t then SReturn (t, e') 
         else raise (
 	  Failure ("return gives " ^ string_of_typ t ^ " expected " ^
 		   string_of_typ func.typ ^ " in " ^ string_of_expr e))
