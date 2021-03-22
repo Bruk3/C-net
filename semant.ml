@@ -12,7 +12,7 @@ module StringMap = Map.Make(String)
 
 let check (globals, functions) =
 
-  (* Verify a list of bindings has no void types or duplicate names *)
+  (* Verify a list of bindings has no void types or duplicate names
   let check_binds (kind : string) (binds : bind list) =
     List.iter (function
 	(Void, b) -> raise (Failure ("illegal void " ^ kind ^ " " ^ b))
@@ -25,9 +25,11 @@ let check (globals, functions) =
     in dups (List.sort (fun (_,a) (_,b) -> compare a b) binds)
   in
 
+
   (**** Check global variables ****)
 
   check_binds "global" globals;
+  *)
 
   (**** Check functions ****)
 
@@ -37,7 +39,8 @@ let check (globals, functions) =
       t = Void;
       name = name; 
       parameters = [(ty, "x")];
-      locals = []; body = [] } map
+      (*locals = [];*)
+       body = [] } map
     in List.fold_left add_bind StringMap.empty [ ("print", Int);
 			                         ("printb", Bool);
 			                         ("printf", Float);
@@ -46,10 +49,10 @@ let check (globals, functions) =
 
   (* Add function name to symbol table *)
   let add_func map fd = 
-    let built_in_err = "function " ^ fd.fname ^ " may not be defined"
-    and dup_err = "duplicate function " ^ fd.fname
+    let built_in_err = "function " ^ fd.name ^ " may not be defined"
+    and dup_err = "duplicate function " ^ fd.name
     and make_err er = raise (Failure er)
-    and n = fd.fname (* Name of the function *)
+    and n = fd.name (* Name of the function *)
     in match fd with (* No duplicate functions or redefinitions of built-ins *)
          _ when StringMap.mem n built_in_decls -> make_err built_in_err
        | _ when StringMap.mem n map -> make_err dup_err  
@@ -66,12 +69,13 @@ let check (globals, functions) =
     with Not_found -> raise (Failure ("unrecognized function " ^ s))
   in
 
-  let _ = find_func "main" in (* Ensure "main" is defined *)
+(* Ensure "main" is defined *)
+  let _ = find_func "main" in 
 
   let check_function func =
     (* Make sure no formals or locals are void or duplicates *)
-    check_binds "formal" func.formals;
-    check_binds "local" func.locals;
+    (* check_binds "formal" func.formals;
+    check_binds "local" func.locals; *)
 
     (* Raise an exception if the given rvalue type cannot be assigned to
        the given lvalue type *)
@@ -92,11 +96,11 @@ let check (globals, functions) =
 
     (* Return a semantically-checked expression, i.e., with a type *)
     let rec expr = function
-        Literal  l -> (Int, SLiteral l)
-      | Fliteral l -> (Float, SFliteral l)
-      | BoolLit l  -> (Bool, SBoolLit l)
+        Charlit l -> (Int, SCharlit l)
+      | Intlit l -> (Int, SIntlit l)
+      | Floatlit l -> (Float, SFloatlit l)
       | Noexpr     -> (Void, SNoexpr)
-      | Id s       -> (type_of_identifier s, SId s)
+      | Rid s       -> (type_of_identifier s, SId s)
       | Assign(var, e) as ex -> 
           let lt = type_of_identifier var
           and (rt, e') = expr e in
@@ -121,10 +125,10 @@ let check (globals, functions) =
           let ty = match op with
             Add | Sub | Mult | Div when same && t1 = Int   -> Int
           | Add | Sub | Mult | Div when same && t1 = Float -> Float
-          | Equal | Neq            when same               -> Bool
-          | Less | Leq | Greater | Geq
-                     when same && (t1 = Int || t1 = Float) -> Bool
-          | And | Or when same && t1 = Bool -> Bool
+          | Eq | Neq            when same               -> Int
+          | Lt | Leq | Gt | Geq
+                     when same && (t1 = Int || t1 = Float) -> Int
+          | And | Or when same && t1 = Int -> Int
           | _ -> raise (
 	      Failure ("illegal binary operator " ^
                        string_of_typ t1 ^ " " ^ string_of_op op ^ " " ^
@@ -149,8 +153,8 @@ let check (globals, functions) =
     let check_bool_expr e = 
       let (t', e') = expr e
       and err = "expected Boolean expression in " ^ string_of_expr e
-      in if t' != Bool then raise (Failure err) else (t', e') 
-    in
+      in if t' != Int then raise (Failure err) else (t', e') 
+    in 
 
     (* Return a semantically-checked statement i.e. containing sexprs *)
     let rec check_stmt = function

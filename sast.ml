@@ -14,7 +14,7 @@ and sx =
   | SCharlit of int
   | SFloatlit of string
   | SStrlit of string
-  | Sid of sid
+  | SId of sid
   (* Operators *)
   | SBinop of sexpr * binop * sexpr
   | SBinassor of sid * bin_assign_op * sexpr
@@ -62,3 +62,4 @@ type sdecl =
     (* main : func ; *)
     (* Deal with main later *)
   }
+
