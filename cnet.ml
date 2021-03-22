@@ -1,11 +1,14 @@
-type action = Ast | Scanner
+type action =Scanner | Ast | LLVM_IR | Compile
 
 let () =
-  let action =  ref Ast in
+  let action =  ref Compile in
   let set_action a () = action := a in
   let speclist = [
-    ("-a", Arg.Unit (set_action Ast), "Print the AST");
     ("-t", Arg.Unit (set_action Scanner), "Print the Scanner Tokens");
+    ("-a", Arg.Unit (set_action Ast), "Print the AST");
+    ("-l", Arg.Unit (set_action LLVM_IR), "Print the generated LLVM IR");
+    ("-c", Arg.Unit (set_action Compile),
+      "Check and print the generated LLVM IR (default)");
   ] in
   let usage_msg = "usage: ./cnet.native [-a|-s|-l|-c|-t] [file.cnet]" in
   let channel = ref stdin in
@@ -31,5 +34,8 @@ let () =
       let spec_char = Lexing.lexeme lexbuf in
       let _  = Printf.printf "Syntax error on line %d near %s\n" err_line spec_char;
       in exit 1;
-    | _ -> ()
+    | LLVM_IR -> print_string (Llvm.string_of_llmodule (Codegen.translate sast))
+    | Compile -> let m = Codegen.translate sast in
+	Llvm_analysis.assert_valid_module m;
+	print_string (Llvm.string_of_llmodule m)
 
