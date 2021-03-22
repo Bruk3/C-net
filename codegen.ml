@@ -22,19 +22,13 @@ let translate (vdecls, strct_decls, fdecls) =
   and i32_t      = L.i32_type    context (* Int *) 
   and float_t    = L.double_type context (* Float *)
   and void_t     = L.void_type   context 
-  and str_t      = L.pointer_type  i8_t
-  and struct_t   = L.struct_type   context 
-  and array_type = L.array_type  context in
-
+  in
   (* Return the LLVM type for a MicroC type *)
   let ltype_of_typ = function
       A.Char    -> i8_t
     | A.Int     -> i32_t
     | A.Float   -> float_t
     | A.Void    -> void_t
-    | A.String  -> str_t
-    | A.Struct  -> struct_t
-    | A.Array   -> array_type
   in
 
   (* Create a map of global variables after creating each *)
@@ -44,7 +38,7 @@ let translate (vdecls, strct_decls, fdecls) =
           A.Float -> L.const_float (ltype_of_typ typ) 0.0
         | _ -> L.const_int (ltype_of_typ typ) 0
       in StringMap.add name (L.define_global name init cnet_module) m in
-    List.fold_left global_var StringMap.empty sdecls in
+    List.fold_left global_vdecl StringMap.empty vdecls in
 
 
   let printf_t : L.lltype = 
@@ -61,7 +55,8 @@ let translate (vdecls, strct_decls, fdecls) =
      call it even before we've created its body *)
   let function_decls : (L.llvalue * sfunc) StringMap.t =
       let function_decl m fdecl =
-        let (ftyp, name) = fdecl.fid
+        let ftyp = fdecl.fid.typ
+        and name = fdecl.fid.rid
         and formal_types = 
         Array.of_list (List.map (fun (t,_) -> ltype_of_typ t) fdecl.formals)
         in let ftype = L.function_type (ltype_of_typ ftyp) formal_types in
@@ -244,5 +239,5 @@ let translate (vdecls, strct_decls, fdecls) =
         | t -> L.build_ret (L.const_int (ltype_of_typ t) 0))
     in
   
-    List.iter build_function_body fdecls;
+    List.iter build_function_body fdecls in
     cnet_module
