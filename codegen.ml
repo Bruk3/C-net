@@ -1,5 +1,3 @@
-
-
 module L = Llvm
 module A = Ast
 open Sast 
@@ -11,11 +9,11 @@ module StringMap = Map.Make(String)
 let translate (vdecls, strct_decls, fdecls) =
   let context    = L.global_context () in
   
-  let the_module = L.create_module context "CNet" in 
+  let cnet_module = L.create_module context "CNet" in 
 
   (* let debug = fun s ->  
     print_endline ("`````````````````````````````````````"^s);
-    dump_module the_module;
+    dump_module cnet_module;
     print_endline ("`````````````````````````````````````"^s);
     () *)
 
@@ -41,33 +39,33 @@ let translate (vdecls, strct_decls, fdecls) =
 
   (* Create a map of global variables after creating each *)
   let global_decls : L.llvalue StringMap.t =
-    let global_vdecl map (typ, name) = 
+    let global_vdecl m (typ, name) = 
       let init = match typ with
           A.Float -> L.const_float (ltype_of_typ typ) 0.0
         | _ -> L.const_int (ltype_of_typ typ) 0
-      in StringMap.add name (L.define_global name init the_module) map in
+      in StringMap.add name (L.define_global name init cnet_module) m in
     List.fold_left global_var StringMap.empty sdecls in
 
 
   let printf_t : L.lltype = 
       L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
   let printf_func : L.llvalue = 
-      L.declare_function "printf" printf_t the_module in
+      L.declare_function "printf" printf_t cnet_module in
 
   let printbig_t : L.lltype =
       L.function_type i32_t [| i32_t |] in
   let printbig_func : L.llvalue =
-      L.declare_function "printbig" printbig_t the_module in
+      L.declare_function "printbig" printbig_t cnet_module in
 
   (* Define each function (arguments and return type) so we can 
      call it even before we've created its body *)
-     let function_decls : (L.llvalue * sfunc) StringMap.t =
-      let function_decl map fdecl =
-        let (name, ftyp) = fdecl.fid
+  let function_decls : (L.llvalue * sfunc) StringMap.t =
+      let function_decl m fdecl =
+        let (ftyp, name) = fdecl.fid
         and formal_types = 
         Array.of_list (List.map (fun (t,_) -> ltype_of_typ t) fdecl.formals)
         in let ftype = L.function_type (ltype_of_typ ftyp) formal_types in
-        StringMap.add name (L.define_function name ftype the_module, fdecl) map in
+        StringMap.add name (L.define_function name ftype cnet_module, fdecl) m in
       List.fold_left function_decl StringMap.empty fdecls in
     
     (* Fill in the body of the given function *)
@@ -99,29 +97,27 @@ let translate (vdecls, strct_decls, fdecls) =
         let formals = List.fold_left2 add_formal StringMap.empty fdecl.formals
             (Array.to_list (L.params the_function)) in
         (* List.fold_left add_local formals fdecl.slocals  *)
-      in
+      
 
       (* Return the value for a variable or formal argument.
        Check local names first, then global names.
        Will change this later. Doesn't fit what we are trying to do *)
       let lookup n = try StringMap.find n local_vars
-                      with Not_found -> StringMap.find n global_vars
+                      with Not_found -> StringMap.find n global_decls
   in
 
-(* Construct code for an expression; return its value *)
-let rec expr builder ((_, e) : sexpr) = match e with
+  (* Construct code for an expression; return its value *)
+  let rec expr builder ((_, e) : sexpr) = match e with
       SNoexpr     -> L.const_int i32_t 0    
     | SIntlit i  -> L.const_int i32_t i
     | SCharlit c  -> L.const_int i8_t c
     | SFloatlit l -> L.const_float_of_string float_t l
     | SStrlit s   -> L.const_string context s 
     | Sid s       -> L.build_load (lookup s.rid) s.rid builder
-    | SBinassor (s,op,e) -> let e' =  match op with
+    | SBinassor (s,op,e) -> let e' =  ( match op with
                                       Assign -> expr builder e
-                                    | PlusEq -> expr builder Sexpr(_,SBinop(s,A.Add,e))
-                                    | MinusEq -> expr builder Sexpr(_,SBinop(s,A.Sub,e))
-                                  (* I'm assuming that e to be passed in as s+e or s-e 
-                                     if op is PlusEq or MinusEq *)
+                                    | PlusEq -> expr builder Sexpr(s.typ,SBinop(s,A.Add,e))
+                                    | MinusEq -> expr builder Sexpr(s.typ,SBinop(s,A.Sub,e)) )
                                    in ignore(L.build_store e' (lookup s) builder); e'
     | SBinop ((A.Float,_ ) as e1, op, e2) ->
   let e1' = expr builder e1
@@ -129,7 +125,7 @@ let rec expr builder ((_, e) : sexpr) = match e with
   (match op with 
     A.Add     -> L.build_fadd
     | A.Sub     -> L.build_fsub
-    | A.Mult    -> L.build_fmul
+    | A.Mul    -> L.build_fmul
     | A.Div     -> L.build_fdiv 
     | A.Eq      -> L.build_fcmp L.Fcmp.Oeq
     | A.Neq     -> L.build_fcmp L.Fcmp.One
@@ -146,7 +142,7 @@ let rec expr builder ((_, e) : sexpr) = match e with
   (match op with
     A.Add     -> L.build_add
     | A.Sub     -> L.build_sub
-    | A.Mult    -> L.build_mul
+    | A.Mul    -> L.build_mul
     | A.Div     -> L.build_sdiv
     | A.And     -> L.build_and
     | A.Or      -> L.build_or
@@ -160,8 +156,8 @@ let rec expr builder ((_, e) : sexpr) = match e with
     | SUnop(op, ((t, _) as e)) ->
         let e' = expr builder e in
         (match op with
-        A.Neg when t = A.Float -> L.build_fneg 
-            | A.Neg                  -> L.build_neg
+        A.Minus when t = A.Float -> L.build_fneg 
+            | A.Minus                  -> L.build_neg
             | A.Not                  -> L.build_not) e' "tmp" builder
     | SCall ("print", [e]) | SCall ("printb", [e]) ->
   L.build_call printf_func [| int_format_str ; (expr builder e) |]
@@ -174,13 +170,13 @@ let rec expr builder ((_, e) : sexpr) = match e with
     | SCall (f, args) ->
        let (fdef, fdecl) = StringMap.find f function_decls in
  let llargs = List.rev (List.map (expr builder) (List.rev args)) in
- let result = (match fdecl.styp with 
+ let result = (match fdecl.fid.typ with 
                       A.Void -> ""
                     | _ -> f ^ "_result") in
        L.build_call fdef (Array.of_list llargs) result builder
   in
   
-(* LLVM insists each basic block end with exactly one "terminator" 
+  (* LLVM insists each basic block end with exactly one "terminator" 
        instruction that transfers control.  This function runs "instr builder"
        if the current block does not already have a terminator.  Used,
        e.g., to handle the "fall off the end of the function" case. *)
@@ -195,9 +191,9 @@ let rec expr builder ((_, e) : sexpr) = match e with
   
       let rec stmt builder = function
       SBlock sl -> List.fold_left stmt builder sl
-    | SVdecl(svdcl,e) -> add_local formals svdcl; expr builder Sexpr(_,SBinassor(svdcl.rid,A.Assign,e))
+    | SVdecl(svdcl,e) -> add_local formals svdcl; expr builder Sexpr(svdcl.typ, SBinassor(svdcl,A.Assign,e)) ; builder
     | SExpr e -> ignore(expr builder e); builder 
-    | SReturn e -> ignore(match fdecl.styp with
+    | SReturn e -> ignore(match fdecl.fid.typ with
                                 (* Special "return nothing" instr *)
                                 A.Void -> L.build_ret_void builder 
                                 (* Build return statement *)
@@ -239,16 +235,14 @@ let rec expr builder ((_, e) : sexpr) = match e with
       in
   
       (* Build the code for each statement in the function *)
-      let builder = stmt builder (SBlock fdecl.sbody) in
+      let builder = stmt builder (SBlock fdecl.fbody) in
   
       (* Add a return if the last block falls off the end *)
-      add_terminal builder (match fdecl.styp with
+      add_terminal builder (match fdecl.fid.typ with
           A.Void -> L.build_ret_void
         | A.Float -> L.build_ret (L.const_float float_t 0.0)
         | t -> L.build_ret (L.const_int (ltype_of_typ t) 0))
     in
   
-    List.iter build_function_body functions;
-    the_module
-
-
+    List.iter build_function_body fdecls;
+    cnet_module

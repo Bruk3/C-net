@@ -47,9 +47,9 @@ type sfunc = {fid: sid; formals: sid list; fbody: sstmt list}
 type strct = {sname: string; smembers: sid list}
 
 type sdecl =
-    SGVdecl of sid
-  | SGVdecl_ass of
-  | SSdecl of sstrct
+    SGVdecl of sid 
+  | SGVdecl_ass of sid * expr
+  | SSdecl of strct
   | SFdecl of sfunc
 
   type sprogram = {
@@ -58,7 +58,7 @@ type sdecl =
      * be assigned to a default corresponding
      * to the vdecl typ *)
     strct_decls : strct list ;
-    fdecls : func list ;
+    fdecls : sfunc list ;
     (* main : func ; *)
     (* Deal with main later *)
   }
