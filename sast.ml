@@ -58,7 +58,7 @@ type sdecl =
      * be assigned to a default corresponding
      * to the vdecl typ *)
     strct_decls : strct list ;
-    fdecls : func list ;
+    fdecls : sfunc list ;
     (* main : func ; *)
     (* Deal with main later *)
   }
