@@ -1,0 +1,10 @@
+int main(int argc) {
+    int a = 4;
+    int b; 
+    b = 5;
+    // int b = 5;
+    a = 4;
+    printf(0.9);
+    b = a + b;
+    return  b;
+}

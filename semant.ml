@@ -182,6 +182,8 @@ let check  = function
 	  SFor(expr e1, check_bool_expr e2, expr e3, check_stmt st)
       | While(p, s) -> SWhile(check_bool_expr p, check_stmt s)
       | Vdecl (vd) ->  SVdecl vd
+      | Vdecl_ass ({vtyp; vname}, e) -> SVdecl_ass({vtyp; vname}, expr e)
+
       | Return e -> let (t, e') = expr e in
         if t = func.t then SReturn (t, e') 
         else raise (
