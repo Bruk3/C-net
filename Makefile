@@ -39,7 +39,7 @@ clean:
 	opam config exec -- ocamlbuild -clean
 	rm -f final parser.ml parser.mli scanner.ml parser.output \
 	scanner.ml scannertest scannertest.out *cmi *cmo \
-	*.log *.diff *.out *.err parser.output
+	*.log *.diff *.out *.err *.ll *.s *.o *.exe parser.output
 
 .PHONY: all
 all: clean parser
