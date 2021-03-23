@@ -78,7 +78,20 @@ sdecl:
 
 fdecl :
     typ ID LPAREN opt_params RPAREN LBRACE opt_stmts RBRACE
-                    { {t = $1; name = $2; parameters = $4; body = $7} }
+                    { 
+                        let is_decl = function 
+                            Vdecl(v) | Vdecl_ass (v, e) -> true
+                        | _ -> false in 
+                        let local_vars = List.filter is_decl $7 in 
+                        let to_decl = function 
+                            Vdecl(v) -> v
+                          | Vdecl_ass (v, e) -> v 
+                          | _ -> 
+                        in 
+                        let locals = List.map to_decl local_vars
+
+                        {t = $1; name = $2; parameters = $4; body = $7; locals = locals} 
+                    }
 
 opt_params :
     { [] }

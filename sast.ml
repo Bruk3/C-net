@@ -116,7 +116,7 @@ let string_of_svdecl_assign (t, id, e) =
     String.concat "" (List.map string_of_sstmt fdecl.sbody) ^
     "}\n" *)
   
-let string_of_sfunc_helper (t, n, p, b) =
+let string_of_sfunc (t, n, p, b) =
   string_of_typ t ^ " " ^ n ^ "(" ^ String.concat "," (List.map string_of_id p) ^
   ")\n{\n" ^ String.concat ""
     (List.map
@@ -125,13 +125,12 @@ let string_of_sfunc_helper (t, n, p, b) =
        (* (List.map (fun stmt -> (stmt, 1)) b) *)
     ) ^ "}\n\n"
 
-let string_of_sfunc ({styp; sname; sparameters; sbody}) = string_of_sfunc_helper(styp, sname, sparameters, sbody)
 
 let string_of_sdecl = function
     SGVdecl(vdecl) -> string_of_vdecl vdecl
   | SGVdecl_ass({vtyp; vname}, e) -> string_of_svdecl_assign(vtyp, vname, e)
   | SSdecl({name; members}) -> string_of_strct(name, members)
-  | SFdecl({styp; sname; sparameters; sbody}) -> string_of_sfunc_helper(styp, sname, sparameters, sbody)
+  | SFdecl({styp; sname; sparameters; sbody}) -> string_of_sfunc(styp, sname, sparameters, sbody)
   (* let string_of_sprogram ((vdecls : (vdecl * sexpr) list), (strct_decls : strct list), (fd : sfunc list))  = 
     String.concat "" (List.map string_of_sfunc(fd)) ^ "\n" *)
 
