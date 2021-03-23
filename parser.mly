@@ -80,15 +80,16 @@ fdecl :
     typ ID LPAREN opt_params RPAREN LBRACE opt_stmts RBRACE
                     { 
                         let is_decl = function 
-                            Vdecl(v) | Vdecl_ass (v, e) -> true
-                        | _ -> false in 
+                            Vdecl(a)  -> true
+                            | Vdecl_ass (v, e) -> true
+                            | _ -> false in 
                         let local_vars = List.filter is_decl $7 in 
                         let to_decl = function 
-                            Vdecl(v) -> v
-                          | Vdecl_ass (v, e) -> v 
-                          | _ -> 
+                            Vdecl({vtyp; vname}) -> Id(vtyp, vname)
+                          | Vdecl_ass ({vtyp; vname}, e) -> Id(vtyp, vname)
+                          | _ -> raise (Failure "Failed to cast an unexpected stmt type to declaration ")
                         in 
-                        let locals = List.map to_decl local_vars
+                        let locals = List.map to_decl local_vars in
 
                         {t = $1; name = $2; parameters = $4; body = $7; locals = locals} 
                     }

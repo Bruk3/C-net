@@ -84,7 +84,7 @@ type stmt =
   | Block   of stmt list
 
                                 (* Functions *)
-type func = {t: typ ; name : string ; parameters : id list ; body : stmt list; locals : vdecl list}
+type func = {t: typ ; name : string ; parameters : id list ; body : stmt list; locals : id list}
 
                                  (* Structs *)
 type strct = { name : string ; members : vdecl list }

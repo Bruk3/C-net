@@ -54,7 +54,8 @@ let check  = function
       t = Void;
       name = name; 
       parameters = [Id(ty, "x")];
-       body = [] } map
+      locals = [];
+      body = [] } map
     in List.fold_left add_bind StringMap.empty [ ("print", Int);
 			                         ("printf", Float);
 			                         ("printbig", Int) ]
@@ -98,7 +99,7 @@ let check  = function
 
     (* Build local symbol table of variables for this function *)
     let symbols = List.fold_left (fun m (Id(ty, name)) -> StringMap.add name ty m)
-	                StringMap.empty (func.parameters) (* Should be globals @ func.parameters *)
+	                StringMap.empty (func.parameters @ func.locals) (* Should be globals @ func.parameters *)
     in
 
     let type_of_identifier s =

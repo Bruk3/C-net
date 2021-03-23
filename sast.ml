@@ -130,7 +130,7 @@ let string_of_sdecl = function
     SGVdecl(vdecl) -> string_of_vdecl vdecl
   | SGVdecl_ass({vtyp; vname}, e) -> string_of_svdecl_assign(vtyp, vname, e)
   | SSdecl({name; members}) -> string_of_strct(name, members)
-  | SFdecl({styp; sname; sparameters; sbody}) -> string_of_sfunc(styp, sname, sparameters, sbody)
+  | SFdecl({styp; sname; sparameters; sbody; _}) -> string_of_sfunc(styp, sname, sparameters, sbody)
   (* let string_of_sprogram ((vdecls : (vdecl * sexpr) list), (strct_decls : strct list), (fd : sfunc list))  = 
     String.concat "" (List.map string_of_sfunc(fd)) ^ "\n" *)
 
