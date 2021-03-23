@@ -10,26 +10,41 @@ module StringMap = Map.Make(String)
 
    Check each global variable, then check each function *)
 
-let check (globals, functions) =
+(* let check (globals, functions) = *)
 
-  (* Verify a list of bindings has no void types or duplicate names
-  let check_binds (kind : string) (binds : bind list) =
+let check  = function
+  Program(all_decls: decl list) -> 
+  let is_function = function 
+  Fdecl(_) -> true
+  | _ -> false in 
+  let func_decl_list = List.filter is_function all_decls in  
+
+  let to_ast_func = function 
+      Fdecl(func) -> func 
+    | _ -> raise (Failure ("illegal type passed to_ast_func ")) in 
+
+  let functions = List.map  to_ast_func func_decl_list in 
+
+
+
+  (* Uncomment later *)
+  (* Verify a list of bindings has no void types or duplicate names *)
+  (* let check_binds (kind : string) (binds : id list) =
     List.iter (function
-	(Void, b) -> raise (Failure ("illegal void " ^ kind ^ " " ^ b))
+	Id(Void, b) -> raise (Failure ("illegal void " ^ kind ^ " " ^ b))
       | _ -> ()) binds;
     let rec dups = function
         [] -> ()
-      |	((_,n1) :: (_,n2) :: _) when n1 = n2 ->
+      |	(Id(_,n1) :: Id(_,n2) :: _) when n1 = n2 ->
 	  raise (Failure ("duplicate " ^ kind ^ " " ^ n1))
       | _ :: t -> dups t
-    in dups (List.sort (fun (_,a) (_,b) -> compare a b) binds)
+    in dups (List.sort (fun a b -> compare a b) binds)
   in
 
 
   (**** Check global variables ****)
 
-  check_binds "global" globals;
-  *)
+  check_binds "global" globals; *)
 
   (**** Check functions ****)
 
@@ -39,7 +54,6 @@ let check (globals, functions) =
       t = Void;
       name = name; 
       parameters = [Id(ty, "x")];
-      (*locals = [];*)
        body = [] } map
     in List.fold_left add_bind StringMap.empty [ ("print", Int);
 			                         ("printf", Float);
@@ -47,7 +61,7 @@ let check (globals, functions) =
   in
 
   (* Add function name to symbol table *)
-  let add_func map fd = 
+  let add_func map (fd: func) = 
     let built_in_err = "function " ^ fd.name ^ " may not be defined"
     and dup_err = "duplicate function " ^ fd.name
     and make_err er = raise (Failure er)
@@ -83,11 +97,10 @@ let check (globals, functions) =
     in   
 
     (* Build local symbol table of variables for this function *)
-    let symbols = List.fold_left (fun m (ty, name) -> StringMap.add name ty m)
-	                StringMap.empty (globals @ func.parameters)
+    let symbols = List.fold_left (fun m (Id(ty, name)) -> StringMap.add name ty m)
+	                StringMap.empty (func.parameters) (* Should be globals @ func.parameters *)
     in
 
-    (* Return a variable from our local symbol table *)
     let type_of_identifier s =
       try StringMap.find s symbols
       with Not_found -> raise (Failure ("undeclared identifier " ^ s))
@@ -98,14 +111,15 @@ let check (globals, functions) =
         Charlit l -> (Int, SCharlit l)
       | Intlit l -> (Int, SIntlit l)
       | Floatlit l -> (Float, SFloatlit l)
+      | Strlit l -> (String, SStrlit l)
       | Noexpr     -> (Void, SNoexpr)
-      | Rid s       -> (type_of_identifier s, SId s)
+      | Rid s       -> (type_of_identifier (string_of_rid s), SId (string_of_rid s))
       | Binassop (var, op, e) as ex -> 
-        let lt = type_of_identifier var (* TODO *)
+        let lt = type_of_identifier (string_of_rid var) (* TODO *)
         and (rt, e') = expr e in 
           let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^ 
             string_of_typ rt ^ " in " ^ string_of_expr ex
-          in (check_assign lt rt err, SBinassop(var, op, (rt, e')))
+          in (check_assign lt rt err, SBinassop((string_of_rid var), op, (rt, e')))
       | Unop(op, e) as ex -> 
           let (t, e') = expr e in
           let ty = match op with
@@ -133,19 +147,21 @@ let check (globals, functions) =
                        string_of_typ t2 ^ " in " ^ string_of_expr e))
           in (ty, SBinop((t1, e1'), op, (t2, e2')))
       | Call(fname, args) as call -> 
-          let fd = find_func fname in
+          let fd = find_func (string_of_rid fname) in
           let param_length = List.length fd.parameters in
           if List.length args != param_length then
             raise (Failure ("expecting " ^ string_of_int param_length ^ 
                             " arguments in " ^ string_of_expr call))
-          else let check_call (ft, _) e = 
-            let (et, e') = expr e in 
-            let err = "illegal argument found " ^ string_of_typ et ^
-              " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e
-            in (check_assign ft et err, e')
+          else let check_call id e = 
+              match id with 
+              Id(ft, _) -> 
+                let (et, e') = expr e in 
+                let err = "illegal argument found " ^ string_of_typ et ^
+                  " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e
+                in (check_assign ft et err, e')
           in 
           let args' = List.map2 check_call fd.parameters args
-          in (fd.typ, SCall(fname, args'))
+          in (fd.t, SCall(fname, args'))
     in
 
     let check_bool_expr e = 
@@ -157,19 +173,19 @@ let check (globals, functions) =
     (* Return a semantically-checked statement i.e. containing sexprs *)
     let rec check_stmt = function
         Expr e -> SExpr (expr e)
-      | Delete n -> SDelete (expr n)
+      (* | Delete n -> SDelete (expr n) *)
       | Break -> SBreak
       | Continue -> SContinue
-      | If(p, b1, b2) -> SIf(check_bool_expr p, check_stmt b1, check_stmt b2)
+      (* | If(p, b1, b2) -> SIf(check_bool_expr p, check_stmt b1, check_stmt b2) *)
       | For(e1, e2, e3, st) -> 
 	  SFor(expr e1, check_bool_expr e2, expr e3, check_stmt st)
       | While(p, s) -> SWhile(check_bool_expr p, check_stmt s)
-      | Vdecl (vd) ->  ()
+      | Vdecl (vd) ->  SContinue (* TODO *)
       | Return e -> let (t, e') = expr e in
         if t = func.t then SReturn (t, e') 
         else raise (
 	  Failure ("return gives " ^ string_of_typ t ^ " expected " ^
-		   string_of_typ func.typ ^ " in " ^ string_of_expr e))
+		   string_of_typ func.t ^ " in " ^ string_of_expr e))
 	    
 	    (* A block is correct if each statement is correct and nothing
 	       follows any Return statement.  Nested blocks are flattened. *)
@@ -190,4 +206,14 @@ let check (globals, functions) =
 	SBlock(sl) -> sl
       | _ -> raise (Failure ("internal error: block didn't become a block?"))
     }
-  in (globals, List.map check_function functions)
+  in    (* (globals, List.map check_function functions) *)
+
+  let decl_to_sdecl = function
+    GVdecl(vdecl) ->  SGVdecl(vdecl)
+    | GVdecl_ass(vdecl, e) -> SGVdecl_ass (vdecl, (Void, SNoexpr)) (* TODO *)
+    | Sdecl(s) -> SSdecl s 
+    | Fdecl (func) -> SFdecl (check_function func)
+
+    in 
+  let sdcls = List.map decl_to_sdecl all_decls in  
+  SProgram (sdcls)
