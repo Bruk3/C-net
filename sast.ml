@@ -22,7 +22,7 @@ and sx =
   | SNew of newable
   | SArrayLit of typ * sexpr * sexpr list
   | SIndex of sid * sexpr
-  | SCall of rid * sexpr list
+  | SCall of sid * sexpr list
 
 type sstmt =
     SExpr of sexpr
@@ -52,14 +52,14 @@ type sfunc = {
 type strct = {sname: string; smembers: sid list}
 
 type sdecl =
-    SGVdecl of sid 
+    SGVdecl of sid
   | SGVdecl_ass of sid * expr
   | SSdecl of strct
   | SFdecl of sfunc
 
-  type sprogram = {
-    vdecls : (vdecl * expr) list ; 
-    (* If it's just a decl, expr can  
+type sprogram = {
+    vdecls : (vdecl * sexpr) list ;
+    (* If it's just a decl, expr can
      * be assigned to a default corresponding
      * to the vdecl typ *)
     strct_decls : strct list ;
