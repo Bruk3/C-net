@@ -34,3 +34,6 @@ _opam/
 
 # runtest logs 
 runtests.log
+
+# To prevent the github action workflow from failing
+_tags
