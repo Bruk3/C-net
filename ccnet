@@ -6,6 +6,14 @@ CC="cc"
 # LLVM compiler
 LLC="llc-10"
 
+LLCFail() {
+  echo "Could not find the LLVM compiler \"$LLC\"."
+  echo "Check your LLVM installation and/or modify the LLC variable in ccnet.sh"
+  exit 1
+}
+
+which "$LLC" || LLCFail
+
 # Cnet compiler
 CNET="./cnet.native"
 LIBCNET="./libcnet/*.c"
