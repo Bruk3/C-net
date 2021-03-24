@@ -1,0 +1,7 @@
+
+int main()
+{
+	stdout.println("Hello World!");
+
+	return 0;
+}

@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# C compiler
+CC="cc"
+
+# LLVM compiler
+LLC="llc-10"
+
+# Cnet compiler
+CNET="./cnet.native"
+LIBCNET="./libcnet/*.c"
+
+SOURCE="$1"
+
+if [[ -z $SOURCE ]]; then
+	echo "Usage: $0 <source-code.cnet>"
+	exit
+fi
+
+OUTPUT=${SOURCE%.cnet}
+
+# Compile the source
+$CNET -c $SOURCE > "$OUTPUT.ll" || exit
+$LLC -relocation-model=pic "$OUTPUT.ll" > "$OUTPUT.s" || exit
+
+# remove the .ll file
+rm "$OUTPUT.ll"
+
+$CC -o "$OUTPUT.exe" "$OUTPUT.s" $LIBCNET
+
+#remove the assembly file
+rm "$OUTPUT.s"
+
+
