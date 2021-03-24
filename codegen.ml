@@ -1,12 +1,16 @@
 module L = Llvm
 module A = Ast
+module U = Utils
 open Sast
+
 
 module StringMap = Map.Make(String)
 
 
 (* translate : Sast.program -> Llvm.module *)
-let translate ((vdecls : (A.vdecl * sexpr) list), (strct_decls : strct list), (fdecls : sfunc list)) =
+let translate (sdecl_list : sprogram) =
+  let (vdecls, strct_decls, fdecls) = U.decompose_program sdecl_list in
+(* let translate ((vdecls : (A.vdecl * sexpr) list), (strct_decls : strct list), (fdecls : sfunc list)) = *)
   let context    = L.global_context () in
 
   let the_module = L.create_module context "CNet" in
@@ -64,11 +68,11 @@ let translate ((vdecls : (A.vdecl * sexpr) list), (strct_decls : strct list), (f
      call it even before we've created its body *)
   let function_decls : (L.llvalue * sfunc) StringMap.t =
     let function_decl m (fdecl : sfunc) =
-      let ftyp = fdecl.fid
+      let ftyp = fdecl.styp
       and name = fdecl.sname
       and formal_types =
         Array.of_list (List.map
-                         (function Sid(t,_) -> ltype_of_typ t)
+                         (function (t,_) -> ltype_of_typ t)
                          fdecl.sparameters) in
       let ftype = L.function_type (ltype_of_typ ftyp) formal_types in
       StringMap.add name (L.define_function name ftype the_module, fdecl) m in
@@ -95,7 +99,7 @@ let translate ((vdecls : (A.vdecl * sexpr) list), (strct_decls : strct list), (f
     let rec expr builder ((_, e) : sexpr) = match e with
         SIntlit i   -> L.const_int i32_t i
       | SStrlit s   -> L.build_global_stringptr (s ^ "\n") "tmp" builder
-      | SCall(Sid(A.Int, A.RID(A.FinalID(A.Nid("stdout")), "println")),
+      | SCall(A.RID(A.FinalID("stdout"), "println"),
               (A.String, SStrlit(s)) :: []) ->
         L.build_call println_func
           [| L.const_int i32_t 1;
@@ -123,7 +127,7 @@ let translate ((vdecls : (A.vdecl * sexpr) list), (strct_decls : strct list), (f
 
     let stmt builder = function
       | SExpr e -> ignore(expr builder e); builder
-      | SReturn e -> ignore(match fdecl.fid with
+      | SReturn e -> ignore(match fdecl.styp with
           (* Special "return nothing" instr *)
             A.Void -> L.build_ret_void builder
           (* Build return statement *)

@@ -27,14 +27,10 @@ type bin_assign_op =
   Assign | PlusEq | MinusEq
 
       (* 'recursive' id that can be an id or a member of a struct *)
-type nid =
-  Nid of string
-
-and id =
-  Id of typ * string
+and id = typ * string
 
 and rid =
-    FinalID of nid
+    FinalID of string
   | RID of rid * string
 
                               (* types in C-net *)
@@ -140,12 +136,9 @@ let rec string_of_typ = function
   | Void      -> "void"
   | Array(t)  ->  "" ^ string_of_typ t ^ "[]"
 
-let string_of_nid = function
-    Nid(id) -> id
-let string_of_id = function
-  | Id(t, n) -> string_of_typ t ^ " " ^ n
+let string_of_id (t, n) = string_of_typ t ^ " " ^ n
 let rec string_of_rid = function
-  | FinalID(id) -> string_of_nid id
+  | FinalID(id) -> id
   | RID(r, final) -> string_of_rid r ^ "." ^ final
 
 let string_of_newable = function
@@ -210,7 +203,7 @@ let rec string_of_stmt (main_stmt, main_indent) =
     | Continue           -> "continue;"
     | If(e_s_l,Expr(Noexpr)) -> let string_of_if ((e, s))  =
         "if (" ^ string_of_expr e ^ ")\n"  ^ (print_block s indent)
-      in String.concat (tabs indent ^ "else ") (List.map string_of_if e_s_l) 
+      in String.concat (tabs indent ^ "else ") (List.map string_of_if e_s_l)
     | If(e_s_l, s)       ->
       let string_of_if ((e, s))  =
         "if (" ^ string_of_expr e ^ ")\n"  ^ (print_block s indent)

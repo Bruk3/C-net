@@ -4,9 +4,6 @@
 
 open Ast
 
-type sid =
-  Sid of typ * rid
-
 type sexpr = typ * sx
 and sx =
     SNoexpr
@@ -53,8 +50,7 @@ type sdecl =
   | SSdecl of strct
   | SFdecl of sfunc
 
-type sprogram =
-  SProgram of sdecl list
+type sprogram = sdecl list
 
   (* type sprogram = {
     vdecls : (vdecl * expr) list ;
@@ -137,5 +133,5 @@ let string_of_sdecl = function
     String.concat "" (List.map string_of_sfunc(fd)) ^ "\n" *)
 
     (* TODO *)
-let string_of_sprogram  = function
-    SProgram(decls) -> String.concat "" (List.map string_of_sdecl decls) ^ "\n"
+let string_of_sprogram (decls : sprogram) =
+    String.concat "" (List.map string_of_sdecl decls) ^ "\n"

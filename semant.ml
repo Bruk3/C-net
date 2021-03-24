@@ -1,5 +1,6 @@
 (* Semantic checking for the MicroC compiler *)
 
+module U = Utils
 open Ast
 open Sast
 
@@ -50,15 +51,16 @@ let check  = function
 
   (* Collect function declarations for built-in functions: no bodies *)
   let built_in_decls =
-    let add_bind map (name, ty) = StringMap.add name {
-      t = Void;
+    let add_bind map (return_type, name, params) = StringMap.add name {
+      t = return_type;
       name = name;
-      parameters = [Id(ty, "x")];
+      parameters = params;
       locals = [];
       body = [] } map
-    in List.fold_left add_bind StringMap.empty [ ("print", Int);
-			                         ("printf", Float);
-			                         ("printbig", Int) ]
+    in List.fold_left add_bind StringMap.empty
+      [
+        (Int, "println", [(String, "s")])
+      ]
   in
 
   (* Add function name to symbol table *)
@@ -78,7 +80,7 @@ let check  = function
   in
 
   (* Return a function from our symbol table *)
-  let find_func s =
+  let find_func (s : string) =
     try StringMap.find s function_decls
     with Not_found -> raise (Failure ("unrecognized function " ^ s))
   in
@@ -98,7 +100,7 @@ let check  = function
     in
 
     (* Build local symbol table of variables for this function *)
-    let symbols = List.fold_left (fun m (Id(ty, name)) -> StringMap.add name ty m)
+    let symbols = List.fold_left (fun m ((ty, name)) -> StringMap.add name ty m)
 	                StringMap.empty (func.parameters @ func.locals) (* Should be globals @ func.parameters *)
     in
 
@@ -148,14 +150,12 @@ let check  = function
                        string_of_typ t2 ^ " in " ^ string_of_expr e))
           in (ty, SBinop((t1, e1'), op, (t2, e2')))
       | Call(fname, args) as call ->
-          let fd = find_func (string_of_rid fname) in
+          let fd = find_func (U.final_id_of_rid fname) in
           let param_length = List.length fd.parameters in
           if List.length args != param_length then
             raise (Failure ("expecting " ^ string_of_int param_length ^
                             " arguments in " ^ string_of_expr call))
-          else let check_call id e =
-              match id with
-              Id(ft, _) ->
+          else let check_call (ft, _) e =
                 let (et, e') = expr e in
                 let err = "illegal argument found " ^ string_of_typ et ^
                   " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e
@@ -219,4 +219,4 @@ let check  = function
 
     in
   let sdcls = List.map decl_to_sdecl all_decls in
-  SProgram (sdcls)
+  sdcls
