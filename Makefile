@@ -20,7 +20,6 @@ cnet.native: cnet
 	opam config exec -- \
 		ocamlbuild -use-ocamlfind cnet.native
 
-
 ####################### Dependencies for ocamlbuild ###########################
 
 .PHONY: scanner parser ast
@@ -42,7 +41,7 @@ clean:
 	*.log *.diff *.out *.err *.ll *.s *.o *.exe parser.output
 
 .PHONY: all
-all: clean parser
+all: clean cnet.native printbig.o
 
 
 ##################################################################
