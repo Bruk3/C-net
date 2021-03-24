@@ -3,16 +3,8 @@
 # C compiler
 CC="cc"
 
-# LLVM compiler
-LLC="llc-10"
-
-LLCFail() {
-  echo "Could not find the LLVM compiler \"$LLC\"."
-  echo "Check your LLVM installation and/or modify the LLC variable in ccnet.sh"
-  exit 1
-}
-
-which "$LLC" || LLCFail
+# LLVM compiler - Replace by path to llvm compiler
+LLC="llc"
 
 # Cnet compiler
 CNET="./cnet.native"
@@ -20,15 +12,28 @@ LIBCNET="./libcnet/*.c"
 
 SOURCE="$1"
 
+
 if [[ -z $SOURCE ]]; then
 	echo "Usage: $0 <source-code.cnet>"
 	exit
 fi
 
+
+## Print error and exit
+LLCFail() {
+  echo "Could not find the LLVM compiler \"$LLC\"."
+  echo "Check your LLVM installation and/or modify the LLC variable in ccnet.sh"
+  exit 1
+}
+
+## Check if the llvm compiler exists first
+which "$LLC" || LLCFail
+
+
 OUTPUT=${SOURCE%.cnet}
 
 # Compile the source
-$CNET -c $SOURCE > "$OUTPUT.ll" || exit
+$CNET -c "$SOURCE" > "$OUTPUT.ll" || exit
 $LLC -relocation-model=pic "$OUTPUT.ll" > "$OUTPUT.s" || exit
 
 # remove the .ll file
@@ -38,5 +43,4 @@ $CC -o "$OUTPUT.exe" "$OUTPUT.s" $LIBCNET
 
 #remove the assembly file
 rm "$OUTPUT.s"
-
 
