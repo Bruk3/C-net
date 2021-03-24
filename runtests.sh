@@ -11,6 +11,8 @@ rm -f $globallog
 error=0
 globalerror=0
 
+integrationtests="tests/integration/test-*.cnet tests/integration/fail-*.cnet"
+
 parsertests="tests/parser/test-*.cnet tests/parser/fail-*.cnet"
 
 scannertests="tests/scanner/test-*.cnet tests/scanner/fail-*.cnet"
@@ -153,6 +155,7 @@ for file in $scannertests
 do
     case $file in
 	*test-*)
+
 	    Check $file './cnet.native -t' 2>> $globallog
 	    ;;
 	*fail-*)
@@ -180,5 +183,25 @@ do
 	    ;;
     esac
 done
+
+for file in $integrationtests
+do
+    case $file in
+	*test-*)
+	    './ccnet' $file
+	    Check $file ${file%.cnet}.exe 2>> $globallog
+	    rm ${file%.cnet}.exe
+	    ;;
+	*fail-*)
+	    # './ccnet' $file
+	    # CheckFail $file ${file%.cnet}.exe 2>> $globallog
+	    ;;
+	*)
+	    echo "unknown file type $file"
+	    globalerror=1
+	    ;;
+    esac
+done
+
 
 exit $globalerror

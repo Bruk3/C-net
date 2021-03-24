@@ -78,20 +78,20 @@ sdecl:
 
 fdecl :
     typ ID LPAREN opt_params RPAREN LBRACE opt_stmts RBRACE
-                    { 
-                        let is_decl = function 
+                    {
+                        let is_decl = function
                             Vdecl(a)  -> true
                             | Vdecl_ass (v, e) -> true
-                            | _ -> false in 
-                        let local_vars = List.filter is_decl $7 in 
-                        let to_decl = function 
-                            Vdecl({vtyp; vname}) -> Id(vtyp, vname)
-                          | Vdecl_ass ({vtyp; vname}, e) -> Id(vtyp, vname)
+                            | _ -> false in
+                        let local_vars = List.filter is_decl $7 in
+                        let to_decl = function
+                            Vdecl({vtyp; vname}) -> (vtyp, vname)
+                          | Vdecl_ass ({vtyp; vname}, e) -> (vtyp, vname)
                           | _ -> raise (Failure "Failed to cast an unexpected stmt type to declaration ")
-                        in 
+                        in
                         let locals = List.map to_decl local_vars in
 
-                        {t = $1; name = $2; parameters = $4; body = $7; locals = locals} 
+                        {t = $1; name = $2; parameters = $4; body = $7; locals = locals}
                     }
 
 opt_params :
@@ -99,8 +99,8 @@ opt_params :
     | params { List.rev $1 }
 
 params:
-    typ ID { [ Id($1, $2) ] }
-    | params COMMA typ ID { Id($3, $4) :: $1 }
+    typ ID { [ ($1, $2) ] }
+    | params COMMA typ ID { ($3, $4) :: $1 }
 
 
 opt_stmts:
@@ -182,7 +182,7 @@ expr:
     | id LPAREN opt_args RPAREN { Call($1, $3) }
 
 id :
-    ID { FinalID(Nid($1)) }
+    ID { FinalID($1) }
     | id DOT ID { RID($1, $3) }
 
 opt_args :
