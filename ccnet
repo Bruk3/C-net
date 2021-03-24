@@ -12,23 +12,20 @@ LIBCNET="./libcnet/*.c"
 
 SOURCE="$1"
 
-
 if [[ -z $SOURCE ]]; then
 	echo "Usage: $0 <source-code.cnet>"
 	exit
 fi
 
-
 ## Print error and exit
 LLCFail() {
   echo "Could not find the LLVM compiler \"$LLC\"."
-  echo "Check your LLVM installation and/or modify the LLC variable in ccnet.sh"
+  echo "Check your LLVM installation and/or modify the LLC variable in ccnet"
   exit 1
 }
 
 ## Check if the llvm compiler exists first
 which "$LLC" || LLCFail
-
 
 OUTPUT=${SOURCE%.cnet}
 
@@ -43,4 +40,3 @@ $CC -o "$OUTPUT.exe" "$OUTPUT.s" $LIBCNET
 
 #remove the assembly file
 rm "$OUTPUT.s"
-
