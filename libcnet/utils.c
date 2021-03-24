@@ -1,7 +1,12 @@
 #include <unistd.h>
 
-void println(int fd, char *s, int len)
+int println(int fd, char *s, int len)
 {
-	write(fd, s, len);
-	write(fd, "\n", 1);
+	int n;
+	n = write(fd, s, len);
+	if (n != len)
+		return n;
+	n += write(fd, "\n", 1);
+
+	return n;
 }
