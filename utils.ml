@@ -11,7 +11,7 @@ let my_sast = (
   [],
   [
     {
-      fid = A.Int;
+      styp = A.Int;
       sname = "main";
       sparameters = [];
       sbody =
@@ -19,7 +19,7 @@ let my_sast = (
           SExpr( A.Int,
                  SCall
                    (
-                     Sid((A.Int, RID(FinalID(Nid("stdout")), "println") )),
+                     A.RID(A.FinalID(A.Nid("stdout")), "println"),
                      [ (A.String, SStrlit("Hello World!\n")) ]
                    )
                );

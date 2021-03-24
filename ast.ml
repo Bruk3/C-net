@@ -84,7 +84,7 @@ type stmt =
   | Block   of stmt list
 
                                 (* Functions *)
-type func = {t: typ ; name : string ; parameters : id list ; body : stmt list }
+type func = {t: typ ; name : string ; parameters : id list ; body : stmt list; locals : id list}
 
                                  (* Structs *)
 type strct = { name : string ; members : vdecl list }
@@ -240,7 +240,7 @@ let string_of_decl = function
     GVdecl(vdecl) -> string_of_vdecl vdecl
   | GVdecl_ass({vtyp; vname}, e) -> string_of_vdecl_assign(vtyp, vname, e)
   | Sdecl({name; members}) -> string_of_strct(name, members)
-  | Fdecl({t; name; parameters; body}) -> string_of_func(t, name, parameters, body)
+  | Fdecl({t; name; parameters; body; _}) -> string_of_func(t, name, parameters, body)
 
 let string_of_program  = function
   Program(decls) -> String.concat "" (List.map string_of_decl decls) ^ "\n"
