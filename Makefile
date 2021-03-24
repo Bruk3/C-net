@@ -3,7 +3,7 @@
 test: test-scanner test-parser
 	@echo "SUCCESS"
 
-test-scanner: cnet.native
+test-scanner: ccnet
 	./runtests.sh
 
 test-parser:
@@ -14,8 +14,17 @@ test-parser:
 
 ############################# cnet top level ##################################
 
-## cnet top level - Currently supports two flags
-##  -a (ast pretty printing), -t (token pretty printing)
+## cnet top level compiler that compiles and links a cnet source file into an executable
+.PHONY: cnet
+ccnet: cnet.native
+
+# cnet compiler that translates .cnet -> .ll
+# supports the following flags:
+# -t : scanner pretty printing
+# -a : ast pretty printing
+# -s : sast pretty printing
+# -l : llvm IR pretty printing (no llvm checking)
+# -c : compiler (with llvm checking)
 cnet.native: cnet
 	opam config exec -- \
 		ocamlbuild -use-ocamlfind cnet.native
