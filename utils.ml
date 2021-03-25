@@ -34,9 +34,10 @@ let my_sast = (
 (* Gets the FinalID part of a recursive id. For example, it extracts println
  * from my_struct.my_other_struct.my_file.println
  *)
-let final_id_of_rid = function
+let rec final_id_of_rid = function
   A.FinalID(fid) -> fid
   | A.RID(_, mem) -> mem
+  | A.Index(rid, _) -> final_id_of_rid rid
 
                               (* Codegen utils *)
 (* Changes the format of an sast program, which is a list of sdecls, to one the

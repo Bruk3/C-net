@@ -31,7 +31,10 @@ and id = typ * string
 
 and rid =
     FinalID of string
-  | RID of rid * string
+  | RID of rid * string (* my_struct.my_member *)
+  | Index of rid * expr (* my_struct.my_member[3] *)
+
+(* So for eg. my_struct.ms2.ms_array[2].my_member is valid *)
 
                               (* types in C-net *)
 and typ =
@@ -58,7 +61,7 @@ and expr =
   (* Arrays and new/delete *)
   | New of newable
   | ArrayLit of typ * expr * expr list (* expr:length and expr list:array literal *)
-  | Index  of rid * expr
+  (* | Index  of rid * expr *)
   (* Function calls *)
   | Call of rid * expr list
 
@@ -140,11 +143,12 @@ let string_of_id (t, n) = string_of_typ t ^ " " ^ n
 let rec string_of_rid = function
   | FinalID(id) -> id
   | RID(r, final) -> string_of_rid r ^ "." ^ final
+  | Index(r, expr) -> string_of_rid r ^ "[" ^ (string_of_expr expr) ^ "]"
 
-let string_of_newable = function
+and string_of_newable = function
     NStruct(n)  -> "struct " ^ n
 
-let rec string_of_expr = function
+and string_of_expr = function
   | Noexpr -> ""
   | Intlit(id) -> string_of_int id
   | Charlit(id) -> "" ^ (Char.escaped(Char.chr(id)))
@@ -159,7 +163,7 @@ let rec string_of_expr = function
   | ArrayLit(t, e, el) ->
     "new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^ "] = {" ^
     String.concat ", " (List.map string_of_expr el) ^ "}"
-  | Index(id, e) -> string_of_rid id ^ "[" ^ string_of_expr e ^ "]"
+  (* | Index(id, e) -> string_of_rid id ^ "[" ^ string_of_expr e ^ "]" *)
   | Call(f, el) ->
     string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
 
