@@ -9,7 +9,8 @@ module StringMap = Map.Make(String)
 
 (* translate : Sast.program -> Llvm.module *)
 let translate (sdecl_list : sprogram) =
-  let (vdecls, strct_decls, fdecls) = U.decompose_program sdecl_list in
+  (* replace with (vdecls, strct_decls, fdecls) *)
+  let (_, _, fdecls) = U.decompose_program sdecl_list in
 (* let translate ((vdecls : (A.vdecl * sexpr) list), (strct_decls : strct list), (fdecls : sfunc list)) = *)
   let context    = L.global_context () in
 
@@ -134,5 +135,5 @@ let translate (sdecl_list : sprogram) =
 
       | _ -> raise (Failure("Unimplemented statement type"))
     in
-    List.iter (fun s -> stmt builder s; ()) fdecl.sbody in
+    List.iter (fun s -> ignore (stmt builder s); ()) fdecl.sbody in
   List.iter build_function_body fdecls; the_module;

@@ -36,7 +36,7 @@ let my_sast = (
  *)
 let final_id_of_rid = function
   A.FinalID(fid) -> fid
-  | A.RID(rid, mem) -> mem
+  | A.RID(_, mem) -> mem
 
                               (* Codegen utils *)
 (* Changes the format of an sast program, which is a list of sdecls, to one the
@@ -46,6 +46,7 @@ let final_id_of_rid = function
 let decompose_program (sprog : sdecl list) =
   let helper (vdecls, strct_decls, fdecls) decl = match decl with
     SGVdecl(vd) -> (vd :: vdecls, strct_decls, fdecls)
+    | SGVdecl_ass (vd, _) -> (vd :: vdecls, strct_decls, fdecls) (* TODO: handle SGVdecl_ass properly *)
     | SSdecl(sd) -> (vdecls, sd :: strct_decls, fdecls)
     | SFdecl(fd) -> (vdecls, strct_decls, fd :: fdecls)
   in
