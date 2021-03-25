@@ -1,0 +1,31 @@
+struct id {
+	int id;
+	struct id next;
+	string id_s;
+};
+
+struct person {
+	struct id id;
+	string name;
+};
+
+struct dozen {
+	struct person[] people;
+};
+
+int main()
+{
+	struct dozen my_doz;
+	my_doz.people = new struct person[12] = {};
+	my_doz.people[2].name = "Bob";
+	struct person p;
+	my_doz.people[5].id = p.id;
+	my_doz.people[5] = p;
+	struct person[] tmp = my_doz.people;
+	tmp[1] = p;
+	int[][] x = new int[][3] = {1, 2, 3};
+	x[0] = new int[12] = {};
+	x[0][2] = 12;
+}
+
+
