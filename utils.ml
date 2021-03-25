@@ -6,6 +6,9 @@ let count_new_lines whitespace lexbuf =
   String.iter
     (fun c -> if c = '\n' then Lexing.new_line lexbuf else ()) whitespace;;
 
+(* Get the current line number from the lexbuf *)
+let line_num lexbuf = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum
+
 
                                 (* SAST utils *)
 let my_sast = (
