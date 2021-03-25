@@ -35,7 +35,7 @@ and rid =
 
                               (* types in C-net *)
 and typ =
-  Char | Int | Float | String | Socket | Struct of string | Void
+  Char | Int | Float | String | Socket | File | Struct of string | Void
   | Array of typ
 
 
@@ -131,6 +131,7 @@ let rec string_of_typ = function
   | Int       -> "int"
   | Float     -> "float"
   | Socket    -> "socket"
+  | File      -> "file"
   | String    -> "string"
   | Struct(t) -> "struct " ^ t
   | Void      -> "void"
