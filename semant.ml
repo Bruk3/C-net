@@ -163,6 +163,7 @@ let check  = function
           in
           let args' = List.map2 check_call fd.parameters args
           in (fd.t, SCall(fname, args'))
+      | _ -> raise (Failure ("Expression not yet implemented"))
     in
 
     let check_bool_expr e =
@@ -200,6 +201,7 @@ let check  = function
             | s :: ss         -> check_stmt s :: check_stmt_list ss
             | []              -> []
           in SBlock(check_stmt_list sl)
+      | _ -> raise (Failure ("Statement not yet implemented"))
 
     in (* body of check_function *)
     { styp = func.t;
@@ -213,7 +215,7 @@ let check  = function
 
   let decl_to_sdecl = function
     GVdecl(vdecl) ->  SGVdecl(vdecl)
-    | GVdecl_ass(vdecl, e) -> SGVdecl_ass (vdecl, (Void, SNoexpr)) (* TODO *)
+    | GVdecl_ass(vdecl, _) -> SGVdecl_ass (vdecl, (Void, SNoexpr)) (* TODO *)
     | Sdecl(s) -> SSdecl s
     | Fdecl (func) -> SFdecl (check_function func)
 
