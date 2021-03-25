@@ -45,7 +45,7 @@ ast: ast.ml
 .PHONY: clean
 clean:
 	opam config exec -- ocamlbuild -clean
-	rm -rf final parser.ml parser.mli scanner.ml parser.output \
+	rm -f final parser.ml parser.mli scanner.ml parser.output \
 	scanner.ml scannertest scannertest.out *cmi *cmo \
 	*.log *.diff *.out *.err *.ll *.s *.o parser.output \
 	tests/integration/*.exe
