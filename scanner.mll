@@ -12,6 +12,13 @@ let bslash = '\\'
 let octal_dig = ['0'-'7']
 let octal_triplet = (octal_dig)(octal_dig)(octal_dig)
 let integer = digit+
+let exp = 'e'['-''+']?['0'-'9']+
+let cfloat = (
+    ((digit)+'.'(digit)* (exp)?) |
+    ((digit)* '.'(digit)+(exp)?) |
+    ((digit)+exp)
+)
+
 let normal_id = (alpha | '_')(alpha | digit | '_')*
 
 let whitespace = [' ' '\t' '\r' '\n']
@@ -82,7 +89,7 @@ rule tokenize = parse
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
 | squote (bslash ('n' | 't' | '\\' | '0'| squote))? squote { CHARLIT(0) } (* TODO replace special char with number *)
 | squote print_char squote as lxm               {CHARLIT(Char.code(lxm.[1]))} (*For chars like 'a'*)
-| digit+ '.' digit* as flt { FLOATLIT(float_of_string flt) } (* TODO Optional negative sign *)
+| cfloat as flt { FLOATLIT(float_of_string flt) } (* TODO Optional negative sign *)
 
 (* Error cases *)
 | '"' | squote { raise (ScannerError( Printf.sprintf "unmatched quote on line %d"
