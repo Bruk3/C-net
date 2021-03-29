@@ -3,7 +3,7 @@
 # NOTE: Uncommenting this line will make the github actions workflow fail
 # since the environment doesn't have llvm installed.
 # Include the llvm and llvm.analysis packages while compiling
-# true: package(llvm), package(llvm.analysis)
+true: package(llvm), package(llvm.analysis)
 
 # Enable almost all compiler warnings
 true : warn(+a-4)
