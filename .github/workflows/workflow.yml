@@ -29,6 +29,7 @@ jobs:
       #     ocaml-version: ${{ matrix.ocaml-version }}
 
       - name: Install llvm
+        if: steps.cache-llvm.outputs.cache-hit != 'true'
         uses: KyleMayes/install-llvm-action@v1
         with:
           version: "10.0"
@@ -39,7 +40,7 @@ jobs:
       - run: |
           sudo apt install opam
       - run: opam init
-      - run: echo "y" | opam install llvm.10.0.0
+      - run: yes "Y" | opam install llvm.10.0.0
       - run: eval `opam config env`
       - run: opam install ocamlbuild ocamlfind
       - run: make ci-test && echo SUCCESS
