@@ -36,13 +36,34 @@ jobs:
           directory: ${{ runner.temp }}/llvm
           cached: ${{ steps.cache-llvm.outputs.cache-hit }}
 
-      # - run: sudo apt update
-      - run: |
-          sudo apt install opam
+      - name: Restore Cache
+        id: restore-cache
+        uses: actions/cache@v2
+        with:
+          path: _export
+          key:  ${{ runner.os }}-esy-${{ hashFiles('esy.lock/index.json') }}
+          restore-keys: |
+            ${{ runner.os }}-esy-
+
+      - name: Esy install
+        run: 'esy install'
+
+      - name: Import Cache
+        run: |
+          esy import-dependencies _export
+          rm -rf _export
+
+      - run: sudo apt install opam
       - run: opam init
       - run: opam install -y llvm.10.0.0
-      - run: eval `opam config env`
-      - run: opam install ocamlbuild ocamlfind
+      - run: opam install -y ocamlbuild
+
+      # Re-export dependencies if anything has changed or if it is the first time
+      - name: Setting dependency cache
+        run: |
+          esy export-dependencies
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+
       - run: make ci-test && echo SUCCESS
 
   # slack-workflow-status:
