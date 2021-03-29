@@ -1,0 +1,13 @@
+
+
+struct my_struct {
+	int i;
+	float f;
+	string s;
+}
+
+
+int main()
+{
+	return 0;
+}
