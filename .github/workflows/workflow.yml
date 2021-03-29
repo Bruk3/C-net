@@ -36,7 +36,7 @@ jobs:
       - run: opam init
       - run: opam install -y llvm.10.0.0
       - run: opam install -y ocamlbuild
-
+      - run: export PATH=$PATH:/usr/local/opt/llvm/bin
       - run: make test
 
   slack-workflow-status:
