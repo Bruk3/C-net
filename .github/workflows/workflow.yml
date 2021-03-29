@@ -17,28 +17,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # - name: Cache Opam Dependencies
-      #   id: cache-llvm
-      #   uses: actions/cache@v2
+      # - name: Use OCaml ${{ matrix.ocaml-version }}
+      #   uses: avsm/setup-ocaml@v1
       #   with:
-      #       path: ${{ runner.temp }}/llvm
-      #       key: llvm-10.0
+      #     ocaml-version: ${{ matrix.ocaml-version }}
 
-      # - name: Install llvm
-      #   uses: KyleMayes/install-llvm-action@v1
-      #   with:
-      #     version: "10.0"
-      #     directory: ${{ runner.temp }}/llvm
-      #     cached: ${{ steps.cache-llvm.outputs.cache-hit }}
-
-      # - name: Build
-        # if: steps.cache-deps.outputs.cache-hit != 'true'
-      - run: |
-          sudo apt install ocaml llvm-10.0 llvm-10.0-dev llvm-runtime m4 opam
-      - run: opam init
-      - run: opam install llvm.10.0.0
-      - run: eval `opam config env`
       - run: opam install ocamlbuild ocamlfind
+
       - run: make ci-test && echo SUCCESS
 
   slack-workflow-status:
