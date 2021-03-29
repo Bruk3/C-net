@@ -10,21 +10,23 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-        ocaml-version:
-          - 4.11.1
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Use OCaml ${{ matrix.ocaml-version }}
-        uses: avsm/setup-ocaml@v1
-        with:
-          ocaml-version: ${{ matrix.ocaml-version }}
+      - run: sudo apt install opam
+      - run: opam init
 
-      - run: opam install ocamlbuild ocamlfind
+      # Install dependencies
+      - run: opam install -y llvm.10.0.0
+      - run: opam install -y ocamlbuild
 
-      - run: make ci-test && echo SUCCESS
+      # Create symbolic link for lli and llc
+      - run: sudo ln -s /usr/bin/lli-10 /usr/bin/lli && sudo ln -s /usr/bin/llc-10 /usr/bin/llc
+
+      # Run tests
+      - run: make test
 
   slack-workflow-status:
     if: always()
