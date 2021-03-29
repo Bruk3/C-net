@@ -12,7 +12,7 @@
 %token EQ NEQ LT LEQ GT GEQ
 %token AND OR NOT
 %token IF ELSE ELIF FOR WHILE RETURN BREAK CONTINUE
-%token INT FLOAT CHAR STRING VOID STRUCT SOCKET
+%token INT FLOAT CHAR STRING VOID STRUCT SOCKET FILE
 /* %token TCP UDP */
 %token NEW DELETE
 %token <int> INTLIT CHARLIT
@@ -63,6 +63,7 @@ typ :
     | FLOAT  { Float }
     | STRING  { String }
     | SOCKET  { Socket }
+    | FILE   { File }
     | STRUCT ID  { Struct($2) }
     | typ LBRACKET RBRACKET { Array($1) } /* This is kinda awkward */
 

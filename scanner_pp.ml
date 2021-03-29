@@ -40,6 +40,7 @@ let pretty_print = function
   | CHAR                  -> Printf.sprintf "CHAR"
   | STRING                -> Printf.sprintf "STRING"
   | SOCKET                -> Printf.sprintf "SOCKET"
+  | FILE                  -> Printf.sprintf "FILE"
   | STRUCT                -> Printf.sprintf "STRUCT"
   | VOID                  -> Printf.sprintf "VOID"
   | RETURN                -> Printf.sprintf "RETURN"

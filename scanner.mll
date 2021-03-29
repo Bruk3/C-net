@@ -62,6 +62,7 @@ rule tokenize = parse
 | "void" { VOID }
 | "struct" { STRUCT }
 | "socket" { SOCKET }
+| "file"   { FILE }
 (*| "TCP" {TCP}
 | "UDP" {UDP}*)
 (*Functions*)
