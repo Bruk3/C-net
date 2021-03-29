@@ -19,8 +19,6 @@ let cfloat = (
     ((digit)+exp)
 )
 
-
-
 let normal_id = (alpha | '_')(alpha | digit | '_')*
 
 let whitespace = [' ' '\t' '\r' '\n']
