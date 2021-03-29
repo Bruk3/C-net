@@ -9,7 +9,7 @@ jobs:
       fail-fast: true
       matrix:
         os:
-          - ubuntu-latest
+          - ubuntu-20.04
         ocaml-version:
           - 4.11.1
     runs-on: ${{ matrix.os }}
@@ -22,6 +22,7 @@ jobs:
       #   with:
       #     ocaml-version: ${{ matrix.ocaml-version }}
 
+      - run: sudo apt update
       - run: |
           sudo apt install ocaml llvm-10.0 llvm-10.0-dev llvm-runtime m4 opam
       - run: opam init
