@@ -15,30 +15,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # - name: Install llvm and clang
-      #   uses: KyleMayes/install-llvm-action@v1
-      #   with:
-      #     version: "10.0"
-      #     directory: ${{ runner.temp }}/llvm
-
       - run: sudo apt install opam
       - run: opam init
+
+      # Install dependencies
       - run: opam install -y llvm.10.0.0
       - run: opam install -y ocamlbuild
 
+      # Create symbolic link for lli and llc
       - run: sudo ln -s /usr/bin/lli-10 /usr/bin/lli && sudo ln -s /usr/bin/llc-10 /usr/bin/llc
+
+      # Run tests
       - run: make test
 
-  # slack-workflow-status:
-  #   if: always()
-  #   name: Post Workflow Status To Slack
-  #   needs:
-  #     - build
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Slack Workflow Notification
-  #       uses: Gamesight/slack-workflow-status@master
-  #       with:
-  #         # Required Input
-  #         repo_token: ${{secrets.GITHUB_TOKEN}}
-  #         slack_webhook_url: ${{secrets.SLACK_WEBHOOK}}
+  slack-workflow-status:
+    if: always()
+    name: Post Workflow Status To Slack
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Workflow Notification
+        uses: Gamesight/slack-workflow-status@master
+        with:
+          # Required Input
+          repo_token: ${{secrets.GITHUB_TOKEN}}
+          slack_webhook_url: ${{secrets.SLACK_WEBHOOK}}
