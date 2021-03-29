@@ -1,1 +1,1 @@
-Fatal error: exception Failure("Unmatched double quote")
+Scanner error: unmatched quote on line 2
