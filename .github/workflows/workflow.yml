@@ -27,7 +27,7 @@ jobs:
       - run: opam install -y llvm.10.0.0
       - run: opam install -y ocamlbuild
 
-      - run: sudo ln -s /usr/bin/lli-10 /usr/bin/lli && sudo ln -s /usr/bin/llc-10 /usr/bin/lli
+      - run: sudo ln -s /usr/bin/lli-10 /usr/bin/lli && sudo ln -s /usr/bin/llc-10 /usr/bin/llc
       - run: make test
 
   slack-workflow-status:
