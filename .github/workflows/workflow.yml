@@ -22,9 +22,16 @@ jobs:
       #   with:
       #     ocaml-version: ${{ matrix.ocaml-version }}
 
-      - run: sudo apt update
+      - name: Install llvm
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: "10.0"
+          directory: ${{ runner.temp }}/llvm
+          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+
+      # - run: sudo apt update
       - run: |
-          sudo apt install ocaml llvm-10.0 llvm-10.0-dev llvm-runtime m4 opam
+          sudo apt install opam
       - run: opam init
       - run: opam install llvm.10.0.0
       - run: eval `opam config env`
