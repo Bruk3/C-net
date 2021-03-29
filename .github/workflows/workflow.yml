@@ -6,37 +6,32 @@ on:
 jobs:
   build:
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os:
           - ubuntu-latest
-        ocaml-version:
-          - 4.11.1
+
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Cache llvm dependencies
-        id: cache-llvm
-        uses: actions/cache@v2
-        with:
-            path: ${{ runner.temp }}/llvm
-            key: llvm-10.0
-
-      - name: Install llvm
-        if: steps.cache-llvm.outputs.cache-hit != 'true'
+      - name: Install llvm and Clang
         uses: KyleMayes/install-llvm-action@v1
         with:
           version: "10.0"
           directory: ${{ runner.temp }}/llvm
-          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
 
       - run: sudo apt install opam
       - run: opam init
       - run: opam install -y llvm.10.0.0
       - run: opam install -y ocamlbuild
       - run: export PATH=$PATH:/usr/local/opt/llvm/bin
+
+      # Add Debug: #TODO Delete this line
+      - run: ls /usr/local/opt/llvm/
+
+      - run: sudo ln -s /usr/bin/lli-10 /usr/bin/lli && sudo ln -s /usr/bin/llc-10 /usr/bin/lli
       - run: make test
 
   slack-workflow-status:
