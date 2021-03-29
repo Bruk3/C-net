@@ -1,7 +1,9 @@
 {
     open Parser;;
     open Utils;;
+    exception ScannerError of string;;
 }
+
 
 let alpha = ['a'-'z' 'A'-'Z']
 let digit = ['0'-'9']
@@ -81,8 +83,12 @@ rule tokenize = parse
 | squote (bslash ('n' | 't' | '\\' | '0'| squote))? squote { CHARLIT(0) } (* TODO replace special char with number *)
 | squote print_char squote as lxm               {CHARLIT(Char.code(lxm.[1]))} (*For chars like 'a'*)
 | digit+ '.' digit* as flt { FLOATLIT(float_of_string flt) } (* TODO Optional negative sign *)
-| '"'  { raise (Failure("Unmatched double quote"))}
-| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
+
+(* Error cases *)
+| '"' | squote { raise (ScannerError( Printf.sprintf "unmatched quote on line %d"
+                                (line_num lexbuf)))}
+| _ as char { raise (ScannerError(Printf.sprintf "illegal character %s on line %d"
+                                    (Char.escaped char) (line_num lexbuf))) }
 
 | eof { EOF }
 
@@ -95,5 +101,5 @@ and scomment = parse
 and mcomment = parse
 "*/" { tokenize lexbuf }
 | '\n' { Lexing.new_line lexbuf; mcomment lexbuf }
-| eof { raise (Failure("Unmatched multiline comment"))}
+| eof { raise (ScannerError("reached end of file with an unclosed multiline comment"))}
 | _ { mcomment lexbuf }

@@ -1,3 +1,5 @@
+module U = Utils;;
+
 type action =Scanner | Ast | LLVM_IR | Sast | Compile
 
 let () =
@@ -63,7 +65,11 @@ let () =
 
   with
     Parsing.Parse_error ->
-    let err_line = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum in
+    let err_line = U.line_num lexbuf in
     let spec_char = Lexing.lexeme lexbuf in
-    let _  = Printf.printf "Syntax error on line %d near %s\n" err_line spec_char;
-    in exit 1;
+    let _  = Printf.fprintf stderr "Syntax error on line %d near %s\n" err_line
+        spec_char in
+      exit 1
+
+  | Scanner.ScannerError msg ->
+    Printf.fprintf stderr "Scanner error: %s\n" msg; exit 1;
