@@ -22,8 +22,12 @@ jobs:
       #   with:
       #     ocaml-version: ${{ matrix.ocaml-version }}
 
+      - run: |
+          sudo apt install ocaml llvm-10.0 llvm-10.0-dev llvm-runtime m4 opam
+      - run: opam init
+      - run: opam install llvm.10.0.0
+      - run: eval `opam config env`
       - run: opam install ocamlbuild ocamlfind
-
       - run: make ci-test && echo SUCCESS
 
   slack-workflow-status:
