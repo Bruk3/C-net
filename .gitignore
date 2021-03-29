@@ -16,7 +16,7 @@ _build/
 *.byte
 *.native
 
-# ocamlyacc generated debug log 
+# ocamlyacc generated debug log
 *.output
 
 # oasis generated files
@@ -32,8 +32,5 @@ setup.log
 # Local OPAM switch
 _opam/
 
-# runtest logs 
+# runtest logs
 runtests.log
-
-# To prevent the github action workflow from failing
-_tags
