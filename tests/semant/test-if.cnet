@@ -1,0 +1,14 @@
+int main(int a, int b) {
+    if (a > b) {
+        stdout.println("a is greater than b");
+    }
+    else if (a == b) {
+        stdout.println("a is equal to b");
+    }
+    else if (a <= b ){
+        stdout.println("a is less than or equal to b");
+    }
+    else {
+        stdout.println("b is greater than a");
+    }
+}

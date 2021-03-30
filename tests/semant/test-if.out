@@ -1,0 +1,12 @@
+int main(int a,int b)
+{
+if ((int : (int : a) > (int : b)))
+else if ((int : (int : a) == (int : b)))
+else if ((int : (int : a) <= (int : b)))
+else{
+{
+(int : stdout.println((string : "b is greater than a")));
+}
+}
+}
+

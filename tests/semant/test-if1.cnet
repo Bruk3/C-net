@@ -1,0 +1,9 @@
+int main(int a, int b) {
+    if (a > b) {
+        stdout.println("a is greater than b");
+    }
+    else
+        stdout.println("a is less or equal to b");
+    int c = 9;
+
+}

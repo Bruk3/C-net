@@ -92,7 +92,7 @@ let string_of_svdecl_assign (t, id, e) =
     "if (" ^ string_of_sexpr e ^ ")\n" in String.concat "else " (List.map string_of_sif e_s_l)
     | SIf(e_s_l, s) -> let string_of_sif ((e, _)) =
         "if (" ^ string_of_sexpr e ^ ")\n" in String.concat "else " (List.map string_of_sif e_s_l)  ^
-        "else\n{" ^ string_of_sstmt s ^ "\n}";
+        "else{\n" ^ string_of_sstmt s ^ "}\n";
     | SFor(e1, e2, e3, s) ->
         "for (" ^ string_of_sexpr e1  ^ " ; " ^ string_of_sexpr e2 ^ " ; " ^
         string_of_sexpr e3  ^ ") " ^ string_of_sstmt s
@@ -134,4 +134,4 @@ let string_of_sdecl = function
 
     (* TODO *)
 let string_of_sprogram (decls : sprogram) =
-    String.concat "" (List.map string_of_sdecl decls) ^ "\n"
+    String.concat "" (List.map string_of_sdecl decls)

@@ -1,0 +1,7 @@
+int main(int argc)
+{
+int a;
+(int : a=(int : 4));
+return (int : (int : 5) * (int : 4));
+}
+
