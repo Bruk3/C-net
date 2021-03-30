@@ -44,10 +44,26 @@ let check = function
        in
 
 
-
        (**** Check global variables ****)
 
        (* check_binds "global variable" globals; *)
+
+    (* wrapper function for checking struct members. This is needed because a
+     * struct can potentially include other structs or itself as a member *)
+       let check_struct_binds (s : strct) (m : strct StringMap.t)=
+         let valid_member = function
+           {vtyp = Struct(sname); vname = _} -> (
+               match StringMap.mem sname m with
+                 true -> () | false ->
+                 raise (Failure(Printf.sprintf "unrecognized member struct %s in struct %s" sname s.name))
+             )
+           | _ -> ()
+         in
+         check_binds "struct member" s.members; (* first check normal conditions *)
+         List.iter valid_member s.members (* then check valid struct-typed members *)
+
+       in
+
 
     (* add the structs of the function to a StringMap and verify that they are
      * valid declarations *)
@@ -57,8 +73,9 @@ let check = function
              Sdecl(s) ->
              (match StringMap.mem s.name m with
                 true -> raise (Failure("Duplicate declaration of struct " ^ s.name))
-              | false -> check_binds "struct member" s.members; StringMap.add s.name s m)
-           | tmp -> m
+              | false -> let structs_so_far = StringMap.add s.name s m in (* include the current one *)
+                             check_struct_binds s structs_so_far; structs_so_far)
+           | _ -> m
        in
        List.fold_left add_struct StringMap.empty all_decls
        in
