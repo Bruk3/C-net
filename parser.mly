@@ -179,12 +179,13 @@ expr:
     | NOT expr { Unop(Not, $2) }
     | NEW STRUCT ID { New(NStruct($3)) }
     | NEW typ LBRACKET expr RBRACKET opt_arraylit { ArrayLit($2, $4, $6) }
-    | id LBRACKET expr RBRACKET { Index($1, $3) }
+    /* | id LBRACKET expr RBRACKET { Index($1, $3) } */
     | id LPAREN opt_args RPAREN { Call($1, $3) }
 
 id :
     ID { FinalID($1) }
     | id DOT ID { RID($1, $3) }
+    | id LBRACKET expr RBRACKET { Index($1, $3) }
 
 opt_args :
     { [] }
