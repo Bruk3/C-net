@@ -1,0 +1,19 @@
+
+
+struct my_struct {
+	float x;
+	string y;
+};
+
+struct my_struct2 {
+	float y;
+};
+struct my_struct {
+	file y;
+};
+
+
+int main()
+{
+	return 0;
+}
