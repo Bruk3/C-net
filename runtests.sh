@@ -17,6 +17,8 @@ parsertests="tests/parser/test-*.cnet tests/parser/fail-*.cnet"
 
 scannertests="tests/scanner/test-*.cnet tests/scanner/fail-*.cnet"
 
+semantictests="tests/semant/test-*.cnet tests/semant/fail-*.cnet"
+
 keep=0
 
 Usage() {
@@ -184,6 +186,22 @@ do
     esac
 done
 
+for file in $semantictests
+do
+    case $file in
+    *test-*)
+        Check $file './cnet.native -s' 2>> $globallog
+        ;;
+    *fail-*)
+        CheckFail $file './cnet.native -s' 2>> $globallog
+        ;;
+    *)
+        echo "unknown file type $file"
+        globalerror=1
+        ;;
+    esac
+done
+
 for file in $integrationtests
 do
     case $file in
@@ -202,6 +220,5 @@ do
 	    ;;
     esac
 done
-
 
 exit $globalerror

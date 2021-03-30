@@ -1,0 +1,11 @@
+int main(int argc)
+{
+int a = (int : 4);
+int b;
+(int : b=(int : 5));
+(int : a=(int : 4));
+(int : b=(int : (int : a) + (int : b)));
+(int : b+=(int : a));
+return (int : b);
+}
+
