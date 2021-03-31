@@ -42,13 +42,13 @@ let check  = function
     (* kind can be global, struct member, formal or local *)
     let check_binds (kind : string) (binds : vdecl list) =
       List.iter (function
-            v when v.vtyp = Void  -> raise (Failure ("illegal void " ^ kind ^ " " ^
-                                                     v.vname))
+            v when v.vtyp = Void  -> semant_err ("illegal void " ^ kind ^ " "
+                                                 ^ v.vname)
           | _ -> ()) binds;
       let rec dups = function
           [] -> ()
         | v1 :: v2 :: _ when v1.vname = v2.vname ->
-          raise (Failure ("duplicate " ^ kind ^ " " ^ v1.vname))
+          semant_err ("duplicate " ^ kind ^ " " ^ v1.vname)
         | _ :: t -> dups t
       in dups (List.sort (fun v1 v2 -> compare v1.vname v2.vname) binds)
     in
@@ -65,7 +65,7 @@ let check  = function
           {vtyp = Struct(sname); vname = _} -> (
             match StringMap.mem sname m with
               true -> () | false ->
-              raise (Failure(Printf.sprintf "unrecognized member struct %s in struct %s" sname s.name))
+              semant_err (Printf.sprintf "unrecognized member struct %s in struct %s" sname s.name)
           )
         | _ -> ()
       in
@@ -82,7 +82,7 @@ let check  = function
       let add_struct m = function
           Sdecl(s) ->
           (match StringMap.mem s.name m with
-             true -> raise (Failure("Duplicate declaration of struct " ^ s.name))
+             true -> semant_err ("Duplicate declaration of struct " ^ s.name)
            | false -> let structs_so_far = StringMap.add s.name s m in (* include the current one *)
              check_struct_binds s structs_so_far; structs_so_far)
         | _ -> m
@@ -144,21 +144,36 @@ let check  = function
             StringMap.empty (func.parameters @ func.locals) (* Should be globals @ func.parameters *)
         in
 
-        let type_of_identifier s =
-          try StringMap.find s symbols
-          with Not_found -> semant_err ("undeclared identifier " ^ s)
-        in
+        (* recursively verify an rid to be valid *)
+        let rec type_of_identifier = function
+            FinalID s ->
+            (try StringMap.find s symbols
+              with Not_found -> semant_err ("undeclared identifier " ^ s))
 
-        (* Return a semantically-checked expression, i.e., with a type *)
-        let rec expr = function
-            Charlit l -> (Int, SCharlit l)
-          | Intlit l -> (Int, SIntlit l)
+          | RID(r, member) ->
+            let the_struct = type_of_identifier r
+            in match the_struct with
+              Struct(sname) ->
+              (try
+                 let the_struct = StringMap.find sname structs in
+                 match List.filter (fun t -> t.vname = member) the_struct.members with
+                   m :: [] -> m.vtyp
+                 | [] -> semant_err ("struct " ^ sname ^ " has no member " ^ member)
+                 | _ -> semant_err ("[COMPILER BUG] struct " ^ sname ^ " contains multiple members called " ^ member)
+               with Not_found -> semant_err ("[COMPILER BUG] variable of type struct " ^ sname ^
+                                             " allowed without the the struct begin declared"));
+            | _ -> semant_err ("dot operator not allowed on variable " ^ string_of_rid r)
+        in
+(* Return a semantically-checked expression, i.e., with a type *)
+let rec expr = function
+    Charlit l -> (Int, SCharlit l)
+  | Intlit l -> (Int, SIntlit l)
           | Floatlit l -> (Float, SFloatlit l)
           | Strlit l -> (String, SStrlit l)
           | Noexpr     -> (Void, SNoexpr)
-          | Rid s       -> (type_of_identifier (string_of_rid s), SId (s))
+          | Rid rid      -> (type_of_identifier rid), SId (rid)
           | Binassop (var, op, e) as ex ->
-            let lt = type_of_identifier (string_of_rid var) (* TODO *)
+            let lt = type_of_identifier var (* TODO *)
             and (rt, e') = expr e in
             let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
                       string_of_typ rt ^ " in " ^ string_of_expr ex
