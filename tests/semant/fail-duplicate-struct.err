@@ -1,1 +1,1 @@
-Fatal error: exception Failure("Duplicate declaration of struct my_struct")
+Semantic error: Duplicate declaration of struct my_struct
