@@ -1,0 +1,5 @@
+int main(int argc) {
+    string a = "hi";
+
+    int b = -a;
+}

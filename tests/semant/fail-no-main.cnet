@@ -1,0 +1,3 @@
+int mainy(int a, int b) {
+    return a + b;
+}
