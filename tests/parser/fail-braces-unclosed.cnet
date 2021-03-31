@@ -1,0 +1,10 @@
+//testing unclosed braces in function control flows
+
+int main()
+{
+    if(z>10)
+    {
+        //unclosed braces after if 
+        if(z < 20){z=50; else {z=0;}
+    }  
+}
