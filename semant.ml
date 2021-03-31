@@ -40,6 +40,7 @@ let check  = function
 
     (* Verify a list of bindings has no void types or duplicate names *)
     (* kind can be global, struct member, formal or local *)
+    (* TODO: check array types *)
     let check_binds (kind : string) (binds : vdecl list) =
       List.iter (function
             v when v.vtyp = Void  -> semant_err ("illegal void " ^ kind ^ " "
@@ -89,14 +90,15 @@ let check  = function
       in
       List.fold_left add_struct StringMap.empty all_decls
     in
-      (* Collect function declarations for built-in functions: no bodies *)
-      let built_in_decls =
-        let add_bind map (return_type, name, params) = StringMap.add name {
-            t = return_type;
-            name = name;
-            parameters = params;
-            locals = [];
-            body = [] } map
+
+    (* Collect function declarations for built-in functions: no bodies *)
+    let built_in_decls =
+      let add_bind map (return_type, name, params) = StringMap.add name {
+          t = return_type;
+          name = name;
+          parameters = params;
+          locals = [];
+          body = [] } map
         in List.fold_left add_bind StringMap.empty
           [
             (Int, "println", [(String, "s")])
@@ -144,6 +146,17 @@ let check  = function
             StringMap.empty (func.parameters @ func.locals) (* Should be globals @ func.parameters *)
         in
 
+        let rec verify_decl = function
+            {vtyp = Struct(sn); vname = n} -> (try ignore (StringMap.find sn structs)
+                                               with Not_found -> semant_err (n ^ " is a struct " ^ sn ^
+                                                                             " which doesn't exist"))
+          | {vtyp = Void; vname = n} -> semant_err (n ^ " is a void type, which is illegal")
+          | {vtyp = Array(t); vname = n} -> verify_decl {vtyp = t; vname = n ^ "[0]"}
+          | _ -> () (* Char | Float | Int | String | Socket | File are all fine *)
+
+
+        in
+
         (* recursively verify an rid to be valid *)
         let rec type_of_identifier = function
             FinalID s ->
@@ -162,7 +175,8 @@ let check  = function
                  | _ -> semant_err ("[COMPILER BUG] struct " ^ sname ^ " contains multiple members called " ^ member)
                with Not_found -> semant_err ("[COMPILER BUG] variable of type struct " ^ sname ^
                                              " allowed without the the struct begin declared"));
-            | _ -> semant_err ("dot operator not allowed on variable " ^ string_of_rid r)
+            | t -> semant_err ("dot operator not allowed on variable " ^
+                               string_of_rid r ^ " of type " ^ string_of_typ t)
         in
 (* Return a semantically-checked expression, i.e., with a type *)
 let rec expr = function
@@ -173,7 +187,8 @@ let rec expr = function
           | Noexpr     -> (Void, SNoexpr)
           | Rid rid      -> (type_of_identifier rid), SId (rid)
           | Binassop (var, op, e) as ex ->
-            let lt = type_of_identifier var (* TODO *)
+            let lt = type_of_identifier var (* TODO: Kidus: why doesn't this
+                                               catch illegal assignments? *)
             and (rt, e') = expr e in
             let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
                       string_of_typ rt ^ " in " ^ string_of_expr ex
@@ -237,8 +252,8 @@ let rec expr = function
           | For(e1, e2, e3, st) ->
             SFor(expr e1, check_bool_expr e2, expr e3, check_stmt st)
           | While(p, s) -> SWhile(check_bool_expr p, check_stmt s)
-          | Vdecl (vd) ->  SVdecl vd
-          | Vdecl_ass ({vtyp; vname}, e) -> SVdecl_ass({vtyp; vname}, expr e)
+          | Vdecl (vd) -> verify_decl vd; SVdecl vd
+          | Vdecl_ass (vd, e) -> verify_decl vd; SVdecl_ass(vd, expr e)
 
           | Return e -> let (t, e') = expr e in
             if t = func.t then SReturn (t, e')
