@@ -1,0 +1,8 @@
+//testing missing commas in function arguments
+
+
+int gcd(int a int b){
+    while(a!=b) {
+        return a;
+    }   
+}

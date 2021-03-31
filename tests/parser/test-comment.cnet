@@ -1,0 +1,22 @@
+// this program tests comments
+
+//  this line tests spaced comments
+
+
+/* this tests multi line 
+comments for a c-net program */
+
+/* 
+this 
+tests 
+spaced
+multi 
+line 
+comments
+
+        */
+
+int main ()
+{
+    printf(a);
+}
