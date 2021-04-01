@@ -1,0 +1,17 @@
+// Testing invalid new struct expression
+struct Dimension {
+    float width;
+    float height;
+};
+
+struct Shape {
+    struct Dimension dimension;
+    string type;
+};
+
+int main(int argc) {
+    // The following line should raise a semantic error Exception
+    struct Shape circle = new struct shape;
+    circle.type = "circle";
+    circle.dimension.width = 5.;
+}
