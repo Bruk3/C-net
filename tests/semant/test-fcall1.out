@@ -1,0 +1,16 @@
+int main()
+{
+int a = (int : 5);
+int b = (int : (int : y((int : x((int : a))))) + (int : a));
+}
+
+int x(int b)
+{
+return (int : b);
+}
+
+int y(int c)
+{
+return (int : c);
+}
+

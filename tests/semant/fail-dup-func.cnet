@@ -1,0 +1,6 @@
+int main(int argc) {
+    return 0;
+}
+int main(int argc, int b) {
+    return 0;
+}

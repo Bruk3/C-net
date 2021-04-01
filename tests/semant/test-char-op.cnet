@@ -1,0 +1,3 @@
+int main() {
+    int e = 'a' + 'b' * 'c' / 'd';
+}

@@ -1,0 +1,6 @@
+int main(int argc) {
+    int a = 1;
+    float c = 1;
+
+    c = a + c;
+}

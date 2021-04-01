@@ -1,0 +1,4 @@
+int main(int argc) {
+    char a = 'a';
+    int b = !a;
+}

@@ -1,0 +1,8 @@
+int main(int argc) {
+    float a;
+    
+    for (;a;) {;}
+
+    return 0;
+}
+
