@@ -74,5 +74,5 @@ let () =
   | Scanner.ScannerError msg ->
     Printf.fprintf stderr "Scanner error: %s\n" msg; exit 1;
 
-  | Semant.SemanticError(msg, _) ->
+  | Sast.SemanticError(msg, _) ->
     Printf.fprintf stderr "Semantic error: %s\n" msg; exit 1;

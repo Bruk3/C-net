@@ -4,6 +4,18 @@
 
 open Ast
 
+(* A semantic error in cnet. It contains a message and a line number *)
+
+(* Kidus: The line number is not really implemented and is only there for
+ * forward compatibility. Right now the function semant_err takes only a string,
+ * but later it can take a line number as well
+ * *)
+exception SemanticError of string * int;;
+
+(* The function for raising a semantic error *)
+let semant_err (msg : string) =
+  raise (SemanticError(msg, -1));;
+
 type sexpr = typ * sx
 and sx =
     SNoexpr
@@ -45,7 +57,6 @@ type sfunc = {
 (* type sstrct = {sname: string; smembers: sid list} *)
 
 type sdecl =
-    SGVdecl of vdecl
   | SGVdecl_ass of (vdecl * sexpr)
   | SSdecl of strct
   | SFdecl of sfunc
@@ -125,7 +136,6 @@ let string_of_sfunc (t, n, p, b) =
 
 
 let string_of_sdecl = function
-    SGVdecl(vdecl) -> string_of_vdecl vdecl
   | SGVdecl_ass({vtyp; vname}, e) -> string_of_svdecl_assign(vtyp, vname, e)
   | SSdecl({name; members}) -> string_of_strct(name, members)
   | SFdecl({styp; sname; sparameters; sbody; _}) -> string_of_sfunc(styp, sname, sparameters, sbody)

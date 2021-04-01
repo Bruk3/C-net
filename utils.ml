@@ -41,6 +41,16 @@ let rec final_id_of_rid = function
   A.FinalID(fid) -> fid
   | A.RID(_, mem) -> mem
   | A.Index(rid, _) -> final_id_of_rid rid
+;;
+
+(* Get a default value for a global variable based on its type *)
+let default_global = function
+    A.Char | A.Int -> (A.Int, SIntlit(0))
+  | A.Float -> (A.Float, SFloatlit(0.0))
+  | A.String -> (A.String, SStrlit(""))
+  | A.Void   -> semant_err "[COMPILER BUG] uncaught void global variable detected"
+  | _ -> (A.Void, SNoexpr)
+
 
                               (* Codegen utils *)
 (* Changes the format of an sast program, which is a list of sdecls, to one the
@@ -49,7 +59,6 @@ let rec final_id_of_rid = function
  *)
 let decompose_program (sprog : sdecl list) =
   let helper (vdecls, strct_decls, fdecls) decl = match decl with
-    SGVdecl(vd) -> (vd :: vdecls, strct_decls, fdecls)
     | SGVdecl_ass (vd, _) -> (vd :: vdecls, strct_decls, fdecls) (* TODO: handle SGVdecl_ass properly *)
     | SSdecl(sd) -> (vdecls, sd :: strct_decls, fdecls)
     | SFdecl(fd) -> (vdecls, strct_decls, fd :: fdecls)
