@@ -1,0 +1,11 @@
+
+
+struct person {
+	struct pid a;
+};
+
+
+int main() 
+{
+	return 0;
+}

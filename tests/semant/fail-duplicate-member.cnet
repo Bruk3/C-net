@@ -1,0 +1,16 @@
+
+
+struct my_struct {
+	int x;
+	int y;
+};
+
+struct my_struct2 {
+	int x;
+	int x;
+};
+
+int main()
+{
+	return 0;
+}

@@ -1,0 +1,19 @@
+
+
+struct person {
+	int id;
+	string name;
+};
+
+int main()
+{
+	int[][][] y; /* valid */
+
+	struct person[][] y;
+
+	y;
+
+
+
+	struct non_existent[][] z; /* error */
+}
