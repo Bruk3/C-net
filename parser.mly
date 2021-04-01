@@ -167,7 +167,6 @@ expr:
     | expr TIMES expr     { Binop($1, Mul, $3) }
     | expr DIVIDE expr    { Binop($1, Div, $3) }
     | expr MOD expr       { Binop($1, Mod, $3) }
-    /* | id ASSIGN expr  %prec ASSIGN    { Binassop($1, Assign, $3) } */
     | expr assignment_op expr %prec ASSIGN   {
                                         let f = match $1 with
                                            Rid(rid) -> Binassop(rid, $2, $3)
@@ -179,7 +178,6 @@ expr:
     | NOT expr { Unop(Not, $2) }
     | NEW STRUCT ID { New(NStruct($3)) }
     | NEW typ LBRACKET expr RBRACKET opt_arraylit { ArrayLit($2, $4, $6) }
-    /* | id LBRACKET expr RBRACKET { Index($1, $3) } */
     | id LPAREN opt_args RPAREN { Call($1, $3) }
 
 id :

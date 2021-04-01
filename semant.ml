@@ -225,6 +225,15 @@ let rec expr = function
               let ty =  try (ignore (StringMap.find sn structs)) ; Struct(sn) with
                 Not_found -> semant_err("invalid new expression: type [struct " ^ sn ^ "] doesn't exist")
               in (ty, SNew(NStruct(sn)))
+          | ArrayLit(t, e, e_l) ->
+                let err1 = "illegal expression found: new " ^ string_of_typ t ^ "[" ^ string_of_expr e ". ^
+                 Expression " ^ string_of_expr e ^ " should be of type int"
+                in let isInt =
+                  let (t', _) = expr e in match t' with
+                    Int -> true
+                    | _ -> false
+
+                SArrayLit(t, (Int, e))
           | _ -> semant_err "Expression not yet implemented"
         in
 
@@ -237,7 +246,7 @@ let rec expr = function
         (* Return a semantically-checked statement i.e. containing sexprs *)
         let rec check_stmt = function
             Expr e -> SExpr (expr e)
-          (* | Delete n -> SDelete (expr n) *)
+          | Delete n -> SDelete (expr(Rid(n)))
           | Break -> SBreak
           | Continue -> SContinue
           (* | If(p, b1, b2) -> SIf(check_bool_expr p, check_stmt b1, check_stmt b2) *)
@@ -263,7 +272,6 @@ let rec expr = function
               | s :: ss         -> check_stmt s :: check_stmt_list ss
               | []              -> []
             in SBlock(check_stmt_list sl)
-          | _ -> semant_err "Statement not yet implemented"
 
         in (* body of check_function *)
         { styp = func.t;
