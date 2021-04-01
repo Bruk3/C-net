@@ -1,0 +1,18 @@
+
+
+int x = 9 * 5;
+int y = 3 - 9;
+int z = 4 * 9 - 1 - 12 % 5;
+
+
+int a = 1 && 0;
+int b = 1 || 0;
+
+
+int c = 15 == 9;
+int d = 2 == 2;
+
+int main () {
+	
+	return 0;
+}

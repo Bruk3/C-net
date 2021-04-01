@@ -1,0 +1,12 @@
+int x = (int : 45);
+int y = (int : -6);
+int z = (int : 33);
+int a = (int : 0);
+int b = (int : 1);
+int c = (int : 0);
+int d = (int : 1);
+int main()
+{
+return (int : 0);
+}
+

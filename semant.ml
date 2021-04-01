@@ -273,7 +273,7 @@ let rec expr = function
 
       let decl_to_sdecl = function
           GVdecl(vdecl) ->  SGVdecl_ass(vdecl, U.default_global vdecl.vtyp)
-        | GVdecl_ass(vdecl, _) -> SGVdecl_ass (vdecl, (Void, SNoexpr)) (* TODO *)
+        | GVdecl_ass(vdecl, e) -> SGVdecl_ass (vdecl, U.compute_global vdecl e) (* TODO *)
         | Sdecl(s) -> SSdecl s
         | Fdecl (func) -> SFdecl (check_function func)
 

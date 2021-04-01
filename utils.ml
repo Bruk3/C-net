@@ -50,6 +50,61 @@ let default_global = function
   | A.String -> (A.String, SStrlit(""))
   | A.Void   -> semant_err "[COMPILER BUG] uncaught void global variable detected"
   | _ -> (A.Void, SNoexpr)
+;;
+
+(* compute the value of a global variable assignment at compile time. Global
+ * variables can only be assigned to constant expressions at declaration *)
+let compute_global vdecl exp =
+  let verify_types (t1 : A.typ) (t2 : A.typ) =
+    if t1 = t2 then ()
+     else (semant_err ("incompatible types " ^ A.string_of_typ t1 ^ " and " ^
+           A.string_of_typ t2 ^ " in global variable " ^ vdecl.A.vname))
+  in
+
+  let rec eval_constant = function
+      A.Noexpr | A.Binassop(_) | A.New(_) | A.ArrayLit(_) | A.Call(_) ->
+      semant_err ("non-constant expression used for global variable " ^ vdecl.A.vname)
+    | A.Rid(_) ->
+      semant_err "global declaration using another global variable not implemented"
+
+    | A.Intlit(i) -> (A.Int, SIntlit(i))
+    | A.Charlit(c) -> (A.Int, SIntlit(c))
+    | A.Floatlit(f) -> (A.Float, SFloatlit(f))
+    | A.Strlit(s) -> (A.String, SStrlit(s))
+    | A.Binop(e1, op, e2) -> let e1' = eval_constant e1 and e2' = eval_constant e2
+      in verify_types (fst e1') (fst e2');
+      let bool_int b = if b then 1 else 0 in
+      (match (e1', e2') with
+         ((A.Int, SIntlit(i)), (A.Int, SIntlit(i2))) ->
+         (match op with
+            Add -> (A.Int, SIntlit(i + i2))
+          | Sub -> (A.Int, SIntlit(i - i2))
+          | Mul -> (A.Int, SIntlit(i * i2))
+          | Div -> (A.Int, SIntlit(i / i2))
+          | Mod -> (A.Int, SIntlit(i mod i2))
+          | And -> (A.Int, SIntlit(bool_int ((i land i2) != 0)))
+          | Or  -> (A.Int, SIntlit(bool_int ((i lor i2) != 0))) (* TODO: these what we want? *)
+          | Eq  -> (A.Int, SIntlit(bool_int (i = i2)))
+          | Neq -> (A.Int, SIntlit(bool_int (i != i2)))
+          | Lt  -> (A.Int, SIntlit(bool_int (i < i2)))
+          | Gt  -> (A.Int, SIntlit(bool_int (i > i2)))
+          | Geq -> (A.Int, SIntlit(bool_int (i >= i2)))
+          | Leq -> (A.Int, SIntlit(bool_int (i <= i2)))
+         )
+         (* TODO *)
+       | (A.Float, SFloatlit(_)), (A.Float, SFloatlit(_))
+       | (A.Float, SFloatlit(_)), (A.Int, SIntlit(_)) (*float string operations *)
+       | (A.Int, SIntlit(_)), (A.Float, SFloatlit(_)) (*float string operations *)
+       | (A.Int, SIntlit(_)), (A.String, SStrlit(_)) (* string int operations *)
+       | (A.String, SStrlit(_)), (A.Int, SIntlit(_)) (* string int operations *)
+                                 -> semant_err "global expression type not
+                                 implemented"
+       | _ -> semant_err ("non-constant expression used for global variable " ^ vdecl.A.vname)
+      )
+
+  in
+  eval_constant exp ;;
+
 
 
                               (* Codegen utils *)
