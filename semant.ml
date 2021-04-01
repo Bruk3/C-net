@@ -237,7 +237,7 @@ let rec expr = function
         (* Return a semantically-checked statement i.e. containing sexprs *)
         let rec check_stmt = function
             Expr e -> SExpr (expr e)
-          (* | Delete n -> SDelete (expr n) *)
+          | Delete n -> SDelete (expr(Rid(n)))
           | Break -> SBreak
           | Continue -> SContinue
           (* | If(p, b1, b2) -> SIf(check_bool_expr p, check_stmt b1, check_stmt b2) *)
