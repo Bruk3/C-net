@@ -1,0 +1,5 @@
+int main()
+{
+string c = (string : "a" + "A");
+}
+
