@@ -1,0 +1,8 @@
+void shallow_cpy (int a){
+    return;
+}
+
+int main (){
+    int num = 10; 
+    int cpy = shallow_cpy(num);
+}

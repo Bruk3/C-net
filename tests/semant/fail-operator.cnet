@@ -1,0 +1,14 @@
+
+int foo(int c, float d)    
+{
+  int c;
+  float d;
+  return c+d; 
+}
+
+int main ()
+{
+    int d = 5;
+    float f = 4.0;
+    foo(d,f);
+}
