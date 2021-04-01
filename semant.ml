@@ -6,17 +6,6 @@ open Sast
 
 module StringMap = Map.Make(String)
 
-(* A semantic error in cnet. It contains a message and a line number *)
-
-(* Kidus: The line number is not really implemented and is only there for
- * forward compatibility. Right now the function semant_err takes only a string,
- * but later it can take a line number as well
- * *)
-exception SemanticError of string * int;;
-
-(* The function for raising a semantic error *)
-let semant_err (msg : string) =
-  raise (SemanticError(msg, -1));;
 (* Semantic checking of the AST. Returns an SAST if successful,
    throws an exception if something is wrong.
 
@@ -287,8 +276,8 @@ let rec expr = function
       in    (* (globals, List.map check_function functions) *)
 
       let decl_to_sdecl = function
-          GVdecl(vdecl) ->  SGVdecl(vdecl)
-        | GVdecl_ass(vdecl, _) -> SGVdecl_ass (vdecl, (Void, SNoexpr)) (* TODO *)
+          GVdecl(vdecl) ->  SGVdecl_ass(vdecl, U.default_global vdecl.vtyp)
+        | GVdecl_ass(vdecl, e) -> SGVdecl_ass (vdecl, U.compute_global vdecl e) (* TODO *)
         | Sdecl(s) -> SSdecl s
         | Fdecl (func) -> SFdecl (check_function func)
 
