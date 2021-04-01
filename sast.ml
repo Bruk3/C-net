@@ -73,7 +73,7 @@ type sprogram = sdecl list
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
     | SBinassop(v, o, e) -> v ^ string_of_binassop o ^ string_of_sexpr e
     | SUnop(o, e) -> string_of_uop o ^ string_of_sexpr e
-    | SNew (n) -> string_of_newable n
+    | SNew (n) -> "new " ^ string_of_newable n
     | SArrayLit (t, e, el) ->
     "new " ^ string_of_typ t ^ "[" ^ string_of_sexpr e ^ "] = {" ^
     String.concat ", " (List.map string_of_sexpr el) ^ "}"

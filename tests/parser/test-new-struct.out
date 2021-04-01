@@ -1,0 +1,18 @@
+struct dimension {
+	float width;
+	float height;
+};
+
+struct Shape {
+	struct dimension area;
+	string type;
+};
+
+int main(int argc)
+{
+	struct Shape circle = new struct Shape;
+	circle.type = "circle";
+	circle.dimension.width = 5.;
+}
+
+
