@@ -270,34 +270,38 @@ let rec expr = function
           StringMap.empty :: scope
         in
 
-        (* Return a semantically-checked statement i.e. containing sexprs *)
-        (* Take the current statement and the current scope. Return the same *)
-        let rec check_stmt (cur_stmt : stmt) (scope : vdecl StringMap.t list) = match cur_stmt with
+        (* Take the current statement and the current scope. Returns a tuple of
+         * the checked sast statement and the new scope
+        *)
+        let rec check_stmt (cur_stmt : stmt) (scope : vdecl StringMap.t list)
+          : (sstmt * vdecl StringMap.t list) = match cur_stmt with
 
-            Expr e -> SExpr (expr e)
+            Expr e -> SExpr (expr e), scope
           (* | Delete n -> SDelete (expr n) *)
-          | Break -> SBreak (* TODO that we are in a loop context *)
-          | Continue -> SContinue (* TODO verify that we are in a loop context *)
+          | Break -> SBreak, scope (* TODO that we are in a loop context *)
+          | Continue -> SContinue, scope (* TODO verify that we are in a loop context *)
 
           (* | If(p, b1, b2) -> SIf(check_bool_expr p, check_stmt b1, check_stmt b2) *)
           | If(e_s_l, s) ->
             SIf(List.rev
                   (List.map
                      (fun(e_i, s_i) ->
-                        (check_bool_expr e_i, check_stmt s_i (new_scope scope))) (* introduce new scope *)
+                        (check_bool_expr e_i, fst (check_stmt s_i (new_scope
+                                                                 scope)))) (* introduce new scope *)
                      e_s_l),
-                check_stmt s (new_scope scope))
+                fst (check_stmt s (new_scope scope))), scope
 
           | For(e1, e2, e3, st) ->
-            SFor(expr e1, check_bool_expr e2, expr e3, check_stmt st (new_scope scope))
+            SFor(expr e1, check_bool_expr e2, expr e3, fst (check_stmt st (new_scope scope))), scope
 
-          | While(p, s) -> SWhile(check_bool_expr p, check_stmt s (new_scope scope))
+          | While(p, s) -> SWhile(check_bool_expr p, fst (check_stmt s (new_scope scope))),
+                           scope
 
-          | Vdecl (vd) -> verify_decl vd; SVdecl vd
-          | Vdecl_ass (vd, e) -> verify_decl vd; SVdecl_ass(vd, expr e)
+          | Vdecl (vd) -> verify_decl vd; SVdecl vd , scope
+          | Vdecl_ass (vd, e) -> verify_decl vd; SVdecl_ass(vd, expr e) , scope
 
           | Return e -> let (t, e') = expr e in
-            if t = func.t then SReturn (t, e')
+            if t = func.t then SReturn (t, e'), scope
             else semant_err ("return gives " ^ string_of_typ t ^ " expected " ^
                              string_of_typ func.t ^ " in " ^ string_of_expr e)
 
@@ -306,19 +310,19 @@ let rec expr = function
           | Block sl ->
             let block_scope = new_scope scope in
             let rec check_stmt_list = function
-                [Return _ as s] -> [check_stmt s block_scope]
+                [Return _ as s] -> [fst (check_stmt s block_scope)]
               | Return _ :: _   -> semant_err "nothing may follow a return"
               | Block sl :: ss  -> check_stmt_list (sl @ ss) (* Flatten blocks *)
-              | s :: ss         -> check_stmt s block_scope :: check_stmt_list ss
+              | s :: ss         -> fst (check_stmt s block_scope) :: check_stmt_list ss
               | []              -> []
-            in SBlock(check_stmt_list sl)
+            in SBlock(check_stmt_list sl), scope
           | _ -> semant_err "Statement not yet implemented"
 
         in (* body of check_function *)
         { styp = func.t;
           sname = func.name;
           sparameters = func.parameters;
-          sbody = match check_stmt (Block func.body) [StringMap.empty] with
+          sbody = match fst (check_stmt (Block func.body) [StringMap.empty]) with
               SBlock(sl) -> sl
             | _ -> semant_err "[COMPILER BUG] block didn't become a block?"
         }
