@@ -89,7 +89,8 @@ let check  = function
 
     let check_binds_scoped (full_scope : vdecl StringMap.t list) (v : vdecl) : vdecl StringMap.t list =
       match full_scope with
-        scope :: tl ->
+        [] -> semant_err ("[COMPILER BUG] empty scope passed to check_binds_scoped for variable search " ^ v.vname)
+      | scope :: tl ->
         let valid_struct (sname : string) = match StringMap.mem sname structs with
             true -> ()
           | false -> semant_err ("unrecognized struct type [struct " ^ sname ^ "]")
@@ -161,9 +162,9 @@ let check  = function
         in
 
         (* Build local symbol table of variables for this function *)
-        let symbols = List.fold_left (fun m ((ty, name)) -> StringMap.add name ty m)
-            StringMap.empty (func.parameters @ func.locals) (* Should be globals @ func.parameters *)
-        in
+        (* let symbols = List.fold_left (fun m ((ty, name)) -> StringMap.add name ty m) *)
+        (*     StringMap.empty (func.parameters @ func.locals) (1* Should be globals @ func.parameters *1) *)
+        (* in *)
 
         let rec verify_decl = function
             {vtyp = Struct(sn); vname = n} -> (try ignore (StringMap.find sn structs)
@@ -176,14 +177,23 @@ let check  = function
 
         in
 
-        (* recursively verify an rid to be valid *)
-        let rec type_of_identifier = function
-            FinalID s ->
-            (try StringMap.find s symbols
-              with Not_found -> semant_err ("undeclared identifier " ^ s))
 
+        (* helper function for finding a variable in either the current scope or
+         * all the scope's that include this one
+         *)
+        let rec find_var  (vname : string) (scope : vdecl StringMap.t list) : vdecl = match scope with
+            [] -> semant_err ("undeclared identifier " ^ vname)
+          | m :: tl ->
+            if StringMap.mem vname m then
+              let vd = StringMap.find vname m in vd
+            else
+              find_var vname tl
+        in
+        (* recursively verify an rid to be valid *)
+        let rec type_of_identifier (scope : vdecl StringMap.t list) = function
+            FinalID s -> let the_var = find_var s scope in the_var.vtyp
           | RID(r, member) ->
-            let the_struct = type_of_identifier r
+            let the_struct = type_of_identifier scope r
             in match the_struct with
               Struct(sname) ->
               (try
@@ -198,22 +208,23 @@ let check  = function
                                string_of_rid r ^ " of type " ^ string_of_typ t)
         in
 (* Return a semantically-checked expression, i.e., with a type *)
-let rec expr = function
-    Charlit l -> (Int, SCharlit l)
-  | Intlit l -> (Int, SIntlit l)
+
+        let rec expr (scope : vdecl StringMap.t list) = function
+            Charlit l -> (Int, SCharlit l)
+          | Intlit l -> (Int, SIntlit l)
           | Floatlit l -> (Float, SFloatlit l)
           | Strlit l -> (String, SStrlit l)
           | Noexpr     -> (Void, SNoexpr)
-          | Rid rid      -> (type_of_identifier rid), SId (rid)
+          | Rid rid      -> (type_of_identifier scope rid), SId (rid)
           | Binassop (var, op, e) as ex ->
-            let lt = type_of_identifier var (* TODO: Kidus: why doesn't this
+            let lt = type_of_identifier scope var  (* TODO: Kidus: why doesn't this
                                                catch illegal assignments? *)
-            and (rt, e') = expr e in
+            and (rt, e') = expr scope e in
             let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
                       string_of_typ rt ^ " in " ^ string_of_expr ex
             in (check_assign lt rt err, SBinassop((string_of_rid var), op, (rt, e')))
           | Unop(op, e) as ex ->
-            let (t, e') = expr e in
+            let (t, e') = expr scope e in
             let ty = match op with
                 (Minus | Not) when t = Int || t = Float -> t
               | _ -> semant_err ("illegal unary operator " ^
@@ -221,8 +232,8 @@ let rec expr = function
                                  " in " ^ string_of_expr ex)
             in (ty, SUnop(op, (t, e')))
           | Binop(e1, op, e2) as e ->
-            let (t1, e1') = expr e1
-            and (t2, e2') = expr e2 in
+            let (t1, e1') = expr scope e1
+            and (t2, e2') = expr scope e2 in
             (* All binary operators require operands of the same type *)
             let same = t1 = t2 in
             (* Determine expression type based on operator and operand types *)
@@ -244,7 +255,7 @@ let rec expr = function
               semant_err ("expecting " ^ string_of_int param_length ^
                           " arguments in " ^ string_of_expr call)
             else let check_call (ft, _) e =
-                   let (et, e') = expr e in
+                   let (et, e') = expr scope e in
                    let err = "illegal argument found " ^ string_of_typ et ^
                              " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e
                    in (check_assign ft et err, e')
@@ -256,13 +267,14 @@ let rec expr = function
                 Not_found -> semant_err("invalid new expression: type [struct " ^ sn ^ "] doesn't exist")
               in (ty, SNew(NStruct(sn)))
           | _ -> semant_err "Expression not yet implemented"
-        in
 
-        let check_bool_expr e =
-          let (t', e') = expr e
-          and err = "expected integer expression in " ^ string_of_expr e
-          in if t' != Int then semant_err err else (t', e')
-        in
+        and check_bool_expr scope e =
+              let (t', e') = expr scope e
+              and err = "expected integer expression in " ^ (string_of_expr e)
+              in (if t' != Int then semant_err err else (t', e'))
+
+          in
+
 
         (* a small helper function that adds a new scope to the one it is
          * passed. This is used when entering a function, if/else statement
@@ -272,63 +284,71 @@ let rec expr = function
           StringMap.empty :: scope
         in
 
-        (* Take the current statement and the current scope. Returns a tuple of
-         * the checked sast statement and the new scope
+        (* Take the current statement and the current scope.
+         * Returns a tuple of the checked sast statement and the new scope
         *)
-        let rec check_stmt (cur_stmt : stmt) (scope : vdecl StringMap.t list)
-          : (sstmt * vdecl StringMap.t list) = match cur_stmt with
-
-            Expr e -> SExpr (expr e), scope
+        let rec check_stmt ((cur_stmt : sstmt), (scope : vdecl StringMap.t list))
+          (* : (sstmt * vdecl StringMap.t list) *)
+          = function
+            Expr e -> SExpr(expr scope e), scope
           (* | Delete n -> SDelete (expr n) *)
           | Break -> SBreak, scope (* TODO that we are in a loop context *)
           | Continue -> SContinue, scope (* TODO verify that we are in a loop context *)
 
           (* | If(p, b1, b2) -> SIf(check_bool_expr p, check_stmt b1, check_stmt b2) *)
           | If(e_s_l, s) ->
-            SIf(List.rev
-                  (List.map
-                     (fun(e_i, s_i) ->
-                        (check_bool_expr e_i, fst (check_stmt s_i (new_scope
-                                                                 scope)))) (* introduce new scope *)
-                     e_s_l),
-                fst (check_stmt s (new_scope scope))), scope
+            let sif_of_if (e_i, s_i) =
+              check_bool_expr scope e_i,
+              (fst (check_stmt (SBlock([]), new_scope scope) s_i))
+            in
+            SIf((List.map sif_of_if e_s_l), fst (check_stmt (SBlock([]), new_scope scope) s)), scope
 
           | For(e1, e2, e3, st) ->
-            SFor(expr e1, check_bool_expr e2, expr e3, fst (check_stmt st (new_scope scope))), scope
+            SFor(expr scope e1, check_bool_expr scope e2, expr scope e3, fst (check_stmt (SBlock([]), new_scope scope) st)), scope
 
-          | While(p, s) -> SWhile(check_bool_expr p, fst (check_stmt s (new_scope scope))),
-                           scope
+          | While(p, s) -> SWhile(check_bool_expr scope p, fst (check_stmt (SBlock([]), new_scope scope) s)), scope
 
           | Vdecl (vd) -> verify_decl vd; SVdecl vd , (* add variable to highest scope *)
                                           check_binds_scoped scope vd
 
-          | Vdecl_ass (vd, e) -> verify_decl vd; SVdecl_ass(vd, expr e) ,
+          | Vdecl_ass (vd, e) -> verify_decl vd; SVdecl_ass(vd, expr scope e) ,
                                                  check_binds_scoped scope vd
 
-          | Return e -> let (t, e') = expr e in
+          | Return e -> let (t, e') = expr scope e in
             if t = func.t then SReturn (t, e'), scope
             else semant_err ("return gives " ^ string_of_typ t ^ " expected " ^
                              string_of_typ func.t ^ " in " ^ string_of_expr e)
 
           (* A block is correct if each statement is correct and nothing
              follows any Return statement.  Nested blocks are flattened. *)
-          | Block sl ->
+          | Block(sl) ->
             let block_scope = new_scope scope in
-            let rec check_stmt_list = function
-                [Return _ as s] -> [fst (check_stmt s block_scope)]
-              | Return _ :: _   -> semant_err "nothing may follow a return"
-              | Block sl :: ss  -> check_stmt_list (sl @ ss) (* Flatten blocks *)
-              | s :: ss         -> fst (check_stmt s block_scope) :: check_stmt_list ss
-              | []              -> []
-            in SBlock(check_stmt_list sl), scope
+            let check_stmt_list ((sstmts_so_far : sstmt list), tmp_scope) (tmp_stmt : stmt) : (sstmt list) * vdecl StringMap.t list =
+              let _ = match sstmts_so_far with
+                  SReturn(_) :: _ -> semant_err "nothing may follow a return"
+                | _ -> ()
+              in
+              let (sstatement, new_scope) =
+                check_stmt (SBlock([]), tmp_scope) tmp_stmt
+              in
+              (sstatement :: sstmts_so_far, new_scope)
+              (* | Block sl :: ss  -> check_stmt_list (sl @ ss) (1* Flatten blocks *1) *)
+              (* | s :: ss         -> fst (check_stmt s block_scope) :: check_stmt_list ss *)
+              (* | []              -> [] *)
+            in
+            let (checked_block, _) =
+              (List.fold_left check_stmt_list ([], block_scope) sl)
+            in
+            (SBlock(checked_block), scope)
           | _ -> semant_err "Statement not yet implemented"
 
         in (* body of check_function *)
+
         { styp = func.t;
           sname = func.name;
           sparameters = func.parameters;
-          sbody = match fst (check_stmt (Block func.body) [StringMap.empty]) with
-              SBlock(sl) -> sl
+          sbody = match List.fold_left check_stmt (SBlock([]),[StringMap.empty]) func.body with
+              (SBlock(sl), _) -> sl
             | _ -> semant_err "[COMPILER BUG] block didn't become a block?"
         }
       in    (* (globals, List.map check_function functions) *)
