@@ -1,11 +1,11 @@
 int main()
 {
-	int[] a = new int[3] = {};
+	int[3] a = new int[3] = {};
 	x[0] = 1;
 	x[1] = 2;
 	x[2] = 3;
-	int[] b = new int[4] = {1, 2, 3, 4};
-	int[] c = new int[5] = {1};
+	int[x[2] + 1] b = new int[4] = {1, 2, 3, 4};
+	int[1] c = new int[5] = {1};
 }
 
 

@@ -7,13 +7,11 @@ struct person {
 
 int main()
 {
-	int[][][] y; /* valid */
+	int[3][4][5] y; /* valid */
 
-	struct person[][] y;
+	struct person[2][3] y;
 
 	y;
 
-
-
-	struct non_existent[][] z; /* error */
+	struct non_existent[2][3] z; /* error */
 }

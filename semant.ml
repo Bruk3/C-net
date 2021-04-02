@@ -135,16 +135,6 @@ let check  = function
             StringMap.empty (func.parameters @ func.locals) (* Should be globals @ func.parameters *)
         in
 
-        let rec verify_decl = function
-            {vtyp = Struct(sn); vname = n} -> (try ignore (StringMap.find sn structs)
-                                               with Not_found -> semant_err (n ^ " is of type [struct " ^ sn ^
-                                                                            "] which doesn't exist"))
-          | {vtyp = Void; vname = n} -> semant_err (n ^ " is a void type, which is illegal")
-          | {vtyp = Array(t); vname = n} -> verify_decl {vtyp = t; vname = n ^ "[0]"}
-          | _ -> () (* Char | Float | Int | String | Socket | File are all fine *)
-
-
-        in
 
         (* recursively verify an rid to be valid *)
         let rec type_of_identifier = function
@@ -252,6 +242,25 @@ let rec expr = function
           let (t', e') = expr e
           and err = "expected Boolean expression in " ^ string_of_expr e
           in if t' != Int then semant_err err else (t', e')
+        in
+
+        let rec verify_decl = function
+            {vtyp = Struct(sn); vname = n} -> (try ignore (StringMap.find sn structs)
+                                               with Not_found -> semant_err (n ^ " is of type [struct " ^ sn ^
+                                                                            "] which doesn't exist"))
+          | {vtyp = Void; vname = n} -> semant_err (n ^ " is a void type, which is illegal")
+          | {vtyp = Array(t, e); vname = n} ->
+              let ensure_int =
+                let err = "illegal expression found:  " ^ string_of_typ t ^ "[" ^ string_of_expr e ^
+                "] Expression " ^ string_of_expr e ^ " should be of type int"
+                in
+                let (t', _) = expr e in match t' with
+                  Int -> expr e
+                  | _ -> semant_err(err)
+              in ignore (ensure_int) ; verify_decl {vtyp = t; vname = n ^ "[0]"}
+          | _ -> () (* Char | Float | Int | String | Socket | File are all fine *)
+
+
         in
 
         (* Return a semantically-checked statement i.e. containing sexprs *)

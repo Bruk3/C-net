@@ -1,0 +1,11 @@
+int dummyNum(){
+    return 10;
+}
+int main(){
+    int a = 19;
+    int[a] aWorks;
+    int[dummyNum()] fCallWorksToo;
+
+    float a = 8.9;
+    int[a*2] floatShouldFail;
+}

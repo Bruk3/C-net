@@ -65,7 +65,7 @@ typ :
     | SOCKET  { Socket }
     | FILE   { File }
     | STRUCT ID  { Struct($2) }
-    | typ LBRACKET RBRACKET { Array($1) } /* This is kinda awkward */
+    | typ LBRACKET expr RBRACKET { Array($1, $3) } /* This is kinda awkward */
 
 vdecls:
     vdecls vdecl { $2::$1 }

@@ -3,7 +3,7 @@
 
 int main()
 {
-	int[][] hello;
+	int[2][2] hello;
 
 	hello.y;
 }

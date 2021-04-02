@@ -36,10 +36,13 @@ and rid =
 
 (* So for eg. my_struct.ms2.ms_array[2].my_member is valid *)
 
+(* and arr_size =
+    ArrSizeInt of int
+  | ArrSizeExpr of expr *)
                               (* types in C-net *)
 and typ =
   Char | Int | Float | String | Socket | File | Struct of string | Void
-  | Array of typ
+  | Array of typ * expr
 
 
                                 (* Expression *)
@@ -129,18 +132,6 @@ let string_of_binassop = function
 (* // TODO  *)
 
 
-let rec string_of_typ = function
-    Char      -> "char"
-  | Int       -> "int"
-  | Float     -> "float"
-  | Socket    -> "socket"
-  | File      -> "file"
-  | String    -> "string"
-  | Struct(t) -> "struct " ^ t
-  | Void      -> "void"
-  | Array(t)  ->  "" ^ string_of_typ t ^ "[]"
-
-let string_of_id (t, n) = string_of_typ t ^ " " ^ n
 let rec string_of_rid = function
   | FinalID(id) -> id
   | RID(r, final) -> string_of_rid r ^ "." ^ final
@@ -162,12 +153,35 @@ and string_of_expr = function
   | Binassop(id, op, r) -> string_of_rid id ^ " " ^ string_of_binassop op ^ " " ^ string_of_expr r
   | New(n) -> "new " ^  string_of_newable n
   | ArrayLit(t, e, el) ->
-    "new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^ "] = {" ^
+        let rec string_of_typ = function
+            Char      -> "char"
+          | Int       -> "int"
+          | Float     -> "float"
+          | Socket    -> "socket"
+          | File      -> "file"
+          | String    -> "string"
+          | Struct(t) -> "struct " ^ t
+          | Void      -> "void"
+          | Array(t, e)  ->  "" ^ string_of_typ t ^ "[" ^ string_of_expr  e ^ "]"
+          in
+          "new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^ "] = {" ^
     String.concat ", " (List.map string_of_expr el) ^ "}"
   (* | Index(id, e) -> string_of_rid id ^ "[" ^ string_of_expr e ^ "]" *)
   | Call(f, el) ->
     string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
 
+let rec string_of_typ = function
+    Char      -> "char"
+  | Int       -> "int"
+  | Float     -> "float"
+  | Socket    -> "socket"
+  | File      -> "file"
+  | String    -> "string"
+  | Struct(t) -> "struct " ^ t
+  | Void      -> "void"
+  | Array(t, e)  ->  "" ^ string_of_typ t ^ "[" ^ string_of_expr  e ^ "]"
+
+let string_of_id (t, n) = string_of_typ t ^ " " ^ n
 
 let string_of_vdecl vdecl  =
   string_of_typ vdecl.vtyp ^ " " ^ vdecl.vname ^ ";\n"

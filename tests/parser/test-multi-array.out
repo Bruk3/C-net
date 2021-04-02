@@ -10,7 +10,7 @@ struct person {
 };
 
 struct dozen {
-	struct person[] people;
+	struct person[5] people;
 };
 
 int main()
@@ -21,9 +21,9 @@ int main()
 	struct person p;
 	my_doz.people[5].id = p.id;
 	my_doz.people[5] = p;
-	struct person[] tmp = my_doz.people;
+	struct person[12] tmp = my_doz.people;
 	tmp[1] = p;
-	int[][] x = new int[][3] = {1, 2, 3};
+	int[1][3] x = new int[1][3] = {1, 2, 3};
 	x[0] = new int[12] = {};
 	x[0][2] = 12;
 }
