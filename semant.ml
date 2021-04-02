@@ -250,14 +250,14 @@ let rec expr = function
                                                                             "] which doesn't exist"))
           | {vtyp = Void; vname = n} -> semant_err (n ^ " is a void type, which is illegal")
           | {vtyp = Array(t, e); vname = n} ->
-              let ensure_int =
+              let check_int =
                 let err = "illegal expression found:  " ^ string_of_typ t ^ "[" ^ string_of_expr e ^
                 "] Expression " ^ string_of_expr e ^ " should be of type int"
                 in
                 let (t', _) = expr e in match t' with
                   Int -> expr e
                   | _ -> semant_err(err)
-              in ignore (ensure_int) ; verify_decl {vtyp = t; vname = n ^ "[0]"}
+              in ignore (check_int) ; verify_decl {vtyp = t; vname = n ^ "[0]"}
           | _ -> () (* Char | Float | Int | String | Socket | File are all fine *)
 
 

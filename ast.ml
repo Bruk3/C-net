@@ -36,9 +36,6 @@ and rid =
 
 (* So for eg. my_struct.ms2.ms_array[2].my_member is valid *)
 
-(* and arr_size =
-    ArrSizeInt of int
-  | ArrSizeExpr of expr *)
                               (* types in C-net *)
 and typ =
   Char | Int | Float | String | Socket | File | Struct of string | Void
