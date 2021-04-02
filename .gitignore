@@ -19,6 +19,9 @@ _build/
 # ocamlyacc generated debug log
 *.output
 
+# tester produced output
+*.out
+
 # oasis generated files
 setup.data
 setup.log

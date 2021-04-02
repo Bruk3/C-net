@@ -27,6 +27,7 @@ let check  = function
     let functions = List.map  to_ast_func func_decl_list in
 
 
+
     (* Verify a list of bindings has no void types or duplicate names *)
     (* kind can be global, struct member, formal or local *)
     (* TODO: check array types *)
@@ -45,9 +46,7 @@ let check  = function
 
 
     (**** Check global variables ****)
-
     (* check_binds "global variable" globals; *)
-
     (* wrapper function for checking struct members. This is needed because a
      * struct can potentially include other structs or itself as a member *)
     let check_struct_binds (s : strct) (m : strct StringMap.t)=
@@ -61,13 +60,11 @@ let check  = function
       in
       check_binds "struct member" s.members; (* first check normal conditions *)
       List.iter valid_member s.members (* then check valid struct-typed members *)
-
     in
 
 
     (* add the structs of the function to a StringMap and verify that they are
      * valid declarations *)
-
     let structs : strct StringMap.t =
       let add_struct m = function
           Sdecl(s) ->
@@ -78,6 +75,37 @@ let check  = function
         | _ -> m
       in
       List.fold_left add_struct StringMap.empty all_decls
+    in
+
+    (* The scoped version of check_binds which checks a new variable declaration
+     * in the following steps
+     * 1) Checks for duplicates within the current scope
+     * 2) Checks the validity of the declaration
+     *  i) not void
+     *  ii) if its a struct, it should be a valid struct
+     * If all is well, it returns the the scope updated with the new variable
+     * *)
+
+
+    let check_binds_scoped (scope : vdecl StringMap.t) (v : vdecl) : vdecl StringMap.t =
+      let valid_struct (sname : string) = match StringMap.mem sname structs with
+          true -> ()
+        | false -> semant_err ("unrecognized struct type [struct " ^ sname ^ "]")
+      in
+
+      let _ = match v.vtyp with (* validate non-void / valid struct *)
+          Void -> semant_err ("illegal void " ^ v.vname)
+        | Struct(s) -> valid_struct s
+        | _ -> ()
+      in
+
+      let _ = match StringMap.mem v.vname scope with (* check no duplicates in scope *)
+          true -> semant_err ("duplicate " ^ v.vname)
+        | false -> ()
+      in
+
+      StringMap.add v.vname v scope
+
     in
 
     (* Collect function declarations for built-in functions: no bodies *)
@@ -235,7 +263,7 @@ let rec expr = function
         in
 
         (* Return a semantically-checked statement i.e. containing sexprs *)
-        let rec check_stmt = function
+        let rec check_stmt  = function
             Expr e -> SExpr (expr e)
           (* | Delete n -> SDelete (expr n) *)
           | Break -> SBreak
