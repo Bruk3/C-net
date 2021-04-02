@@ -87,24 +87,26 @@ let check  = function
      * *)
 
 
-    let check_binds_scoped (scope : vdecl StringMap.t) (v : vdecl) : vdecl StringMap.t =
-      let valid_struct (sname : string) = match StringMap.mem sname structs with
-          true -> ()
-        | false -> semant_err ("unrecognized struct type [struct " ^ sname ^ "]")
-      in
+    let check_binds_scoped (full_scope : vdecl StringMap.t list) (v : vdecl) : vdecl StringMap.t list =
+      match full_scope with
+        scope :: tl ->
+        let valid_struct (sname : string) = match StringMap.mem sname structs with
+            true -> ()
+          | false -> semant_err ("unrecognized struct type [struct " ^ sname ^ "]")
+        in
 
-      let _ = match v.vtyp with (* validate non-void / valid struct *)
-          Void -> semant_err ("illegal void " ^ v.vname)
-        | Struct(s) -> valid_struct s
-        | _ -> ()
-      in
+        let _ = match v.vtyp with (* validate non-void / valid struct *)
+            Void -> semant_err ("illegal void " ^ v.vname)
+          | Struct(s) -> valid_struct s
+          | _ -> ()
+        in
 
-      let _ = match StringMap.mem v.vname scope with (* check no duplicates in scope *)
-          true -> semant_err ("duplicate " ^ v.vname)
-        | false -> ()
-      in
+        let _ = match StringMap.mem v.vname scope with (* check no duplicates in scope *)
+            true -> semant_err ("duplicate " ^ v.vname)
+          | false -> ()
+        in
 
-      StringMap.add v.vname v scope
+        (StringMap.add v.vname v scope) :: tl
 
     in
 
@@ -297,8 +299,11 @@ let rec expr = function
           | While(p, s) -> SWhile(check_bool_expr p, fst (check_stmt s (new_scope scope))),
                            scope
 
-          | Vdecl (vd) -> verify_decl vd; SVdecl vd , scope
-          | Vdecl_ass (vd, e) -> verify_decl vd; SVdecl_ass(vd, expr e) , scope
+          | Vdecl (vd) -> verify_decl vd; SVdecl vd , (* add variable to highest scope *)
+                                          check_binds_scoped scope vd
+
+          | Vdecl_ass (vd, e) -> verify_decl vd; SVdecl_ass(vd, expr e) ,
+                                                 check_binds_scoped scope vd
 
           | Return e -> let (t, e') = expr e in
             if t = func.t then SReturn (t, e'), scope
