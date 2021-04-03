@@ -26,58 +26,8 @@ let check  = function
 
     let functions = List.map  to_ast_func func_decl_list in
 
-
-
-    (* Verify a list of bindings has no void types or duplicate names *)
-    (* kind can be global, struct member, formal or local *)
-    (* TODO: check array types *)
-    let check_binds (kind : string) (binds : vdecl list) =
-      List.iter (function
-            v when v.vtyp = Void  -> semant_err ("illegal void " ^ kind ^ " "
-                                                 ^ v.vname)
-          | _ -> ()) binds;
-      let rec dups = function
-          [] -> ()
-        | v1 :: v2 :: _ when v1.vname = v2.vname ->
-          semant_err ("duplicate " ^ kind ^ " " ^ v1.vname)
-        | _ :: t -> dups t
-      in dups (List.sort (fun v1 v2 -> compare v1.vname v2.vname) binds)
-    in
-
-
-    (**** Check global variables ****)
-    (* check_binds "global variable" globals; *)
-    (* wrapper function for checking struct members. This is needed because a
-     * struct can potentially include other structs or itself as a member *)
-    let check_struct_binds (s : strct) (m : strct StringMap.t)=
-      let valid_member = function
-          {vtyp = Struct(sname); vname = _} -> (
-            match StringMap.mem sname m with
-              true -> () | false ->
-              semant_err (Printf.sprintf "unrecognized member struct %s in struct %s" sname s.name)
-          )
-        | _ -> ()
-      in
-      check_binds "struct member" s.members; (* first check normal conditions *)
-      List.iter valid_member s.members (* then check valid struct-typed members *)
-    in
-
-
-    (* add the structs of the function to a StringMap and verify that they are
-     * valid declarations *)
-    let structs : strct StringMap.t =
-      let add_struct m = function
-          Sdecl(s) ->
-          (match StringMap.mem s.name m with
-             true -> semant_err ("Duplicate declaration of struct " ^ s.name)
-           | false -> let structs_so_far = StringMap.add s.name s m in (* include the current one *)
-             check_struct_binds s structs_so_far; structs_so_far)
-        | _ -> m
-      in
-      List.fold_left add_struct StringMap.empty all_decls
-    in
-
-    (* The scoped version of check_binds which checks a new variable declaration
+    (* The generic checkbinds function that takes the structs as an argument
+     * checks the current variable declaration with all the one's it already has
      * in the following steps
      * 1) Checks for duplicates within the current scope
      * 2) Checks the validity of the declaration
@@ -85,9 +35,10 @@ let check  = function
      *  ii) if its a struct, it should be a valid struct
      * If all is well, it returns the the scope updated with the new variable
      * *)
-
-
-    let check_binds_scoped (full_scope : vdecl StringMap.t list) (v : vdecl) : vdecl StringMap.t list =
+    let check_binds_general
+        ((full_scope : vdecl StringMap.t list), (structs : strct StringMap.t)) (v : vdecl)
+      : vdecl StringMap.t list * strct StringMap.t
+      =
       match full_scope with
         [] -> semant_err ("[COMPILER BUG] empty scope passed to check_binds_scoped for variable search " ^ v.vname)
       | scope :: tl ->
@@ -107,9 +58,55 @@ let check  = function
           | false -> ()
         in
 
-        (StringMap.add v.vname v scope) :: tl
+        (StringMap.add v.vname v scope) :: tl, structs
 
     in
+
+    (* add the structs of a program to a StringMap and verify that they are
+     * valid declarations *)
+    let structs : strct StringMap.t =
+      let add_struct m = function
+          Sdecl(s) ->
+          (match StringMap.mem s.name m with
+             true -> semant_err ("Duplicate declaration of struct " ^ s.name)
+           | false ->
+             let structs_so_far =
+               StringMap.add s.name s m (* include the current one *)
+             in
+             List.fold_left check_binds_general
+               ([StringMap.empty],structs_so_far) s.members; structs_so_far)
+        | _ -> m
+      in
+      List.fold_left add_struct StringMap.empty all_decls
+    in
+
+    (* The specific check binds that already has the structs *)
+    let check_binds_scoped scope vd =
+      fst (check_binds_general (scope,structs) vd)
+    in
+
+
+    (**** Check global variables ****)
+    (* check_binds "global variable" globals; *)
+    (* wrapper function for checking struct members. This is needed because a
+     * struct can potentially include other structs or itself as a member *)
+    (* let check_struct_binds (s : strct) (m : strct StringMap.t)= *)
+    (*   let valid_member = function *)
+    (*       {vtyp = Struct(sname); vname = _} -> ( *)
+    (*         match StringMap.mem sname m with *)
+    (*           true -> () | false -> *)
+    (*           semant_err (Printf.sprintf "unrecognized member struct %s in struct %s" sname s.name) *)
+    (*       ) *)
+    (*     | _ -> () *)
+    (*   in *)
+    (*   check_binds "struct member" s.members; (1* first check normal conditions *1) *)
+    (*   List.iter valid_member s.members (1* then check valid struct-typed members *1) *)
+    (* in *)
+
+
+
+
+
 
     (* Collect function declarations for built-in functions: no bodies *)
     let built_in_decls =
