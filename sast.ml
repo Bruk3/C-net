@@ -106,7 +106,7 @@ let string_of_svdecl_assign (t, id, e) =
         "else{\n" ^ string_of_sstmt s ^ "}\n";
     | SFor(e1, e2, e3, s) ->
         "for (" ^ string_of_sexpr e1  ^ " ; " ^ string_of_sexpr e2 ^ " ; " ^
-        string_of_sexpr e3  ^ ") " ^ string_of_sstmt s
+        string_of_sexpr e3  ^ ")\n\t " ^ string_of_sstmt s
     | SWhile(e, s) -> "while (" ^ string_of_sexpr e ^ ") " ^ string_of_sstmt s
     | SVdecl(v)           -> string_of_vdecl v
     | SVdecl_ass({vtyp; vname}, e)
