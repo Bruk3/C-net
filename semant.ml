@@ -287,9 +287,9 @@ let check  = function
         (* Take the current statement and the current scope.
          * Returns a tuple of the checked sast statement and the new scope
         *)
-        let rec check_stmt ((cur_stmt : sstmt), (scope : vdecl StringMap.t list))
-          (* : (sstmt * vdecl StringMap.t list) *)
-          = function
+        let rec check_stmt ((_ : sstmt), (scope : vdecl StringMap.t list)) (aexp : stmt)
+          : (sstmt * vdecl StringMap.t list)
+          = match aexp with
             Expr e -> SExpr(expr scope e), scope
           (* | Delete n -> SDelete (expr n) *)
           | Break -> SBreak, scope (* TODO that we are in a loop context *)
@@ -301,7 +301,7 @@ let check  = function
               check_bool_expr scope e_i,
               (fst (check_stmt (SBlock([]), new_scope scope) s_i))
             in
-            SIf((List.map sif_of_if e_s_l), fst (check_stmt (SBlock([]), new_scope scope) s)), scope
+            SIf(List.rev (List.map sif_of_if e_s_l), fst (check_stmt (SBlock([]), new_scope scope) s)), scope
 
           | For(e1, e2, e3, st) ->
             SFor(expr scope e1, check_bool_expr scope e2, expr scope e3, fst (check_stmt (SBlock([]), new_scope scope) st)), scope
@@ -339,7 +339,7 @@ let check  = function
             let (checked_block, _) =
               (List.fold_left check_stmt_list ([], block_scope) sl)
             in
-            (SBlock(checked_block), scope)
+            (SBlock(List.rev checked_block), scope)
           | _ -> semant_err "Statement not yet implemented"
 
         in (* body of check_function *)
@@ -347,7 +347,12 @@ let check  = function
         { styp = func.t;
           sname = func.name;
           sparameters = func.parameters;
-          sbody = match List.fold_left check_stmt (SBlock([]),[StringMap.empty]) func.body with
+          sbody =
+            (* add formals to scope first *)
+            let init_scope =
+              List.fold_left check_binds_scoped [StringMap.empty] (U.ids_to_vdecls func.parameters)
+            in
+            match check_stmt (SBlock([]),init_scope) (Block(func.body)) with
               (SBlock(sl), _) -> sl
             | _ -> semant_err "[COMPILER BUG] block didn't become a block?"
         }

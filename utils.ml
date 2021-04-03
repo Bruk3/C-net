@@ -105,6 +105,11 @@ let compute_global vdecl exp =
   in
   eval_constant exp ;;
 
+let ids_to_vdecls (ids : A.id list)=
+  let id_to_vdecl ((t, n) : A.id) =
+    {A.vtyp = t; A.vname = n}
+  in List.map id_to_vdecl ids;;
+
 
 
                               (* Codegen utils *)
