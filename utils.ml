@@ -77,19 +77,19 @@ let compute_global vdecl exp =
       (match (e1', e2') with
          ((A.Int, SIntlit(i)), (A.Int, SIntlit(i2))) ->
          (match op with
-            Add -> (A.Int, SIntlit(i + i2))
-          | Sub -> (A.Int, SIntlit(i - i2))
-          | Mul -> (A.Int, SIntlit(i * i2))
-          | Div -> (A.Int, SIntlit(i / i2))
-          | Mod -> (A.Int, SIntlit(i mod i2))
-          | And -> (A.Int, SIntlit(bool_int ((i land i2) != 0)))
-          | Or  -> (A.Int, SIntlit(bool_int ((i lor i2) != 0))) (* TODO: these what we want? *)
-          | Eq  -> (A.Int, SIntlit(bool_int (i = i2)))
-          | Neq -> (A.Int, SIntlit(bool_int (i != i2)))
-          | Lt  -> (A.Int, SIntlit(bool_int (i < i2)))
-          | Gt  -> (A.Int, SIntlit(bool_int (i > i2)))
-          | Geq -> (A.Int, SIntlit(bool_int (i >= i2)))
-          | Leq -> (A.Int, SIntlit(bool_int (i <= i2)))
+            A.Add -> (A.Int, SIntlit(i + i2))
+          | A.Sub -> (A.Int, SIntlit(i - i2))
+          | A.Mul -> (A.Int, SIntlit(i * i2))
+          | A.Div -> (A.Int, SIntlit(i / i2))
+          | A.Mod -> (A.Int, SIntlit(i mod i2))
+          | A.And -> (A.Int, SIntlit(bool_int ((i land i2) != 0)))
+          | A.Or  -> (A.Int, SIntlit(bool_int ((i lor i2) != 0))) (* TODO: these what we want? *)
+          | A.Eq  -> (A.Int, SIntlit(bool_int (i = i2)))
+          | A.Neq -> (A.Int, SIntlit(bool_int (i != i2)))
+          | A.Lt  -> (A.Int, SIntlit(bool_int (i < i2)))
+          | A.Gt  -> (A.Int, SIntlit(bool_int (i > i2)))
+          | A.Geq -> (A.Int, SIntlit(bool_int (i >= i2)))
+          | A.Leq -> (A.Int, SIntlit(bool_int (i <= i2)))
          )
          (* TODO *)
        | (A.Float, SFloatlit(_)), (A.Float, SFloatlit(_))
@@ -97,13 +97,17 @@ let compute_global vdecl exp =
        | (A.Int, SIntlit(_)), (A.Float, SFloatlit(_)) (*float string operations *)
        | (A.Int, SIntlit(_)), (A.String, SStrlit(_)) (* string int operations *)
        | (A.String, SStrlit(_)), (A.Int, SIntlit(_)) (* string int operations *)
-                                 -> semant_err "global expression type not
-                                 implemented"
+                                 -> semant_err "global expression type not implemented"
        | _ -> semant_err ("non-constant expression used for global variable " ^ vdecl.A.vname)
       )
 
   in
   eval_constant exp ;;
+
+let ids_to_vdecls (ids : A.id list)=
+  let id_to_vdecl ((t, n) : A.id) =
+    {A.vtyp = t; A.vname = n}
+  in List.map id_to_vdecl ids;;
 
 
 
