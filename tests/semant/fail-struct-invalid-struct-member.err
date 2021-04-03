@@ -1,1 +1,1 @@
-Semantic error: unrecognized member struct pid in struct person
+Semantic error: unrecognized struct type [struct pid]
