@@ -307,9 +307,9 @@ let check  = function
         in
 
         (* Take the current statement and the current scope.
-         * Returns a tuple of the checked sast statement and the new scope
+         * Returns the new statement and the new scope appropriately.
         *)
-        let rec check_stmt ((_ : sstmt), (scope : vdecl StringMap.t list)) (aexp : stmt)
+        let rec check_stmt (scope : vdecl StringMap.t list) (aexp : stmt)
           : (sstmt * vdecl StringMap.t list)
           = match aexp with
             Expr e -> SExpr(expr scope e), scope
@@ -321,14 +321,14 @@ let check  = function
           | If(e_s_l, s) ->
             let sif_of_if (e_i, s_i) =
               check_bool_expr scope e_i,
-              (fst (check_stmt (SBlock([]), new_scope scope) s_i))
+              (fst (check_stmt (new_scope scope) s_i))
             in
-            SIf(List.rev (List.map sif_of_if e_s_l), fst (check_stmt (SBlock([]), new_scope scope) s)), scope
+            SIf(List.rev (List.map sif_of_if e_s_l), fst (check_stmt (new_scope scope) s)), scope
 
           | For(e1, e2, e3, st) ->
-            SFor(expr scope e1, check_bool_expr scope e2, expr scope e3, fst (check_stmt (SBlock([]), new_scope scope) st)), scope
+            SFor(expr scope e1, check_bool_expr scope e2, expr scope e3, fst (check_stmt (new_scope scope) st)), scope
 
-          | While(p, s) -> SWhile(check_bool_expr scope p, fst (check_stmt (SBlock([]), new_scope scope) s)), scope
+          | While(p, s) -> SWhile(check_bool_expr scope p, fst (check_stmt (new_scope scope) s)), scope
 
           | Vdecl (vd) -> verify_decl vd; SVdecl vd , (* add variable to highest scope *)
                                           check_binds_scoped scope vd
@@ -351,7 +351,7 @@ let check  = function
                 | _ -> ()
               in
               let (sstatement, new_scope) =
-                check_stmt (SBlock([]), tmp_scope) tmp_stmt
+                check_stmt tmp_scope tmp_stmt
               in
               (sstatement :: sstmts_so_far, new_scope)
               (* | Block sl :: ss  -> check_stmt_list (sl @ ss) (1* Flatten blocks *1) *)
@@ -374,7 +374,7 @@ let check  = function
             let init_scope =
               List.fold_left check_binds_scoped [StringMap.empty] (U.ids_to_vdecls func.parameters)
             in
-            match check_stmt (SBlock([]),init_scope) (Block(func.body)) with
+            match check_stmt init_scope (Block(func.body)) with
               (SBlock(sl), _) -> sl
             | _ -> semant_err "[COMPILER BUG] block didn't become a block?"
         }
