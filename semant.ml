@@ -266,9 +266,31 @@ let check  = function
               let ty =  try (ignore (StringMap.find sn structs)) ; Struct(sn) with
                 Not_found -> semant_err("invalid new expression: type [struct " ^ sn ^ "] doesn't exist")
               in (ty, SNew(NStruct(sn)))
-          | _ -> semant_err "Expression not yet implemented"
 
-        and check_bool_expr scope e =
+          | ArrayLit(t, e, e_l) ->
+              let check_int =
+                let err = "illegal expression found: new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^
+                 "] Expression " ^ string_of_expr e ^ " should be of type int"
+                in
+                let (t', se) = expr scope e in match t' with
+                  Int -> (t', se)
+                  | _ -> semant_err(err)
+              in
+              let check_expr_list e_l =
+                let err t1 t2 = "illegal expression found in Array literal. Array of type " ^
+                  string_of_typ t1 ^ " can not contain element of type " ^ string_of_typ t2
+                  in
+                let sx_list = List.map (fun e -> expr scope e) e_l in
+                let rec invalid_exists = function
+                  [] -> sx_list
+                  | (ti, _) :: tail -> if ti = t then invalid_exists tail else semant_err(err t ti)
+                  in invalid_exists sx_list
+            in
+              (t, SArrayLit(t, check_int, (check_expr_list e_l)))
+          (* | _ -> semant_err "Expression not yet implemented" *)
+        in
+
+        let check_bool_expr scope e =
               let (t', e') = expr scope e
               and err = "expected integer expression in " ^ (string_of_expr e)
               in (if t' != Int then semant_err err else (t', e'))
