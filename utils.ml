@@ -97,8 +97,7 @@ let compute_global vdecl exp =
        | (A.Int, SIntlit(_)), (A.Float, SFloatlit(_)) (*float string operations *)
        | (A.Int, SIntlit(_)), (A.String, SStrlit(_)) (* string int operations *)
        | (A.String, SStrlit(_)), (A.Int, SIntlit(_)) (* string int operations *)
-                                 -> semant_err "global expression type not
-                                 implemented"
+                                 -> semant_err "global expression type not implemented"
        | _ -> semant_err ("non-constant expression used for global variable " ^ vdecl.A.vname)
       )
 
