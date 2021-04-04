@@ -287,7 +287,7 @@ let check  = function
                   | (ti, _) :: tail -> if ti = t then invalid_exists tail else semant_err(err t ti)
                   in invalid_exists sx_list
             in
-              (t, SArrayLit(t, check_int, (check_expr_list e_l)))
+              (Array(t), SArrayLit(t, check_int, (check_expr_list e_l)))
           (* | _ -> semant_err "Expression not yet implemented" *)
         in
 
