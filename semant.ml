@@ -155,7 +155,9 @@ let check  = function
         (* Raise an exception if the given rvalue type cannot be assigned to
            the given lvalue type *)
         let check_assign lvaluet rvaluet err =
-          if lvaluet = rvaluet then lvaluet else semant_err err
+          if (lvaluet = rvaluet) || (lvaluet = Int && rvaluet == Char) ||
+               (lvaluet = Char && rvaluet == Int) then lvaluet
+          else semant_err err
         in
 
         (* Build local symbol table of variables for this function *)
@@ -237,6 +239,8 @@ let check  = function
             let ty = match op with
                 Add | Sub | Mul | Div when same && t1 = Int   -> Int
               | Add | Sub | Mul | Div when same && t1 = Float -> Float
+              | Add | Sub when t1 = Int && t2 = Char -> Int
+              | Add | Sub when t1 = Char && t2 = Int -> Float
               | Eq | Neq            when same               -> Int
               | Lt | Leq | Gt | Geq
                 when same && (t1 = Int || t1 = Float) -> Int
@@ -330,9 +334,9 @@ let check  = function
           | Vdecl (vd) -> verify_decl vd; SVdecl vd , (* add variable to highest scope *)
                                           check_binds_scoped scope vd
 
-          | Vdecl_ass (vd, e) -> verify_decl vd; SVdecl_ass(vd, expr scope e) ,
-                                                 check_binds_scoped scope vd
-
+          | Vdecl_ass ({vtyp; vname}, e) -> verify_decl {vtyp; vname} ;
+              let (d, newScope) = SVdecl_ass({vtyp; vname}, expr scope e) , check_binds_scoped scope {vtyp; vname} in
+                      ignore (expr (newScope) (Binassop(FinalID(vname), Assign, e)) ) ; (d, newScope)
           | Return e -> let (t, e') = expr scope e in
             if t = func.t then SReturn (t, e'), scope
             else semant_err ("return gives " ^ string_of_typ t ^ " expected " ^

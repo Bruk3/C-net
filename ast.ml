@@ -152,7 +152,7 @@ and string_of_newable = function
 and string_of_expr = function
   | Noexpr -> ""
   | Intlit(id) -> string_of_int id
-  | Charlit(id) -> "" ^ (Char.escaped(Char.chr(id)))
+  | Charlit(id) -> "" ^ "\'" ^ (Char.escaped(Char.chr(id))) ^ "\'"
   | Floatlit(id) -> string_of_float id
   | Strlit(id) -> "\"" ^ id ^ "\""
   | Rid(id) -> string_of_rid id (* TODO *)
