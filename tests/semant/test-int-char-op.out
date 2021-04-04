@@ -1,0 +1,7 @@
+int main(int argc)
+{
+int a = (int : 1);
+char b = (int : 2);
+return (int : (int : a) + (char : b));
+}
+

@@ -1,6 +1,6 @@
 int main(int argc) {
     int a = 1;
-    float c = 1;
+    float c = 1.2;
 
     c = a;
 }

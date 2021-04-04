@@ -76,7 +76,7 @@ type sprogram = sdecl list
     "(" ^ string_of_typ t ^ " : " ^ (match e with
       SNoexpr -> ""
     | SIntlit(l) -> string_of_int l
-    | SCharlit(l) -> "" ^ (Char.escaped(Char.chr(l)))
+    | SCharlit(l) -> "" ^ "\'" ^ (Char.escaped(Char.chr(l))) ^ "\'"
     | SFloatlit(l) -> string_of_float l
     | SStrlit(l) -> "\"" ^ l ^ "\""
     | SId(s) -> string_of_rid s
