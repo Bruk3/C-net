@@ -154,9 +154,7 @@ let check  = function
         (* Raise an exception if the given rvalue type cannot be assigned to
            the given lvalue type *)
         let check_assign lvaluet rvaluet err =
-          if (lvaluet = rvaluet) || (lvaluet = Int && rvaluet == Char) ||
-               (lvaluet = Char && rvaluet == Int) then lvaluet
-          else semant_err err
+          if (lvaluet = rvaluet) then lvaluet else semant_err err
         in
 
         (* helper function for finding a variable in either the current scope or
@@ -210,7 +208,7 @@ let check  = function
 (* Return a semantically-checked expression, i.e., with a type *)
 
         and expr (scope : vdecl StringMap.t list) = function
-            Charlit l -> (Int, SCharlit l)
+            Charlit l -> (Char, SCharlit l)
           | Intlit l -> (Int, SIntlit l)
           | Floatlit l -> (Float, SFloatlit l)
           | Strlit l -> (String, SStrlit l)
@@ -240,11 +238,9 @@ let check  = function
             let ty = match op with
                 Add | Sub | Mul | Div when same && t1 = Int   -> Int
               | Add | Sub | Mul | Div when same && t1 = Float -> Float
-              | Add | Sub when t1 = Int && t2 = Char -> Int
-              | Add | Sub when t1 = Char && t2 = Int -> Float
+              (* | Add | Sub | Mul | Div when same && t1 = Char -> Char *) (* maybe? *)
               | Eq | Neq            when same               -> Int
-              | Lt | Leq | Gt | Geq
-                when same && (t1 = Int || t1 = Float) -> Int
+              | Lt | Leq | Gt | Geq when same && t1 = Int -> Int
               | And | Or when same && t1 = Int -> Int
               | _ -> semant_err ("illegal binary operator " ^
                                  string_of_typ t1 ^ " " ^ string_of_op op ^ " " ^
