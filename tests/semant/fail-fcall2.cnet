@@ -4,7 +4,7 @@ int sum(int a, int b) {
 
 int main(int argc) {
     int a = 1;
-    float b = 2; 
+    float b = 2.4;
 
     sum(a, b);
 }
