@@ -1,0 +1,14 @@
+
+struct mstruct {
+	float id;
+};
+
+int main(){
+
+	int x;
+	while(1) {
+		struct mstruct[][] x;
+
+		x[0][0].id;
+	}
+}

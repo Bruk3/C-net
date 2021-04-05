@@ -73,8 +73,8 @@ let check  = function
              let structs_so_far =
                StringMap.add s.name s m (* include the current one *)
              in
-             List.fold_left check_binds_general
-               ([StringMap.empty],structs_so_far) s.members; structs_so_far)
+             ignore (List.fold_left check_binds_general
+               ([StringMap.empty],structs_so_far) s.members); structs_so_far)
         | _ -> m
       in
       List.fold_left add_struct StringMap.empty all_decls
@@ -191,9 +191,10 @@ let check  = function
         (* recursively verify an rid to be valid *)
         let rec type_of_identifier (scope : vdecl StringMap.t list) = function
             FinalID s -> let the_var = find_var s scope in the_var.vtyp
+
           | RID(r, member) ->
             let the_struct = type_of_identifier scope r
-            in match the_struct with
+            in (match the_struct with
               Struct(sname) ->
               (try
                  let the_struct = StringMap.find sname structs in
@@ -204,11 +205,28 @@ let check  = function
                with Not_found -> semant_err ("[COMPILER BUG] variable of type struct " ^ sname ^
                                              " allowed without the the struct begin declared"));
             | t -> semant_err ("dot operator not allowed on variable " ^
-                               string_of_rid r ^ " of type " ^ string_of_typ t)
-        in
+                               string_of_rid r ^ " of type " ^ string_of_typ t))
+
+          | Index(r, e) ->
+            let (t, _) = expr scope e in
+            match t with
+              Int ->
+              (let vt = type_of_identifier scope r in
+               match vt with
+                 Array(at) -> at
+               | _ -> semant_err ("cannot index non-array variable" ^
+                                  (string_of_rid r)))
+            | ot -> semant_err ("index into an array has to be of type int, " ^
+                    "but the expression (" ^ (string_of_expr e) ^ ") has type " ^
+                    (string_of_typ ot))
+
+
+
+
+        (* in *)
 (* Return a semantically-checked expression, i.e., with a type *)
 
-        let rec expr (scope : vdecl StringMap.t list) = function
+        and expr (scope : vdecl StringMap.t list) = function
             Charlit l -> (Int, SCharlit l)
           | Intlit l -> (Int, SIntlit l)
           | Floatlit l -> (Float, SFloatlit l)
