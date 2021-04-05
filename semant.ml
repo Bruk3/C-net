@@ -36,12 +36,9 @@ let check  = function
      * If all is well, it returns the the scope updated with the new variable
      * *)
     let check_binds_general
-        ((full_scope : vdecl StringMap.t list), (structs : strct StringMap.t)) (v : vdecl)
-      : vdecl StringMap.t list * strct StringMap.t
+        ((scope : vdecl StringMap.t), (structs : strct StringMap.t)) (v : vdecl)
+      : vdecl StringMap.t * strct StringMap.t
       =
-      match full_scope with
-        [] -> semant_err ("[COMPILER BUG] empty scope passed to check_binds_scoped for variable search " ^ v.vname)
-      | scope :: tl ->
         let valid_struct (sname : string) = match StringMap.mem sname structs with
             true -> ()
           | false -> semant_err ("unrecognized struct type [struct " ^ sname ^ "]")
@@ -58,7 +55,7 @@ let check  = function
           | false -> ()
         in
 
-        (StringMap.add v.vname v scope) :: tl, structs
+        (StringMap.add v.vname v scope) , structs
 
     in
 
@@ -74,39 +71,39 @@ let check  = function
                StringMap.add s.name s m (* include the current one *)
              in
              ignore (List.fold_left check_binds_general
-               ([StringMap.empty],structs_so_far) s.members); structs_so_far)
+               (StringMap.empty,structs_so_far) s.members); structs_so_far)
         | _ -> m
       in
       List.fold_left add_struct StringMap.empty all_decls
     in
 
-    (* The specific check binds that already has the structs *)
-    let check_binds_scoped scope vd =
-      fst (check_binds_general (scope,structs) vd)
+    (* The specific check binds that already has the structs and takes one scope
+     * (the 'top' one)
+     *)
+    let check_binds scope v =
+      fst (check_binds_general (scope, structs) v)
     in
 
+    (* the check_binds that takes a full scope and checks for conflicts in the
+     * top one
+     *)
+    let check_binds_scoped full_scope v
+      : vdecl StringMap.t list
+      =
+      match full_scope with
+        [] -> semant_err ("[COMPILER BUG] empty scope passed to check_binds_scoped for variable search " ^ v.vname)
+      | scope :: tl -> (check_binds scope v) :: tl
+    in
 
-    (**** Check global variables ****)
-    (* check_binds "global variable" globals; *)
-    (* wrapper function for checking struct members. This is needed because a
-     * struct can potentially include other structs or itself as a member *)
-    (* let check_struct_binds (s : strct) (m : strct StringMap.t)= *)
-    (*   let valid_member = function *)
-    (*       {vtyp = Struct(sname); vname = _} -> ( *)
-    (*         match StringMap.mem sname m with *)
-    (*           true -> () | false -> *)
-    (*           semant_err (Printf.sprintf "unrecognized member struct %s in struct %s" sname s.name) *)
-    (*       ) *)
-    (*     | _ -> () *)
-    (*   in *)
-    (*   check_binds "struct member" s.members; (1* first check normal conditions *1) *)
-    (*   List.iter valid_member s.members (1* then check valid struct-typed members *1) *)
-    (* in *)
-
-
-
-
-
+    (* Collect global variables and check their validity *)
+    let globals =
+      let add_global m = function
+          GVdecl(vd) -> check_binds m vd
+        | _ -> m
+      in
+      List.fold_left add_global StringMap.empty all_decls
+        (* TODO: catch builtin decls *)
+    in
 
     (* Collect function declarations for built-in functions: no bodies *)
     let built_in_decls =
@@ -391,7 +388,7 @@ let check  = function
           sbody =
             (* add formals to scope first *)
             let init_scope =
-              List.fold_left check_binds_scoped [StringMap.empty] (U.ids_to_vdecls func.parameters)
+              List.fold_left check_binds_scoped [globals] (U.ids_to_vdecls func.parameters)
             in
             match check_stmt init_scope (Block(func.body)) with
               (SBlock(sl), _) -> sl
