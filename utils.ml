@@ -58,8 +58,9 @@ let compute_global vdecl exp =
   let verify_types (t1 : A.typ) (t2 : A.typ) =
     if t1 = t2 then ()
      else (semant_err ("incompatible types " ^ A.string_of_typ t1 ^ " and " ^
-           A.string_of_typ t2 ^ " in global variable " ^ vdecl.A.vname))
+                       A.string_of_typ t2 ^ " in global variable " ^ vdecl.A.vname))
   in
+  let bool_int b = if b then 1 else 0 in
 
   let rec eval_constant = function
       A.Noexpr | A.Binassop(_) | A.New(_) | A.ArrayLit(_) | A.Call(_) ->
@@ -73,7 +74,6 @@ let compute_global vdecl exp =
     | A.Strlit(s) -> (A.String, SStrlit(s))
     | A.Binop(e1, op, e2) -> let e1' = eval_constant e1 and e2' = eval_constant e2
       in verify_types (fst e1') (fst e2');
-      let bool_int b = if b then 1 else 0 in
       (match (e1', e2') with
          ((A.Int, SIntlit(i)), (A.Int, SIntlit(i2))) ->
          (match op with
@@ -100,6 +100,14 @@ let compute_global vdecl exp =
                                  -> semant_err "global expression type not implemented"
        | _ -> semant_err ("non-constant expression used for global variable " ^ vdecl.A.vname)
       )
+    | A.Unop(op, e) ->
+      let _, e' = eval_constant e in
+      match e' with
+        SIntlit(i) -> ( match op with
+            A.Not -> (A.Int, SIntlit(bool_int (i == 0)))
+          | A.Minus -> (A.Int, SIntlit( -1 * i ))
+        )
+      | _ -> semant_err ("operator [" ^ (A.string_of_uop op) ^ "] only valid for integers")
 
   in
   eval_constant exp ;;

@@ -35,18 +35,20 @@ let check  = function
      *  ii) if its a struct, it should be a valid struct
      * If all is well, it returns the the scope updated with the new variable
      * *)
-    let check_binds_general
+    let rec check_binds_general
         ((scope : vdecl StringMap.t), (structs : strct StringMap.t)) (v : vdecl)
       : vdecl StringMap.t * strct StringMap.t
       =
         let valid_struct (sname : string) = match StringMap.mem sname structs with
             true -> ()
-          | false -> semant_err ("unrecognized struct type [struct " ^ sname ^ "]")
+          | false -> semant_err (v.vname ^ " has unrecognized struct type [struct " ^ sname ^ "]")
         in
 
         let _ = match v.vtyp with (* validate non-void / valid struct *)
             Void -> semant_err ("illegal void " ^ v.vname)
           | Struct(s) -> valid_struct s
+          | Array(t) ->
+            ignore (check_binds_general (scope, structs) {vtyp = t; vname = v.vname ^ "[0]"}); ()
           | _ -> ()
         in
 
@@ -98,12 +100,12 @@ let check  = function
     (* Collect global variables and check their validity *)
     let globals =
       let add_global m = function
-          GVdecl(vd) -> check_binds m vd
-        | _ -> m
+          GVdecl(vd) | GVdecl_ass(vd, _) -> check_binds m vd
+        | Sdecl(_) | Fdecl(_) -> m
       in
       List.fold_left add_global StringMap.empty all_decls
-        (* TODO: catch builtin decls *)
     in
+        (* TODO: catch builtin decls *)
 
     (* Collect function declarations for built-in functions: no bodies *)
     let built_in_decls =
@@ -157,23 +159,6 @@ let check  = function
           else semant_err err
         in
 
-        (* Build local symbol table of variables for this function *)
-        (* let symbols = List.fold_left (fun m ((ty, name)) -> StringMap.add name ty m) *)
-        (*     StringMap.empty (func.parameters @ func.locals) (1* Should be globals @ func.parameters *1) *)
-        (* in *)
-
-        let rec verify_decl = function
-            {vtyp = Struct(sn); vname = n} -> (try ignore (StringMap.find sn structs)
-                                               with Not_found -> semant_err (n ^ " is of type [struct " ^ sn ^
-                                                                            "] which doesn't exist"))
-          | {vtyp = Void; vname = n} -> semant_err (n ^ " is a void type, which is illegal")
-          | {vtyp = Array(t); vname = n} -> verify_decl {vtyp = t; vname = n ^ "[0]"}
-          | _ -> () (* Char | Float | Int | String | Socket | File are all fine *)
-
-
-        in
-
-
         (* helper function for finding a variable in either the current scope or
          * all the scope's that include this one
          *)
@@ -204,13 +189,14 @@ let check  = function
             | t -> semant_err ("dot operator not allowed on variable " ^
                                string_of_rid r ^ " of type " ^ string_of_typ t))
 
-          | Index(r, e) ->
+          | Index(r, e) -> (* TODO index into a string should be a char *)
             let (t, _) = expr scope e in
             match t with
               Int ->
               (let vt = type_of_identifier scope r in
                match vt with
                  Array(at) -> at
+               | String -> Char
                | _ -> semant_err ("cannot index non-array variable" ^
                                   (string_of_rid r)))
             | ot -> semant_err ("index into an array has to be of type int, " ^
@@ -346,10 +332,10 @@ let check  = function
 
           | While(p, s) -> SWhile(check_bool_expr scope p, fst (check_stmt (new_scope scope) s)), scope
 
-          | Vdecl (vd) -> verify_decl vd; SVdecl vd , (* add variable to highest scope *)
+          | Vdecl (vd) ->  SVdecl vd , (* add variable to highest scope *)
                                           check_binds_scoped scope vd
 
-          | Vdecl_ass ({vtyp; vname}, e) -> verify_decl {vtyp; vname} ;
+          | Vdecl_ass ({vtyp; vname}, e) ->
               let (d, newScope) = SVdecl_ass({vtyp; vname}, expr scope e) , check_binds_scoped scope {vtyp; vname} in
                       ignore (expr (newScope) (Binassop(FinalID(vname), Assign, e)) ) ; (d, newScope)
           | Return e -> let (t, e') = expr scope e in
@@ -398,7 +384,10 @@ let check  = function
 
       let decl_to_sdecl = function
           GVdecl(vdecl) ->  SGVdecl_ass(vdecl, U.default_global vdecl.vtyp)
-        | GVdecl_ass(vdecl, e) -> SGVdecl_ass (vdecl, U.compute_global vdecl e) (* TODO *)
+        | GVdecl_ass(vdecl, e) ->
+          (* ignore (expr globals Binassop(FinalID(vdecl.vname, Assign, e))); (1* check validity of assignment *1) *)
+          SGVdecl_ass (vdecl, U.compute_global vdecl e)
+        (* TODO check assignment *)
         | Sdecl(s) -> SSdecl s
         | Fdecl (func) -> SFdecl (check_function func)
 
