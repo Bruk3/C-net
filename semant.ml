@@ -11,7 +11,12 @@ module StringMap = Map.Make(String)
 
    Check each global variable, then check each function *)
 
-(* let check (globals, functions) = *)
+(* Add other things that might be needed inside statements to this struct *)
+(* to_free : list of names of string variables to get freed
+ * in_loop : specifies whether the current context is a loop
+ * *)
+type stmt_params = {scp : vdecl StringMap.t list ; fl : string list; il : bool};;
+
 
 let check  = function
     Program(all_decls: decl list) ->
@@ -35,21 +40,20 @@ let check  = function
      *  ii) if its a struct, it should be a valid struct
      * If all is well, it returns the the scope updated with the new variable
      * *)
-    let check_binds_general
-        ((full_scope : vdecl StringMap.t list), (structs : strct StringMap.t)) (v : vdecl)
-      : vdecl StringMap.t list * strct StringMap.t
+    let rec check_binds_general
+        ((scope : vdecl StringMap.t), (structs : strct StringMap.t)) (v : vdecl)
+      : vdecl StringMap.t * strct StringMap.t
       =
-      match full_scope with
-        [] -> semant_err ("[COMPILER BUG] empty scope passed to check_binds_scoped for variable search " ^ v.vname)
-      | scope :: tl ->
         let valid_struct (sname : string) = match StringMap.mem sname structs with
             true -> ()
-          | false -> semant_err ("unrecognized struct type [struct " ^ sname ^ "]")
+          | false -> semant_err (v.vname ^ " has unrecognized struct type [struct " ^ sname ^ "]")
         in
 
         let _ = match v.vtyp with (* validate non-void / valid struct *)
-            Void -> semant_err ("illegal void " ^ v.vname)
+            Void -> semant_err (v.vname ^ " is a void type, which is illegal")
           | Struct(s) -> valid_struct s
+          | Array(t) ->
+            ignore (check_binds_general (scope, structs) {vtyp = t; vname = v.vname ^ "[0]"}); ()
           | _ -> ()
         in
 
@@ -58,7 +62,7 @@ let check  = function
           | false -> ()
         in
 
-        (StringMap.add v.vname v scope) :: tl, structs
+        (StringMap.add v.vname v scope) , structs
 
     in
 
@@ -74,38 +78,39 @@ let check  = function
                StringMap.add s.name s m (* include the current one *)
              in
              ignore (List.fold_left check_binds_general
-               ([StringMap.empty],structs_so_far) s.members); structs_so_far)
+               (StringMap.empty,structs_so_far) s.members); structs_so_far)
         | _ -> m
       in
       List.fold_left add_struct StringMap.empty all_decls
     in
 
-    (* The specific check binds that already has the structs *)
-    let check_binds_scoped scope vd =
-      fst (check_binds_general (scope,structs) vd)
+    (* The specific check binds that already has the structs and takes one scope
+     * (the 'top' one)
+     *)
+    let check_binds scope v =
+      fst (check_binds_general (scope, structs) v)
     in
 
+    (* the check_binds that takes a full scope and checks for conflicts in the
+     * top one
+     *)
+    let check_binds_scoped full_scope v
+      : vdecl StringMap.t list
+      =
+      match full_scope with
+        [] -> semant_err ("[COMPILER BUG] empty scope passed to check_binds_scoped for variable search " ^ v.vname)
+      | scope :: tl -> (check_binds scope v) :: tl
+    in
 
-    (**** Check global variables ****)
-    (* check_binds "global variable" globals; *)
-    (* wrapper function for checking struct members. This is needed because a
-     * struct can potentially include other structs or itself as a member *)
-    (* let check_struct_binds (s : strct) (m : strct StringMap.t)= *)
-    (*   let valid_member = function *)
-    (*       {vtyp = Struct(sname); vname = _} -> ( *)
-    (*         match StringMap.mem sname m with *)
-    (*           true -> () | false -> *)
-    (*           semant_err (Printf.sprintf "unrecognized member struct %s in struct %s" sname s.name) *)
-    (*       ) *)
-    (*     | _ -> () *)
-    (*   in *)
-    (*   check_binds "struct member" s.members; (1* first check normal conditions *1) *)
-    (*   List.iter valid_member s.members (1* then check valid struct-typed members *1) *)
-    (* in *)
-
-
-
-
+    (* Collect global variables and check their validity *)
+    let globals =
+      let add_global m = function
+          GVdecl(vd) | GVdecl_ass(vd, _) -> check_binds m vd
+        | Sdecl(_) | Fdecl(_) -> m
+      in
+      List.fold_left add_global StringMap.empty all_decls
+    in
+        (* TODO: catch builtin decls *)
 
 
     (* Collect function declarations for built-in functions: no bodies *)
@@ -159,23 +164,6 @@ let check  = function
                (lvaluet = Char && rvaluet == Int) then lvaluet
           else semant_err err
         in
-
-        (* Build local symbol table of variables for this function *)
-        (* let symbols = List.fold_left (fun m ((ty, name)) -> StringMap.add name ty m) *)
-        (*     StringMap.empty (func.parameters @ func.locals) (1* Should be globals @ func.parameters *1) *)
-        (* in *)
-
-        let rec verify_decl = function
-            {vtyp = Struct(sn); vname = n} -> (try ignore (StringMap.find sn structs)
-                                               with Not_found -> semant_err (n ^ " is of type [struct " ^ sn ^
-                                                                            "] which doesn't exist"))
-          | {vtyp = Void; vname = n} -> semant_err (n ^ " is a void type, which is illegal")
-          | {vtyp = Array(t); vname = n} -> verify_decl {vtyp = t; vname = n ^ "[0]"}
-          | _ -> () (* Char | Float | Int | String | Socket | File are all fine *)
-
-
-        in
-
 
         (* helper function for finding a variable in either the current scope or
          * all the scope's that include this one
@@ -317,57 +305,61 @@ let check  = function
           in
 
 
-        (* a small helper function that adds a new scope to the one it is
-         * passed. This is used when entering a function, if/else statement
-         * blocks, loops and blocks i
-         *)
-        let new_scope (scope : vdecl StringMap.t list) =
-          StringMap.empty :: scope
-        in
-
         (* Take the current statement and the current scope.
          * Returns the new statement and the new scope appropriately.
         *)
-        let rec check_stmt (scope : vdecl StringMap.t list) (aexp : stmt)
-          : (sstmt * vdecl StringMap.t list)
-          = match aexp with
-            Expr e -> SExpr(expr scope e), scope
-          (* | Delete n -> SDelete (expr n) *)
-          | Break -> SBreak, scope (* TODO that we are in a loop context *)
-          | Continue -> SContinue, scope (* TODO verify that we are in a loop context *)
+        (* sp : contains the current scope, information about which variables need to be freed and
+         * whether the current context is a loop or not
+         *)
+        let rec check_stmt (sp : stmt_params) (aexp : stmt)
+          : (sstmt * stmt_params)
+          =
+          let {scp = scope; fl = tofree; il = inloop} = sp in
+          let new_scope = {scp = StringMap.empty :: scope ; fl = tofree; il = inloop} in
 
-          (* | If(p, b1, b2) -> SIf(check_bool_expr p, check_stmt b1, check_stmt b2) *)
+          match aexp with
+            Expr e -> SExpr(expr scope e), sp
+          (* | Delete n -> SDelete (expr n) *)
+          | Break when inloop -> SBreak, {scp = scope; fl = tofree; il = false}
+          | Break -> semant_err ("break used without being in a loop")
+          | Continue when inloop -> SContinue, {scp = scope; fl = tofree; il = true}
+          | Continue -> semant_err ("continue used without being in a loop")
+
           | If(e_s_l, s) ->
             let sif_of_if (e_i, s_i) =
-              check_bool_expr scope e_i,
-              (fst (check_stmt (new_scope scope) s_i))
+              check_bool_expr scope e_i, (fst (check_stmt new_scope s_i))
             in
-            SIf(List.rev (List.map sif_of_if e_s_l), fst (check_stmt (new_scope scope) s)), scope
+            SIf(List.rev (List.map sif_of_if e_s_l), fst (check_stmt new_scope s)), sp
 
           | For(e1, e2, e3, st) ->
-            SFor(expr scope e1, check_bool_expr scope e2, expr scope e3, fst (check_stmt (new_scope scope) st)), scope
+            SFor(expr scope e1, check_bool_expr scope e2, expr scope e3, fst (check_stmt new_scope st)), sp
 
-          | While(p, s) -> SWhile(check_bool_expr scope p, fst (check_stmt (new_scope scope) s)), scope
+          | While(p, s) -> SWhile(check_bool_expr scope p, fst (check_stmt new_scope s)), sp
 
-          | Vdecl (vd) -> verify_decl vd; SVdecl vd , (* add variable to highest scope *)
-                                          check_binds_scoped scope vd
+          (* add variable to highest scope *)
+          | Vdecl (vd) -> SVdecl vd , {scp = check_binds_scoped scope vd;
+                                                       fl = tofree; il = inloop}
 
-          | Vdecl_ass ({vtyp; vname}, e) -> verify_decl {vtyp; vname} ;
-              let (d, newScope) = SVdecl_ass({vtyp; vname}, expr scope e) , check_binds_scoped scope {vtyp; vname} in
-                      ignore (expr (newScope) (Binassop(FinalID(vname), Assign, e)) ) ; (d, newScope)
+          | Vdecl_ass ({vtyp; vname}, e) ->
+            let (d, newscp) = SVdecl_ass({vtyp; vname}, expr scope e) , check_binds_scoped scope {vtyp; vname} in
+                      ignore (expr newscp (Binassop(FinalID(vname), Assign, e)))
+                    ; (d, {scp=newscp; fl=tofree; il=inloop})
           | Return e -> let (t, e') = expr scope e in
-            if t = func.t then SReturn (t, e'), scope
+            if t = func.t then SReturn (t, e'), sp
             else semant_err ("return gives " ^ string_of_typ t ^ " expected " ^
                              string_of_typ func.t ^ " in " ^ string_of_expr e)
 
           (* A block is correct if each statement is correct and nothing
              follows any Return statement.  Nested blocks are flattened. *)
           | Block(sl) ->
-            let block_scope = new_scope scope in
-            let check_stmt_list ((sstmts_so_far : sstmt list), tmp_scope) (tmp_stmt : stmt) : (sstmt list) * vdecl StringMap.t list =
+            let block_scope = new_scope in
+            let check_stmt_list (* foldable *)
+                ((sstmts_so_far : sstmt list), tmp_scope)
+                (tmp_stmt : stmt)
+              : (sstmt list) * stmt_params =
               let _ = match sstmts_so_far with
                   SReturn(_) :: _ -> semant_err "nothing may follow a return"
-                | _ -> ()
+                | _ -> () (* TODO make sure there is a return statement *)
               in
               let (sstatement, new_scope) =
                 check_stmt tmp_scope tmp_stmt
@@ -380,7 +372,7 @@ let check  = function
             let (checked_block, _) =
               (List.fold_left check_stmt_list ([], block_scope) sl)
             in
-            (SBlock(List.rev checked_block), scope)
+            (SBlock(List.rev checked_block), sp)
           | _ -> semant_err "Statement not yet implemented"
 
         in (* body of check_function *)
@@ -390,10 +382,13 @@ let check  = function
           sparameters = func.parameters;
           sbody =
             (* add formals to scope first *)
-            let init_scope =
-              List.fold_left check_binds_scoped [StringMap.empty] (U.ids_to_vdecls func.parameters)
+            let init_params =
+              {scp = List.fold_left check_binds_scoped [StringMap.empty; globals] (U.ids_to_vdecls func.parameters);
+               fl = [];
+               il = false;
+              }
             in
-            match check_stmt init_scope (Block(func.body)) with
+            match check_stmt init_params (Block(func.body)) with
               (SBlock(sl), _) -> sl
             | _ -> semant_err "[COMPILER BUG] block didn't become a block?"
         }
