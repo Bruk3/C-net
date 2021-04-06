@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "string.h"
-
 
 static void die(const char *message)
 {
@@ -30,6 +30,24 @@ static string *create_str()
 	return new_str;
 }
 
+static string *clone_str(string *s)
+{
+	string *new_str = (string *) mem_alloc(sizeof(string));
+
+	new_str->length 	= s->length;
+	new_str->data		= s->length == 0 ? NULL :
+					(char *) mem_alloc(sizeof(s->length+1));
+
+	return new_str;
+}
+static void __concat_str(char *s, string *s1, string *s2)
+{
+	s = (char *) mem_alloc(s1->length+s2->length+1);
+	strncpy(s, s1->data, s1->length);
+	strncpy(s+s1->length, s2->data, s2->length+1);
+
+}
+
 /* Constructors */ 
 string *new_str()
 {
@@ -54,7 +72,7 @@ void free_str(string *str)
 	free(str);
 }
 
-/* Copy assignment */
+/* operator '=' (deep copy) */
 void copy_str(string *src, string *dst)
 {
 	if (dst->length < src->length){
@@ -66,13 +84,6 @@ void copy_str(string *src, string *dst)
 	dst->length = src->length;
 }
 
-static void __concat_str(char *s, string *s1, string *s2)
-{
-	s = (char *) mem_alloc(s1->length+s2->length+1);
-	strncpy(s, s1->data, s1->length);
-	strncpy(s+s1->length, s2->data, s2->length+1);
-
-}
 /* Operator + */
 string *concat_str(string *s1, string *s2)
 {
@@ -110,8 +121,74 @@ char char_at(string *str, int index)
 	return str->data[index];
 }
 
-/* Other helper function */ 
+/* Other string function */ 
 int str_length(string *s1)
 {
 	return s1->length;
+}
+
+string *str_lower(string *s)
+{
+	string *s1 = clone_str(s);
+	for(int i = 0; i<s->length;i++)
+		s1->data[i] = tolower(s->data[i]);
+	
+	s1->data[s1->length] = '\0';
+
+	return s1;
+}
+
+string *str_upper(string *s)
+{
+	string *s1 = clone_str(s);
+	for(int i = 0; i<s->length;i++)
+		s1->data[i] = toupper(s->data[i]);
+	
+	s1->data[s1->length] = '\0';
+
+	return s1;
+}
+
+/* [start, end) */ 
+string *substring(string *s, int start, int end)
+{
+	string *s1 = create_str();
+	s1->length = end - start;
+	s1->data   = (char *)mem_alloc(s1->length+1);
+	strncpy(s1->data, s->data+start, s1->length);
+	s1->data[s->length] = '\0';
+
+	return s1;
+
+}
+
+string *reverse(string *s)
+{	
+	string *s1 = clone_str(s);
+	int len = s1->length;
+	for(int i = 0; i<len/2;i++)
+		s1->data[i] = s->data[len-i-1];
+	
+	s1->data[s1->length] = '\0';
+
+	return s1;
+}
+
+int str_atoi(string *s)
+{
+	return atoi(s->data);
+}
+
+float str_atof(string *s)
+{
+	return atof(s->data);
+}
+
+int find_char(string *s, char c)
+{
+	for(int i = 0; i<s->length;i++)
+		if(s->data[i] == c)
+			return i;
+
+	return -1;
 }
