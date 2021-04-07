@@ -15,7 +15,7 @@ module StringMap = Map.Make(String)
 (* to_free : list of names of string variables to get freed
  * in_loop : specifies whether the current context is a loop
  * *)
-type stmt_params = {scp : vdecl StringMap.t list ; fl : string list; il : bool};;
+type stmt_params = {scp : vdecl StringMap.t list ; fl : string list list; il : bool};;
 
 
 let check  = function
@@ -315,11 +315,26 @@ let check  = function
           : (sstmt * stmt_params)
           =
           let {scp = scope; fl = tofree; il = inloop} = sp in
-          let new_scope = {scp = StringMap.empty :: scope ; fl = tofree; il = inloop} in
+          let new_scope = {scp = StringMap.empty :: scope ; fl = [] :: tofree; il = inloop} in
+          let new_loop_scope = {scp = StringMap.empty :: scope; fl = [] :: tofree; il = true} in
+          let mkblock = function Block s -> Block s | s -> Block [s] in
+          let add_free vd = match tofree with
+              [] -> semant_err "[COMPILER BUG] empty list passed to free list"
+            | hd :: tl -> match vd.vtyp with
+                String -> { scp = check_binds_scoped scope vd;
+                            fl = (vd.vname :: hd) :: tl; il = inloop}
+              | _ -> {scp = check_binds_scoped scope vd; fl = tofree; il = inloop}
+          in
+          let insert_frees {scp=tscp; fl=freelist; il=til} =
+            let insert_free vname = SDelete (String, SId(FinalID(vname))) in
+            match freelist with
+              [] -> semant_err "[COMPILER BUG] empty list passed to insert_frees"
+            | hd :: tl -> (List.map insert_free hd), {scp=tscp; fl=tl; il=til}
+          in
 
           match aexp with
             Expr e -> SExpr(expr scope e), sp
-          (* | Delete n -> SDelete (expr n) *)
+          | Delete n -> SDelete (expr scope (Rid(n))), sp
           | Break when inloop -> SBreak, {scp = scope; fl = tofree; il = false}
           | Break -> semant_err ("break used without being in a loop")
           | Continue when inloop -> SContinue, {scp = scope; fl = tofree; il = true}
@@ -332,18 +347,18 @@ let check  = function
             SIf(List.rev (List.map sif_of_if e_s_l), fst (check_stmt new_scope s)), sp
 
           | For(e1, e2, e3, st) ->
-            SFor(expr scope e1, check_bool_expr scope e2, expr scope e3, fst (check_stmt new_scope st)), sp
+            SFor(expr scope e1, check_bool_expr scope e2, expr scope e3, fst
+                   (check_stmt new_loop_scope (mkblock st))), sp
 
-          | While(p, s) -> SWhile(check_bool_expr scope p, fst (check_stmt new_scope s)), sp
+          | While(p, s) -> SWhile(check_bool_expr scope p, fst (check_stmt new_loop_scope (mkblock s))), sp
 
           (* add variable to highest scope *)
-          | Vdecl (vd) -> SVdecl vd , {scp = check_binds_scoped scope vd;
-                                                       fl = tofree; il = inloop}
+          | Vdecl (vd) -> SVdecl(vd), add_free vd
 
           | Vdecl_ass ({vtyp; vname}, e) ->
             let (d, newscp) = SVdecl_ass({vtyp; vname}, expr scope e) , check_binds_scoped scope {vtyp; vname} in
-                      ignore (expr newscp (Binassop(FinalID(vname), Assign, e)))
-                    ; (d, {scp=newscp; fl=tofree; il=inloop})
+                      ignore (expr newscp (Binassop(FinalID(vname), Assign, e))) ;
+                      d, add_free {vtyp; vname}
           | Return e -> let (t, e') = expr scope e in
             if t = func.t then SReturn (t, e'), sp
             else semant_err ("return gives " ^ string_of_typ t ^ " expected " ^
@@ -359,7 +374,7 @@ let check  = function
               : (sstmt list) * stmt_params =
               let _ = match sstmts_so_far with
                   SReturn(_) :: _ -> semant_err "nothing may follow a return"
-                | _ -> () (* TODO make sure there is a return statement *)
+                | _ -> ()
               in
               let (sstatement, new_scope) =
                 check_stmt tmp_scope tmp_stmt
@@ -369,10 +384,15 @@ let check  = function
               (* | s :: ss         -> fst (check_stmt s block_scope) :: check_stmt_list ss *)
               (* | []              -> [] *)
             in
-            let (checked_block, _) =
+            let (checked_block, old_sp) =
               (List.fold_left check_stmt_list ([], block_scope) sl)
             in
-            (SBlock(List.rev checked_block), sp)
+            let free_stmts, _ = insert_frees old_sp in
+            (match checked_block with
+               SReturn(s) :: tl -> SBlock (List.rev (SReturn(s) :: (free_stmts @ tl)))
+             | _ -> SBlock (List.rev (free_stmts @ checked_block))
+            ), sp
+
           | _ -> semant_err "Statement not yet implemented"
 
         in (* body of check_function *)
@@ -384,12 +404,16 @@ let check  = function
             (* add formals to scope first *)
             let init_params =
               {scp = List.fold_left check_binds_scoped [StringMap.empty; globals] (U.ids_to_vdecls func.parameters);
-               fl = [];
-               il = false;
+               fl = []; il = false;
               }
             in
             match check_stmt init_params (Block(func.body)) with
-              (SBlock(sl), _) -> sl
+              (SBlock(sl), _) ->
+              (match List.rev sl with (* check there is a return statement for the function *)
+                 SReturn(_) :: _ when func.t != Void -> sl
+               | _ when func.t = Void -> sl
+               | _  -> semant_err ("no return statement found for non-void function " ^ func.name))
+
             | _ -> semant_err "[COMPILER BUG] block didn't become a block?"
         }
       in    (* (globals, List.map check_function functions) *)

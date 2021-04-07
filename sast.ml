@@ -111,11 +111,13 @@ let string_of_svdecl_assign (t, id, e) =
     | SVdecl(v)           -> string_of_vdecl v
     | SVdecl_ass({vtyp; vname}, e)
       -> string_of_svdecl_assign(vtyp, vname, e)
+    | SBreak -> "break;"
+    | SContinue -> "continue;"
 
     | SBlock(stmts) ->
         "{\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"
 
-    | _ -> raise (Failure("Unimplemented statement type in sast prettyprint"))
+    | SDelete x -> "delete " ^ (string_of_sexpr x) ^ "\n"
 
   (* let string_of_sfdecl fdecl =
     string_of_typ fdecl.styp ^ " " ^
