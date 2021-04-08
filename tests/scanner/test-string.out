@@ -1,0 +1,7 @@
+STRING
+ID(a)
+ASSIGN
+STRLIT(abc)
+PLUS
+STRLIT(def)
+EOF
