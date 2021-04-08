@@ -143,9 +143,28 @@ let check  = function
         with Not_found -> semant_err ("unrecognized function " ^ s)
       in
 
-      (* Ensure "main" is defined *)
-      let _ = try find_func "main"
-        with _ -> semant_err "main function not found" in
+      (* Ensure "main" is defined and has the correct prototype*)
+      (* Allowed prototypes for main
+        int main()
+        int main(int)
+        int main(int, string[])
+      *)
+      let check_main =
+        let {t; parameters} = try
+            find_func "main"
+          with _ -> semant_err "main function not found"
+        in
+          let check_return = match t with
+            Int -> true
+          | _ -> semant_err  "return type of main must be int."
+        in
+          match parameters with
+            [] -> ()
+          | [(Int, _)] -> ()
+          | [(Int, _); (String, _)] -> ()
+          | _ -> semant_err "Invalid prototype of main function."
+
+      in
 
       let check_function func =
         (* Make sure no formals or locals are void or duplicates *)
