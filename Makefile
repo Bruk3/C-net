@@ -1,8 +1,5 @@
-CC := gcc
-INCLUDES = -I./libcnet
-CFLAGS := -Wall -Werror -g $(INCLUDES)
-
-OBJECTS:= string.o util.o
+LIB_DIR = ./libcnet
+CTEST_DIR = ./tests/stdlib
 
 # The "opam exec --" part is for compatiblity with github CI actions
 ############################# TEST TARGETS ####################################
@@ -20,7 +17,8 @@ test-parser:
 
 ## cnet top level compiler that compiles and links a cnet source file into an executable
 .PHONY: ccnet
-ccnet: cnet.native $(OBJECTS)
+ccnet: cnet.native stdlib_tests
+
 
 # cnet compiler that translates .cnet -> .ll
 # supports the following flags:
@@ -45,8 +43,13 @@ parser: parser.mly ast.ml
 ast: ast.ml
 
 ####################### Std Lib ###########################
-%.o: %.c
-	$(CC) $(CFLAGS) -c %^
+.PHONY: stdlib stdlib_tests
+
+stdlib_tests: stdlib
+	cd $(CTEST_DIR) && make all
+
+stdlib:
+	cd $(LIB_DIR) && make all
 
 #############################  Other targets  #################################
 .PHONY: clean
@@ -56,6 +59,7 @@ clean:
 	scanner.ml scannertest scannertest.out *cmi *cmo \
 	*.log *.diff *.out *.err *.ll *.s *.o libcnet/*.o parser.output \
 	tests/integration/*.exe
+	cd $(CTEST_DIR) && make clean
 
 .PHONY: all
 all: clean cnet.native
