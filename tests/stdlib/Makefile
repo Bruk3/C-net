@@ -1,15 +1,21 @@
 CC := gcc
-INCLUDES = -I../../libcnet
-CFLAGS := -Wall -Werror -g -std=c11 $(INCLUDES)
-CTESTS := cnet_test1 cnet_test2
+LIB_DIR = ../../libcnet
+INCLUDES = -I$(LIB_DIR)
+CFLAGS := -Wall -Werror -g -std=c11
+CTESTS := test1 test2
+DEPENDS := string.h utils.h
+DEPENDS := $(addprefix $(LIB_DIR)/, $(DEPENDS));
 
 stdlib_tests: $(CTESTS)
 
-cnet_%: %.c
-	$(CC) $(CFLAGS) $^ -o $@
+%: %.o
+	$(CC) $(CFLAGS) -o $@ $<
+
+%.o: %.c $(DEPENDS)
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 
 clean:
-	rm -f *.o cnet_*
+	rm -f *.o test*
 
 all: clean stdlib_tests
 

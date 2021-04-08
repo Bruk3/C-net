@@ -3,7 +3,6 @@
 #include <string.h>
 #include <ctype.h>
 #include "utils.h"
-#include "string.h"
 
 static string *create_str()
 {

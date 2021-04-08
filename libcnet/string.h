@@ -1,3 +1,5 @@
+#ifndef _STRING_H_
+#define _STRING_H_
 
 #define DEFAULT_LENGTH 20
 
@@ -40,3 +42,5 @@ int cnet_str_atoi(string *s);
 float cnet_str_atof(string *s);
 
 int cnet_find_char(string *s, char c);
+
+#endif
