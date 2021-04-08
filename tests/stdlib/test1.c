@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
-#include "../../../libcnet/string.h"
+#include "string.h"
 
 int main()
 {
