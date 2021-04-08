@@ -222,14 +222,14 @@ let check  = function
           | Noexpr     -> (Void, SNoexpr)
           | Rid rid      -> (type_of_identifier scope rid), SId (rid)
           | Binassop (var, op, e) as ex -> (match op with
-              PlusEq -> expr scope (Binassop(var, Assign, Binop(Rid(var), Add, e)))
-            | MinusEq -> expr scope (Binassop(var, Assign, Binop(Rid(var), Sub, e)))
-            | Assign -> let lt = type_of_identifier scope var
-              and (rt, e') = expr scope e in
-              let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
-                        string_of_typ rt ^ " in " ^ string_of_expr ex
-              in check_assign lt rt err, SBinassop(var, Assign, (rt, e')))
-            | Unop(op, e) as ex ->
+                PlusEq -> expr scope (Binassop(var, Assign, Binop(Rid(var), Add, e)))
+              | MinusEq -> expr scope (Binassop(var, Assign, Binop(Rid(var), Sub, e)))
+              | Assign -> let lt = type_of_identifier scope var
+                and (rt, e') = expr scope e in
+                let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
+                          string_of_typ rt ^ " in " ^ string_of_expr ex
+                in check_assign lt rt err, SBinassop(var, Assign, (rt, e')))
+          | Unop(op, e) as ex ->
             let (t, e') = expr scope e in
             let ty = match op with
                 (Minus | Not) when t = Int || t = Float -> t

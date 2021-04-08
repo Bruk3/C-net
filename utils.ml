@@ -125,25 +125,51 @@ let ids_to_vdecls (ids : A.id list)=
 let handle_strings sexp =
   let assign a b = SVdecl_ass({A.vtyp=String; A.vname = a}, b) in
   (* (stmt list -> sexpr -> sstmt list, sexpr) *)
-  let rec handle_helper stmts cur_exp = match cur_exp with
+  let rec handle_helper stmts cur_exp n = match cur_exp with
       (A.String as st, SCall(fn, args)) ->
-      let cur_tmp = "tmp" ^ (string_of_int 1) in
-      assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(A.FinalID(cur_tmp)))
+      let cur_tmp = "tmp" ^ (string_of_int n) in
+      assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(A.FinalID(cur_tmp))), n + 1
 
     (* All binary assignments should have been converted to = in semant *)
-    | (A.String, SBinassop(s1, _, s2)) -> let new_stmts, s2' = handle_helper stmts s2
-      in new_stmts, (String, SCall("cnet_strcpy", [String, SId(s1); (s2')]))
+    | (A.String, SBinassop(s1, _, s2)) -> let new_stmts, s2', n' = handle_helper stmts s2 n
+      in new_stmts, (String, SCall("cnet_strcpy", [String, SId(s1); (s2')])), n'
 
-    |(A.String, x) -> stmts , (A.String, x)
-    | _ -> stmts, cur_exp
+    | (A.String, SBinop((t1, e1), op, (t2, e2))) -> (match (t1, t2) with
+
+          (String, String) ->
+          (match op with
+             Add ->
+             let cs1, e1', n' = handle_helper stmts (t1, e1) n
+             in
+             let cs2, e2', n'' = handle_helper cs1 (t1,e2) n'
+             in
+             let cur_tmp = "tmp" ^ (string_of_int n'') in
+             assign cur_tmp (String, SCall("cnet_stradd", [e1'; e2'])) :: cs2,
+                (String, SId(FinalID(cur_tmp))), n'' + 1
+           | _ -> semant_err ("[COMPILER BUG] only + should be allowed on two strings (handle_strings)"))
+
+        | (String, Int) | (Int, String) ->
+          let the_str, the_int = (if t1 = String then e1, e2 else e2, e1) in
+          (match op with
+             Mul ->
+             let cs1, the_str', n' = handle_helper stmts (String, the_str) n in
+             let cur_tmp = "tmp" ^ (string_of_int n') in
+             assign cur_tmp (String, SCall("cnet_strmul", [the_str'; Int, the_int ])) :: cs1 ,
+             (String, SId(FinalID(cur_tmp))), n' + 1
+           | _ -> semant_err "[COMPILER BUG] only * should be allowed on string-int (hanlde_strings)")
+      )
+
+    |(A.String, x) -> stmts , (A.String, x), n
+    | _ -> stmts, cur_exp, n
   in
-  let pre_stmts, new_exp  = handle_helper [] sexp in
+  let pre_stmts, new_exp, _  = handle_helper [] sexp 0 in
   match pre_stmts with
     [] -> SExpr(new_exp)
   | l -> let convert_to_free = function
         SVdecl_ass({vtyp=_; vname=vn}, _) -> SDelete(String, SId(FinalID(vn)))
       | _ -> semant_err ("[COMPILER BUG] convert_to_free not setup properly")
     in
+    let l = List.rev l in
     let free_stmts = List.map convert_to_free l in
     SBlock(l @ [SExpr(new_exp)] @ free_stmts)
 ;;
