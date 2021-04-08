@@ -49,12 +49,12 @@ static void __concat_str(char *s, string *s1, string *s2)
 }
 
 /* Constructors */ 
-string *new_str()
+string *cnet_new_str()
 {
 	return create_str();
 }
 
-string *new_str_with_data(char *data)
+string *cnet_new_str_with_data(char *data)
 {
 	string *new_str =  create_str();
 	new_str->length = strlen(data);
@@ -65,7 +65,7 @@ string *new_str_with_data(char *data)
 }
 
 /* Destructor */
-void free_str(string *str)
+void cnet_free_str(string *str)
 {
 	if (str->length)
 		free(str->data);
@@ -73,7 +73,7 @@ void free_str(string *str)
 }
 
 /* operator '=' (deep copy) */
-void copy_str(string *src, string *dst)
+void cnet_copy_str(string *src, string *dst)
 {
 	if (dst->length < src->length){
 		free(dst->data);
@@ -85,7 +85,7 @@ void copy_str(string *src, string *dst)
 }
 
 /* Operator + */
-string *concat_str(string *s1, string *s2)
+string *cnet_concat_str(string *s1, string *s2)
 {
 	string *new_str = create_str();
 	new_str->length = s1->length+s2->length;
@@ -95,7 +95,7 @@ string *concat_str(string *s1, string *s2)
 }
 
 /* Operator += */ 
-void merge_str(string *s1, string *s2)
+void cnet_merge_str(string *s1, string *s2)
 {
 	char *temp_data = (char *) mem_alloc(s2->length+s1->length+1);	
 	__concat_str(temp_data, s1, s2);
@@ -107,13 +107,13 @@ void merge_str(string *s1, string *s2)
 }
 
 /* Operator ==, >, < */ 
-int cmp_str(string *s1, string *s2)
+int cnet_cmp_str(string *s1, string *s2)
 {
 	return strcmp(s1->data, s2->data);
 }
 
 /* Operator [] */ 
-char char_at(string *str, int index)
+char cnet_char_at(string *str, int index)
 {
 	if (index >= str->length)
 		return '\0';
@@ -122,12 +122,12 @@ char char_at(string *str, int index)
 }
 
 /* Other string function */ 
-int str_length(string *s1)
+int cnet_str_length(string *s1)
 {
 	return s1->length;
 }
 
-string *str_lower(string *s)
+string *cnet_str_lower(string *s)
 {
 	string *s1 = clone_str(s);
 	for(int i = 0; i<s->length;i++)
@@ -138,7 +138,7 @@ string *str_lower(string *s)
 	return s1;
 }
 
-string *str_upper(string *s)
+string *cnet_str_upper(string *s)
 {
 	string *s1 = clone_str(s);
 	for(int i = 0; i<s->length;i++)
@@ -150,7 +150,7 @@ string *str_upper(string *s)
 }
 
 /* [start, end) */ 
-string *substring(string *s, int start, int end)
+string *cnet_substring(string *s, int start, int end)
 {
 	string *s1 = create_str();
 	s1->length = end - start;
@@ -162,7 +162,7 @@ string *substring(string *s, int start, int end)
 
 }
 
-string *reverse(string *s)
+string *cnet_reverse(string *s)
 {	
 	string *s1 = clone_str(s);
 	int len = s1->length;
@@ -174,17 +174,17 @@ string *reverse(string *s)
 	return s1;
 }
 
-int str_atoi(string *s)
+int cnet_str_atoi(string *s)
 {
 	return atoi(s->data);
 }
 
-float str_atof(string *s)
+float cnet_str_atof(string *s)
 {
 	return atof(s->data);
 }
 
-int find_char(string *s, char c)
+int cnet_find_char(string *s, char c)
 {
 	for(int i = 0; i<s->length;i++)
 		if(s->data[i] == c)
