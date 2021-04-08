@@ -13,7 +13,7 @@ let octal_dig = ['0'-'7']
 let octal_triplet = (octal_dig)(octal_dig)(octal_dig)
 let integer = digit+
 let exp = 'e'['-''+']?['0'-'9']+
-let sliterals = ([^ '\\' '"'] | ('\\'[^ '\n' ]))*
+let sliterals = ([^ '\\' '"' '\n'] | ('\\'[^ '\n' ]))*
 let cfloat = (
     ((digit)+'.'(digit)* (exp)?) |
     ((digit)* '.'(digit)+(exp)?) |
