@@ -1,5 +1,5 @@
 int main()
 {
-string c = (string : "a" + "A");
+string c = (string : (string : "a") + (string : "A"));
 }
 

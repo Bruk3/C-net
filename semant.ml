@@ -257,6 +257,7 @@ let check  = function
             let ty = match op with
                 Add | Sub | Mul | Div when same && t1 = Int   -> Int
               | Add | Sub | Mul | Div when same && t1 = Float -> Float
+              | Add when same && t1 = String -> String
               | Add | Sub when t1 = Int && t2 = Char -> Int
               | Add | Sub when t1 = Char && t2 = Int -> Float
               | Eq | Neq            when same               -> Int

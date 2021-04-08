@@ -13,6 +13,7 @@ let octal_dig = ['0'-'7']
 let octal_triplet = (octal_dig)(octal_dig)(octal_dig)
 let integer = digit+
 let exp = 'e'['-''+']?['0'-'9']+
+let sliterals = ([^ '\\' '"'] | ('\\'[^ '\n' ]))*
 let cfloat = (
     ((digit)+'.'(digit)* (exp)?) |
     ((digit)* '.'(digit)+(exp)?) |
@@ -72,8 +73,6 @@ rule tokenize = parse
 | "struct" { STRUCT }
 | "socket" { SOCKET }
 | "file"   { FILE }
-(*| "TCP" {TCP}
-| "UDP" {UDP}*)
 (*Functions*)
 | "return" { RETURN }
 (*Memory*)
@@ -85,7 +84,8 @@ rule tokenize = parse
 | "/*" { mcomment lexbuf }
 | normal_id as lxm {ID(lxm)}
 | integer as lxm { INTLIT(int_of_string lxm) }
-| '"' ((print_char)* as str) '"' { STRLIT(str) }
+(* | '"' ((print_char)* as str) '"' { STRLIT(str) } *)
+| '"' (sliterals as str) '"' { STRLIT(str) }
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
 | squote (bslash ('n' | 't' | '\\' | '0'| squote))? squote { CHARLIT(0) } (* TODO replace special char with number *)
 | squote print_char squote as lxm               {CHARLIT(Char.code(lxm.[1]))} (*For chars like 'a'*)
