@@ -2,23 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "utils.h"
 #include "string.h"
-
-static void die(const char *message)
-{
-	perror(message);
-	exit(1);
-}
-
-static void *mem_alloc(int length)
-{
-	void *mem = malloc(length);
-
-	if (!mem)
-		die("Could not allocate memory");
-
-	return mem;
-}
 
 static string *create_str()
 {

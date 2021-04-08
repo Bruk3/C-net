@@ -1,9 +1,10 @@
 
 #define DEFAULT_LENGTH 20
 
+/*string * can be casted to char * if needed */ 
 struct string {
-	int length;
 	char *data;
+	int length;
 };
 
 typedef struct string string;
