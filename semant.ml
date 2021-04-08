@@ -123,7 +123,7 @@ let check  = function
           body = [] } map
         in List.fold_left add_bind StringMap.empty
           [
-            (Int, "println", [(String, "s")])
+            (Int, "println", [(File, "f"); (String, "s")])
           ]
       in
 
@@ -221,14 +221,15 @@ let check  = function
           | Strlit l -> (String, SStrlit l)
           | Noexpr     -> (Void, SNoexpr)
           | Rid rid      -> (type_of_identifier scope rid), SId (rid)
-          | Binassop (var, op, e) as ex ->
-            let lt = type_of_identifier scope var  (* TODO: Kidus: why doesn't this
-                                               catch illegal assignments? *)
-            and (rt, e') = expr scope e in
-            let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
-                      string_of_typ rt ^ " in " ^ string_of_expr ex
-            in (check_assign lt rt err, SBinassop((string_of_rid var), op, (rt, e')))
-          | Unop(op, e) as ex ->
+          | Binassop (var, op, e) as ex -> (match op with
+              PlusEq -> expr scope (Binassop(var, Assign, Binop(Rid(var), Add, e)))
+            | MinusEq -> expr scope (Binassop(var, Assign, Binop(Rid(var), Sub, e)))
+            | Assign -> let lt = type_of_identifier scope var
+              and (rt, e') = expr scope e in
+              let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
+                        string_of_typ rt ^ " in " ^ string_of_expr ex
+              in check_assign lt rt err, SBinassop(var, Assign, (rt, e')))
+            | Unop(op, e) as ex ->
             let (t, e') = expr scope e in
             let ty = match op with
                 (Minus | Not) when t = Int || t = Float -> t
@@ -277,7 +278,7 @@ let check  = function
                    in (check_assign ft et err, e')
               in
               let args' = List.map2 check_call fd.parameters args
-              in (fd.t, SCall(FinalID(U.final_id_of_rid fname), args'))
+              in (fd.t, SCall(U.final_id_of_rid fname, args'))
           | New(NStruct(sn)) ->
               let ty =  try (ignore (StringMap.find sn structs)) ; Struct(sn) with
                 Not_found -> semant_err("invalid new expression: type [struct " ^ sn ^ "] doesn't exist")

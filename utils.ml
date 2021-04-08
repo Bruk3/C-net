@@ -25,8 +25,8 @@ let my_sast = (
           SExpr( A.Int,
                  SCall
                    (
-                     A.RID(A.FinalID("stdout"), "println"),
-                     [ (A.String, SStrlit("Hello World!\n")) ]
+                     "println",
+                     [(File, SId(FinalID("stdout"))); (A.String, SStrlit("Hello World!\n")) ]
                    )
                );
           SReturn(A.Int, SIntlit(0))
@@ -125,11 +125,14 @@ let ids_to_vdecls (ids : A.id list)=
 let handle_strings sexp =
   let assign a b = SVdecl_ass({A.vtyp=String; A.vname = a}, b) in
   (* (stmt list -> sexpr -> sstmt list, sexpr) *)
-  let handle_helper stmts cur_exp = match cur_exp with
+  let rec handle_helper stmts cur_exp = match cur_exp with
       (A.String as st, SCall(fn, args)) ->
       let cur_tmp = "tmp" ^ (string_of_int 1) in
       assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(A.FinalID(cur_tmp)))
 
+    (* All binary assignments should have been converted to = in semant *)
+    | (A.String, SBinassop(s1, _, s2)) -> let new_stmts, s2' = handle_helper stmts s2
+      in new_stmts, (String, SCall("cnet_strcpy", [String, SId(s1); (s2')]))
 
     |(A.String, x) -> stmts , (A.String, x)
     | _ -> stmts, cur_exp
@@ -137,7 +140,12 @@ let handle_strings sexp =
   let pre_stmts, new_exp  = handle_helper [] sexp in
   match pre_stmts with
     [] -> SExpr(new_exp)
-  | l -> SBlock(l @ [SExpr(new_exp)])
+  | l -> let convert_to_free = function
+        SVdecl_ass({vtyp=_; vname=vn}, _) -> SDelete(String, SId(FinalID(vn)))
+      | _ -> semant_err ("[COMPILER BUG] convert_to_free not setup properly")
+    in
+    let free_stmts = List.map convert_to_free l in
+    SBlock(l @ [SExpr(new_exp)] @ free_stmts)
 ;;
 
 

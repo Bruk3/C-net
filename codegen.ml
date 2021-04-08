@@ -100,7 +100,7 @@ let translate (sdecl_list : sprogram) =
     let rec expr builder ((_, e) : sexpr) = match e with
         SIntlit i   -> L.const_int i32_t i
       | SStrlit s   -> L.build_global_stringptr (s ^ "\n") "tmp" builder
-      | SCall(A.RID(A.FinalID("stdout"), "println"), (A.String, SStrlit(s)) :: []) ->
+      | SCall("println", (A.String, SId(A.FinalID("stdout"))) :: (A.String, SStrlit(s)) :: []) ->
         L.build_call println_func
           [| L.const_int i32_t 1;
              (expr builder (A.String, SStrlit(s)));
