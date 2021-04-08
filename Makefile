@@ -1,3 +1,9 @@
+CC := gcc
+INCLUDES = -I./libcnet
+CFLAGS := -Wall -Werror -g $(INCLUDES)
+
+OBJECTS:= string.o util.o
+
 # The "opam exec --" part is for compatiblity with github CI actions
 ############################# TEST TARGETS ####################################
 test: test-scanner test-parser
@@ -10,13 +16,11 @@ test-parser:
 	ocamlyacc -v parser.mly
 	rm parser.ml parser.mli
 
-
-
 ############################# cnet top level ##################################
 
 ## cnet top level compiler that compiles and links a cnet source file into an executable
-.PHONY: cnet
-ccnet: cnet.native
+.PHONY: ccnet
+ccnet: cnet.native $(OBJECTS)
 
 # cnet compiler that translates .cnet -> .ll
 # supports the following flags:
@@ -40,18 +44,21 @@ scanner_pp: scanner_pp.ml
 parser: parser.mly ast.ml
 ast: ast.ml
 
+####################### Std Lib ###########################
+%.o: %.c
+	$(CC) $(CFLAGS) -c %^
 
 #############################  Other targets  #################################
 .PHONY: clean
 clean:
 	opam config exec -- ocamlbuild -clean
-	rm -f final parser.ml parser.mli scanner.ml parser.output \
+	rm -f  final parser.ml parser.mli scanner.ml parser.output \
 	scanner.ml scannertest scannertest.out *cmi *cmo \
-	*.log *.diff *.out *.err *.ll *.s *.o parser.output \
+	*.log *.diff *.out *.err *.ll *.s *.o libcnet/*.o parser.output \
 	tests/integration/*.exe
 
 .PHONY: all
-all: clean cnet.native printbig.o
+all: clean cnet.native
 
 
 ##################################################################
