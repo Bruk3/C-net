@@ -332,7 +332,14 @@ let check  = function
           : (sstmt * vdecl StringMap.t list)
           = match aexp with
             Expr e -> SExpr(expr scope e), scope
-          (* | Delete n -> SDelete (expr n) *)
+          | Delete n ->
+                let t = type_of_identifier scope n in
+                let err = "illegal identifier for delete: [" ^ string_of_typ t ^ " " ^ string_of_rid n ^
+                "]. Identifier should be of type Struct or Array" in
+                let e = Rid(n) in
+                let check_valid_delete =  function
+                    Array(_) | Struct(_) -> SDelete (expr scope e), scope
+                  | _ -> semant_err (err) in check_valid_delete t
           | Break -> SBreak, scope (* TODO that we are in a loop context *)
           | Continue -> SContinue, scope (* TODO verify that we are in a loop context *)
 
