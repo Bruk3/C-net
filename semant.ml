@@ -195,7 +195,7 @@ let check  = function
             | t -> semant_err ("dot operator not allowed on variable " ^
                                string_of_rid r ^ " of type " ^ string_of_typ t))
 
-          | Index(r, e) ->
+          | Index(r, e) -> (* TODO: index into a string should be char *)
             let (t, _) = expr scope e in
             match t with
               Int ->
@@ -244,12 +244,11 @@ let check  = function
             (* Determine expression type based on operator and operand types *)
             let ty = match op with
                 Add | Sub | Mul | Div when same && t1 = Int   -> Int
-              | Add | Sub | Mul | Div when same && t1 = Float -> Float
-              | Add | Sub when t1 = Int && t2 = Char -> Int
-              | Add | Sub when t1 = Char && t2 = Int -> Float
-              | Eq | Neq            when same               -> Int
-              | Lt | Leq | Gt | Geq
-                when same && (t1 = Int || t1 = Float) -> Int
+              (* | Add | Sub | Mul | Div when same && t1 = Float -> Float *)
+              (* | Add | Sub when t1 = Int && t2 = Char -> Int *)
+              (* | Add | Sub when t1 = Char && t2 = Int -> Float *)
+              (* | Eq | Neq            when same               -> Int *)
+              | Lt | Leq | Gt | Geq when same && t1 = Int -> Int
               | And | Or when same && t1 = Int -> Int
               | _ -> semant_err ("illegal binary operator " ^
                                  string_of_typ t1 ^ " " ^ string_of_op op ^ " " ^
@@ -393,8 +392,6 @@ let check  = function
              | _ -> SBlock (List.rev (free_stmts @ checked_block))
             ), sp
 
-          | _ -> semant_err "Statement not yet implemented"
-
         in (* body of check_function *)
 
         { styp = func.t;
@@ -420,7 +417,8 @@ let check  = function
 
       let decl_to_sdecl = function
           GVdecl(vdecl) ->  SGVdecl_ass(vdecl, U.default_global vdecl.vtyp)
-        | GVdecl_ass(vdecl, e) -> SGVdecl_ass (vdecl, U.compute_global vdecl e) (* TODO *)
+        | GVdecl_ass(vdecl, e) -> SGVdecl_ass (vdecl, U.compute_global vdecl e)
+        (* TODO check assignment*)
         | Sdecl(s) -> SSdecl s
         | Fdecl (func) -> SFdecl (check_function func)
 
