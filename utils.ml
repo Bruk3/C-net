@@ -1,5 +1,6 @@
 module A = Ast
-open Sast
+open Sast;;
+open Ast;;
 
                               (* Scanner utils *)
 let count_new_lines whitespace lexbuf =
@@ -17,7 +18,7 @@ let my_sast = (
   [
     {
       styp = A.Int;
-      sname = "main";
+      sfname = "main";
       sparameters = [];
       sbody =
         [
@@ -116,6 +117,29 @@ let ids_to_vdecls (ids : A.id list)=
   let id_to_vdecl ((t, n) : A.id) =
     {A.vtyp = t; A.vname = n}
   in List.map id_to_vdecl ids;;
+
+(* Goes through an expression and substitues operations on strings with the call
+ * to the appropriate string library functions. It also creats temporary
+ * variables for handling return values of things
+ * *)
+let handle_strings sexp =
+  let assign a b = SVdecl_ass({A.vtyp=String; A.vname = a}, b) in
+  (* (stmt list -> sexpr -> sstmt list, sexpr) *)
+  let handle_helper stmts cur_exp = match cur_exp with
+      (A.String as st, SCall(fn, args)) ->
+      let cur_tmp = "tmp" ^ (string_of_int 1) in
+      assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(A.FinalID(cur_tmp)))
+
+
+    |(A.String, x) -> stmts , (A.String, x)
+    | _ -> stmts, cur_exp
+  in
+  let pre_stmts, new_exp  = handle_helper [] sexp in
+  match pre_stmts with
+    [] -> SExpr(new_exp)
+  | l -> SBlock(l @ [SExpr(new_exp)])
+;;
+
 
 
 

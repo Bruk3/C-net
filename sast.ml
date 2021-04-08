@@ -48,7 +48,7 @@ type sstmt =
 
 type sfunc = {
   styp: typ;
-  sname: string;
+  sfname: string;
   sparameters: id list;
   sbody: sstmt list
 }
@@ -139,8 +139,8 @@ let string_of_sfunc (t, n, p, b) =
 
 let string_of_sdecl = function
   | SGVdecl_ass({vtyp; vname}, e) -> string_of_svdecl_assign(vtyp, vname, e)
-  | SSdecl({name; members}) -> string_of_strct(name, members)
-  | SFdecl({styp; sname; sparameters; sbody; _}) -> string_of_sfunc(styp, sname, sparameters, sbody)
+  | SSdecl({sname; members}) -> string_of_strct(sname, members)
+  | SFdecl({styp; sfname; sparameters; sbody; _}) -> string_of_sfunc(styp, sfname, sparameters, sbody)
   (* let string_of_sprogram ((vdecls : (vdecl * sexpr) list), (strct_decls : strct list), (fd : sfunc list))  =
     String.concat "" (List.map string_of_sfunc(fd)) ^ "\n" *)
 

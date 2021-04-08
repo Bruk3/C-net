@@ -71,11 +71,11 @@ let check  = function
     let structs : strct StringMap.t =
       let add_struct m = function
           Sdecl(s) ->
-          (match StringMap.mem s.name m with
-             true -> semant_err ("Duplicate declaration of struct " ^ s.name)
+          (match StringMap.mem s.sname m with
+             true -> semant_err ("Duplicate declaration of struct " ^ s.sname)
            | false ->
              let structs_so_far =
-               StringMap.add s.name s m (* include the current one *)
+               StringMap.add s.sname s m (* include the current one *)
              in
              ignore (List.fold_left check_binds_general
                (StringMap.empty,structs_so_far) s.members); structs_so_far)
@@ -202,7 +202,7 @@ let check  = function
               (let vt = type_of_identifier scope r in
                match vt with
                  Array(at) -> at
-               | _ -> semant_err ("cannot index non-array variable" ^
+               | _ -> semant_err ("cannot index non-array variable " ^
                                   (string_of_rid r)))
             | ot -> semant_err ("index into an array has to be of type int, " ^
                     "but the expression (" ^ (string_of_expr e) ^ ") has type " ^
@@ -244,6 +244,9 @@ let check  = function
             (* Determine expression type based on operator and operand types *)
             let ty = match op with
                 Add | Sub | Mul | Div when same && t1 = Int   -> Int
+              | Add when same && t1 = String -> String (* "hello" + "world" *)
+              | Mul when (t1 = String && t2 = Int) || (t1 = Int && t2 = String)
+                                                      -> String
               (* | Add | Sub | Mul | Div when same && t1 = Float -> Float *)
               (* | Add | Sub when t1 = Int && t2 = Char -> Int *)
               (* | Add | Sub when t1 = Char && t2 = Int -> Float *)
@@ -256,18 +259,25 @@ let check  = function
             in (ty, SBinop((t1, e1'), op, (t2, e2')))
           | Call(fname, args) as call ->
             let fd = find_func (U.final_id_of_rid fname) in
+            let args = (match fname with
+                  FinalID(_) -> args
+                | RID(sm,_) -> Rid(sm) :: args
+                | indx -> semant_err ("cannot call a function on index " ^ (string_of_rid indx))
+              )
+            in
             let param_length = List.length fd.parameters in
             if List.length args != param_length then
               semant_err ("expecting " ^ string_of_int param_length ^
                           " arguments in " ^ string_of_expr call)
             else let check_call (ft, _) e =
                    let (et, e') = expr scope e in
-                   let err = "illegal argument found " ^ string_of_typ et ^
-                             " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e
+                   let err = "illegal argument found in call to " ^ fd.name ^ " : " ^ "found " ^
+                             string_of_typ et ^ " but expected " ^ string_of_typ ft ^ " in " ^
+                             string_of_expr e
                    in (check_assign ft et err, e')
               in
               let args' = List.map2 check_call fd.parameters args
-              in (fd.t, SCall(fname, args'))
+              in (fd.t, SCall(FinalID(U.final_id_of_rid fname), args'))
           | New(NStruct(sn)) ->
               let ty =  try (ignore (StringMap.find sn structs)) ; Struct(sn) with
                 Not_found -> semant_err("invalid new expression: type [struct " ^ sn ^ "] doesn't exist")
@@ -332,7 +342,7 @@ let check  = function
           in
 
           match aexp with
-            Expr e -> SExpr(expr scope e), sp
+            Expr e -> U.handle_strings (expr scope e), sp
           | Delete n -> SDelete (expr scope (Rid(n))), sp
           | Break when inloop -> SBreak, {scp = scope; fl = tofree; il = false}
           | Break -> semant_err ("break used without being in a loop")
@@ -360,8 +370,8 @@ let check  = function
                       d, add_free {vtyp; vname}
           | Return e -> let (t, e') = expr scope e in
             if t = func.t then SReturn (t, e'), sp
-            else semant_err ("return gives " ^ string_of_typ t ^ " expected " ^
-                             string_of_typ func.t ^ " in " ^ string_of_expr e)
+            else semant_err ("return statement in function "^ func.name ^" has type " ^ string_of_typ t ^
+                             " but expected " ^ string_of_typ func.t ^ " in " ^ string_of_expr e)
 
           (* A block is correct if each statement is correct and nothing
              follows any Return statement.  Nested blocks are flattened. *)
@@ -395,7 +405,7 @@ let check  = function
         in (* body of check_function *)
 
         { styp = func.t;
-          sname = func.name;
+          sfname = func.name;
           sparameters = func.parameters;
           sbody =
             (* add formals to scope first *)

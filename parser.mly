@@ -75,7 +75,7 @@ vdecl:
     typ ID SEMI { {vtyp = $1; vname = $2} }
 
 sdecl:
-        STRUCT ID LBRACE vdecls RBRACE SEMI { {name = $2; members = List.rev $4} }
+        STRUCT ID LBRACE vdecls RBRACE SEMI { {sname = $2; members = List.rev $4} }
 
 fdecl :
     typ ID LPAREN opt_params RPAREN LBRACE opt_stmts RBRACE
