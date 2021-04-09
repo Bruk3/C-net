@@ -45,7 +45,7 @@ ast: ast.ml
 ####################### Std Lib ###########################
 .PHONY: stdlib stdlib_tests
 
-stdlib_tests: stdlib
+stdlib_tests:
 	cd $(CTEST_DIR) && make all
 
 stdlib:
@@ -59,6 +59,7 @@ clean:
 	scanner.ml scannertest scannertest.out *cmi *cmo \
 	*.log *.diff *.out *.err *.ll *.s *.o parser.output \
 	tests/integration/*.exe
+	cd $(LIB_DIR) && make clean
 	cd $(CTEST_DIR) && make clean
 
 .PHONY: all
