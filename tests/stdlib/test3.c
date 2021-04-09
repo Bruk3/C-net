@@ -10,10 +10,12 @@ int main()
 	char line[DEFAULT_BUF_SIZE];
 	string *filename = cnet_new_str("test3.c", strlen("test3.c"));
 	string *mode	 = cnet_new_str("r", strlen("r")); 
-	cnet_file *file = cnet_open_file(filename, mode);
+	cnet_file *file  = cnet_open_file(filename, mode);
 	fread(line, 1, 10, file->f);
 	string *s = cnet_new_str(line, 10);
-
+	// snprintf(stdout, s->length, "%s\n", s->data);
+	cnet_free(filename);
+	cnet_free(mode);
 	cnet_free(s);
 	cnet_free(file);
 }

@@ -47,7 +47,7 @@ cnet_file *cnet_open_file(string *filename, string *mode)
     char fname[filename->length+1], md[mode->length+1];
 
     memcpy((char *)fname, filename->data, filename->length);
-    memcpy((char *)mode, mode->data, mode->length);
+    memcpy((char *)md, mode->data, mode->length);
     
     fname[filename->length] = '\0';
     md[mode->length]        = '\0';
