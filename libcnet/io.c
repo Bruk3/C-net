@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,6 +5,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <errno.h>
+#include <stdio.h>
 #include "utils.h"
 
 static int sock_domain[] = {AF_INET, AF_INET6};
@@ -34,9 +34,6 @@ static void cnet_free_socket(void *ptr)
 {
     cnet_socket *s = (cnet_socket *)ptr;
 	close(s->fd);
-    if (s->type != LISTEN){
-        free(s->buf);
-    }
     
 	free(s);
     
@@ -61,21 +58,67 @@ cnet_file *cnet_open_file(string *filename, string *mode)
     cnet_file *file = (cnet_file *)mem_alloc(sizeof(cnet_file));
     file->cnet_free = cnet_free_file;
     file->f         = f;
+    file->fd        = fileno(f);
+
+    if (file->fd < 0){
+        die("Could not open file");
+    }
 
 	return file;
 }
 
-// string *cnet_read()
-// {}
+// string *cnet_read(void *ptr, int read_all, int size)
+// {
 
-// string *cnet_readln()
-// {}
+// }
 
-// int cnet_write()
-// {}
+// string *cnet_readln(void *ptr)
+// {
+    
+// }
 
-// int cnet_writeln()
-// {}
+
+int cnet_nwrite(void *ptr, string *s, int length)
+{
+    int n;
+    cnet_io *io = (cnet_io *)ptr; 
+    length = (length > s->length) ? s->length : length;
+    n = write(io->fd, s->data, length);
+    if (n != length){
+        fprintf(stderr, "error: %s", strerror(errno));
+        die("\n");
+    }
+
+    return n;
+}
+
+int cnet_write(void *ptr, string *s)
+{
+	return cnet_nwrite(ptr, s->data, s->length);
+}
+
+int cnet_writeln(void *ptr, string *s)
+{
+    int n, tmp;
+    cnet_io *io = (cnet_io *)ptr; 
+	n = write(io->fd, s->data, s->length);
+    if (n != s->length){
+        fprintf(stderr, "error: %s", strerror(errno));
+        die("\n");
+    }
+    tmp = write(io->fd, "\n", 1);
+    if (tmp != 1){
+        fprintf(stderr, "error: %s", strerror(errno));
+        die("\n");
+    }
+
+	return n + tmp;
+}
+
+int cnet_get_fd(cnet_file *file)
+{
+    return file->fd;
+}
 
 static cnet_socket *create_listener(int fd, int domain, unsigned short port)
 {
@@ -85,8 +128,6 @@ static cnet_socket *create_listener(int fd, int domain, unsigned short port)
     sock->fd        = fd;
     sock->port      = port;
     sock->type      = LISTEN;
-    sock->buf_len   = 0;
-    sock->buf       = NULL;
     sock->addr      = (struct sockaddr_in *)mem_alloc(sizeof(struct sockaddr_in));
     
     memset(sock->addr, 0, sizeof(struct sockaddr_in));
@@ -103,8 +144,6 @@ static cnet_socket *create_connection_socket()
     
     sock->cnet_free = cnet_free_socket;
     sock->type      = CONNECT;
-    sock->buf_len   = DEFAULT_BUF_SIZE;
-    sock->buf       = (char *)mem_alloc(DEFAULT_BUF_SIZE);
     sock->addr      = (struct sockaddr_in *)mem_alloc(sizeof(struct sockaddr_in));
 
     return sock;

@@ -23,7 +23,7 @@ void *mem_alloc(int size)
 /* free yourself */ 
 void cnet_free(void *s)
 {
-	cnet_cast *fs = (cnet_cast *)s;
+	cnet_io *fs = (cnet_io *)s;
 	if(s)
 		fs->cnet_free(s);
 }

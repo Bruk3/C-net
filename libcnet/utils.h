@@ -18,6 +18,7 @@ typedef struct string string;
 /* files */ 
 struct cnet_file {
 	void (*cnet_free) (void *f);
+	int fd;
 	FILE *f;
 };
 
@@ -29,8 +30,6 @@ struct cnet_socket {
 	int fd;
 	int port;
 	int type;
-	int buf_len;
-	char *buf;
 	struct sockaddr_in *addr;
 };
 
@@ -44,11 +43,12 @@ struct prot_type {
 typedef struct prot_type prot_type;
 
 /* for casting purposes*/ 
-struct cnet_cast {
+struct cnet_io {
 	void (*cnet_free) (void *ptr);
+	int fd;
 };
 
-typedef struct cnet_cast cnet_cast;
+typedef struct cnet_io cnet_io;
 
 void die(const char *message);
 
