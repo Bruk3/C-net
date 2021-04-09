@@ -3,8 +3,8 @@
 
 #define DEFAULT_BUF_SIZE 4096
 #define MAXPENDING 5
-#define LISTENER 0
-#define CONNECTER 1
+#define LISTEN 0
+#define CONNECT 1
 
 /* strings */ 
 struct string {
@@ -45,7 +45,7 @@ typedef struct prot_type prot_type;
 
 /* for casting purposes*/ 
 struct cnet_cast {
-	void (*cnet_free) (void *sock);
+	void (*cnet_free) (void *ptr);
 };
 
 typedef struct cnet_cast cnet_cast;

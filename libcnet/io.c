@@ -16,25 +16,25 @@ static prot_type ptype[] = {
 };
 
 
-void cnet_close_file(FILE *f)
+static void cnet_close_file(FILE *f)
 {
 	if (fclose(f) < 0)
 		fprintf(stderr, "error: %s\n", strerror(errno));
 
 }
 
-void cnet_free_file(void *ptr)
+static void cnet_free_file(void *ptr)
 {
     cnet_file *file = (cnet_file *)ptr;
     cnet_close_file(file->f);
     free(file);
 }
 
-void cnet_free_socket(void *ptr)
+static void cnet_free_socket(void *ptr)
 {
     cnet_socket *s = (cnet_socket *)ptr;
 	close(s->fd);
-    if (s->type != LISTENER){
+    if (s->type != LISTEN){
         free(s->buf);
     }
     
@@ -84,7 +84,7 @@ static cnet_socket *create_listener(int fd, int domain, unsigned short port)
     sock->cnet_free = cnet_free_socket;
     sock->fd        = fd;
     sock->port      = port;
-    sock->type      = LISTENER;
+    sock->type      = LISTEN;
     sock->buf_len   = 0;
     sock->buf       = NULL;
     sock->addr      = (struct sockaddr_in *)mem_alloc(sizeof(struct sockaddr_in));
@@ -102,7 +102,7 @@ static cnet_socket *create_connection_socket()
     cnet_socket *sock   = (cnet_socket *)mem_alloc(sizeof(cnet_socket));
     
     sock->cnet_free = cnet_free_socket;
-    sock->type      = CONNECTER;
+    sock->type      = CONNECT;
     sock->buf_len   = DEFAULT_BUF_SIZE;
     sock->buf       = (char *)mem_alloc(DEFAULT_BUF_SIZE);
     sock->addr      = (struct sockaddr_in *)mem_alloc(sizeof(struct sockaddr_in));
@@ -146,7 +146,7 @@ out:
 
 cnet_socket *cnet_accept_connection(cnet_socket *listener)
 {
-    if (listener->type != LISTENER)
+    if (listener->type != LISTEN)
         die("Non-Listener socket cannot accept connections.");
 
     int fd;

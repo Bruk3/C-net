@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "../../libcnet/str.h"
-#include "../../libcnet/utils.h"
+#include "str.h"
+#include "utils.h"
 
 int main()
 {

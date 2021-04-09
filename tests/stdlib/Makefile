@@ -6,11 +6,11 @@ INCLUDES = -I$(LIB_DIR)
 CFLAGS := -Wall -g -std=c11
 VGFLAGS := --leak-check=full --track-origins=yes
 
-OBJS := string.o utils.o
+OBJS := string.o utils.o  io.o
 OBJS := $(addprefix $(LIB_DIR)/, $(OBJS));
-DEPENDS := string.h utils.h
+DEPENDS := string.h utils.h io.h
 DEPENDS := $(addprefix $(LIB_DIR)/, $(DEPENDS));
-CTESTS := cnet_test1
+CTESTS := cnet_test1 cnet_test3
 
 stdlib_tests: clean stdlib $(CTESTS)
 
