@@ -62,7 +62,7 @@ clean:
 	cd $(CTEST_DIR) && make clean
 
 .PHONY: all
-all: clean cnet.native printbig.o
+all: clean cnet.native
 
 
 ##################################################################

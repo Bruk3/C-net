@@ -20,6 +20,14 @@ void *mem_alloc(int size)
 	return mem;
 }
 
+/* free yourself */ 
+void cnet_free(void *s)
+{
+	cnet_custom *fs = (cnet_custom *)s;
+	if(s)
+		fs->cnet_free(s);
+}
+
 // static int serverSocket(unsigned short port)
 // {
 // 	int servSock;

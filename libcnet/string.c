@@ -4,10 +4,25 @@
 #include <ctype.h>
 #include "utils.h"
 
+
+/* Destructor */
+static void cnet_free_str(void *str)
+{
+	if (!str)
+		return;
+
+	string *s = (string *)str;
+	if (s->length)
+		free(s->data);
+	
+	free(s);
+}
+
 static string *create_str()
 {
 	string *new_str = (string *) mem_alloc(sizeof(string));
 
+	new_str->cnet_free  = cnet_free_str;
 	new_str->length 	= 0;
 	new_str->data		= NULL;
 
@@ -18,71 +33,80 @@ static string *clone_str(string *s)
 {
 	string *new_str = (string *) mem_alloc(sizeof(string));
 
+	new_str->cnet_free  = cnet_free_str;
 	new_str->length 	= s->length;
 	new_str->data		= s->length == 0 ? NULL :
-					(char *) mem_alloc(sizeof(s->length+1));
+							(char *) mem_alloc(sizeof(s->length));
 
 	return new_str;
 }
-static void __concat_str(char *s, string *s1, string *s2)
+static void __concat_str(char **s, string *s1, string *s2)
 {
-	s = (char *) mem_alloc(s1->length+s2->length+1);
-	strncpy(s, s1->data, s1->length);
-	strncpy(s+s1->length, s2->data, s2->length+1);
-
+	*s = (char *) mem_alloc(s1->length+s2->length);
+	if(s1->data)
+		memcpy(s[0], s1->data, s1->length);
+	if(s2->data)
+		memcpy(s[s1->length], s2->data, s2->length);
 }
 
 /* Constructors */ 
-string *cnet_new_str()
+string *cnet_empty_str()
 {
 	return create_str();
 }
 
-string *cnet_new_str_with_data(char *data)
+string *cnet_new_str(char *data, int length)
 {
-	string *new_str =  create_str();
-	new_str->length = strlen(data);
-	new_str->data	= (char *)mem_alloc(new_str->length+1);
-	strncpy(new_str->data, data, new_str->length+1);
+	if (!length)
+		return cnet_empty_str();
+
+	string *new_str 	=  create_str();
+	
+	new_str->length 	= length;
+	new_str->data		= (char *)mem_alloc(length);
+	memcpy(new_str->data, data, length);
 
 	return new_str;
 }
 
-/* Destructor */
-void cnet_free_str(string *str)
-{
-	if (str->length)
-		free(str->data);
-	free(str);
-}
 
 /* operator '=' (deep copy) */
-void cnet_copy_str(string *src, string *dst)
+void cnet_strcpy(string *dst, string *src)
 {
-	if (dst->length < src->length){
-		free(dst->data);
-		dst->data = (char *) mem_alloc(src->length+1);
-	}
+	if (!dst || !src)
+		die("Error: NULL Pointer\n");
 
-	strncpy(dst->data, src->data, dst->length+1);
+	if (dst->data)
+		free(dst->data);
+
 	dst->length = src->length;
+	dst->data = (char *) mem_alloc(src->length);
+
+	memcpy(dst->data, src->data, src->length);
 }
 
 /* Operator + */
-string *cnet_concat_str(string *s1, string *s2)
+string *cnet_strcat(string *s1, string *s2)
 {
+	if (!s1 || !s2)
+		die("Error: NULL Pointer\n");
+
 	string *new_str = create_str();
 	new_str->length = s1->length+s2->length;
-	__concat_str(new_str->data, s1, s2);
+	__concat_str(&new_str->data, s1, s2);
 
 	return new_str;
 }
 
 /* Operator += */ 
-void cnet_merge_str(string *s1, string *s2)
+void cnet_strmerge(string *s1, string *s2)
 {
-	char *temp_data = (char *) mem_alloc(s2->length+s1->length+1);	
-	__concat_str(temp_data, s1, s2);
+	if (!s1 || !s2)
+		die("Error: NULL Pointer\n");
+
+	char *temp_data = (char *) mem_alloc(s2->length+s1->length);	
+	__concat_str(&temp_data, s1, s2);
+	
 	if (s1->length)
 		free(s1->data);
 	
@@ -90,45 +114,91 @@ void cnet_merge_str(string *s1, string *s2)
 	s1->data    = temp_data;
 }
 
-/* Operator ==, >, < */ 
-int cnet_cmp_str(string *s1, string *s2)
+/* Operator * */
+string *cnet_strmult(string *s, int mult)
 {
-	return strcmp(s1->data, s2->data);
+
+	if (!s || mult < 0)
+		die("Error: Invalid argument");
+	
+	string *new_str = cnet_empty_str();
+
+	if (s->length == 0)
+		return new_str;
+
+	new_str->length = s->length * mult;
+	new_str->data	= (char *) mem_alloc(new_str->length);
+
+	for (int i = 0; i < mult; i++)
+		memcpy(&new_str->data[i*s->length], s->data, s->length);
+	
+	return new_str;
+}
+
+/* Operator == */ 
+int cnet_strcmp(string *s1, string *s2)
+{
+	if (!s1 || !s2)
+		die("Error: NULL Pointer\n");
+
+	if (s1->length != s2->length)
+		return -1;
+	
+	for(int i = 0; i<s1->length;i++)
+		if (s1->data[i] != s2->data[i])
+			return -1;
+
+	return 0;
 }
 
 /* Operator [] */ 
 char cnet_char_at(string *str, int index)
 {
 	if (index >= str->length)
-		return '\0';
+		die("Error: Index out of bounds\n");
+	
+	if (index < 0){
+		index +=str->length;
+		if (index >= 0)
+			return str->data[index];
+
+		die("Error: Index out of bounds\n");
+	}
  
 	return str->data[index];
 }
 
 /* Other string function */ 
-int cnet_str_length(string *s1)
+int cnet_strlen(string *s1)
 {
+	if (!s1)
+		die("Error: NULL Pointer\n");
+
 	return s1->length;
 }
 
 string *cnet_str_lower(string *s)
 {
+	if (!s || !s->data)
+		return s;
+
 	string *s1 = clone_str(s);
 	for(int i = 0; i<s->length;i++)
 		s1->data[i] = tolower(s->data[i]);
 	
-	s1->data[s1->length] = '\0';
-
 	return s1;
 }
 
 string *cnet_str_upper(string *s)
 {
+	if (!s || !s->data)
+		return s;
+
 	string *s1 = clone_str(s);
-	for(int i = 0; i<s->length;i++)
+
+	for(int i = 0; i<s1->length;i++){
 		s1->data[i] = toupper(s->data[i]);
-	
-	s1->data[s1->length] = '\0';
+	}
 
 	return s1;
 }
@@ -136,10 +206,12 @@ string *cnet_str_upper(string *s)
 /* [start, end) */ 
 string *cnet_substring(string *s, int start, int end)
 {
+	if (start >= end)
+		die("Error: Invalid range\n");
 	string *s1 = create_str();
 	s1->length = end - start;
 	s1->data   = (char *)mem_alloc(s1->length+1);
-	strncpy(s1->data, s->data+start, s1->length);
+	memcpy(s1->data, s->data+start, s1->length);
 	s1->data[s->length] = '\0';
 
 	return s1;
@@ -160,16 +232,23 @@ string *cnet_reverse(string *s)
 
 int cnet_str_atoi(string *s)
 {
+	if (!s || !s->data)
+		die("Error: NULL Pointer\n");
 	return atoi(s->data);
 }
 
 float cnet_str_atof(string *s)
 {
+	if (!s || !s->data)
+		die("Error: NULL Pointer\n");
 	return atof(s->data);
 }
 
 int cnet_find_char(string *s, char c)
 {
+	if (!s || !s->data)
+		die("Error: NULL Pointer\n");
+
 	for(int i = 0; i<s->length;i++)
 		if(s->data[i] == c)
 			return i;
