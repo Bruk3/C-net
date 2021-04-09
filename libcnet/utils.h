@@ -3,6 +3,8 @@
 
 #define DEFAULT_BUF_SIZE 4096
 #define MAXPENDING 5
+#define LISTENER 0
+#define CONNECTER 1
 
 /* strings */ 
 struct string {
@@ -16,7 +18,7 @@ typedef struct string string;
 /* files */ 
 struct cnet_file {
 	void (*cnet_free) (void *f);
-	int fd;
+	FILE *f;
 };
 
 typedef struct cnet_file cnet_file;
@@ -26,10 +28,10 @@ struct cnet_socket {
 	void (*cnet_free) (void *sock);
 	int fd;
 	int port;
-	struct sockaddr *addr;
-	int sock_type;
-	char buf[DEFAULT_BUF_SIZE];
+	int type;
 	int buf_len;
+	char *buf;
+	struct sockaddr_in *addr;
 };
 
 typedef struct cnet_socket cnet_socket;
