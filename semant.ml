@@ -370,7 +370,15 @@ let check  = function
                       ignore (expr newscp (Binassop(FinalID(vname), Assign, e))) ;
                       d, add_free {vtyp; vname}
           | Return e -> let (t, e') = expr scope e in
-            if t = func.t then SReturn (t, e'), sp
+            if t = func.t && t != String then SReturn (t, e'), sp
+            else if t = func.t && t == String then
+              let free_stmts, _ = insert_frees sp in
+              SBlock ([ SBlock(free_stmts);
+                        SVdecl({vtyp=String; vname="ret_tmp"});
+                        U.handle_strings (String, SBinassop(FinalID("ret_tmp"), Assign, (t, e')));
+                        SReturn(String, SId(FinalID("ret_tmp")))
+                      ])
+            , sp
             else semant_err ("return statement in function "^ func.name ^" has type " ^ string_of_typ t ^
                              " but expected " ^ string_of_typ func.t ^ " in " ^ string_of_expr e)
 
@@ -394,13 +402,13 @@ let check  = function
               (* | s :: ss         -> fst (check_stmt s block_scope) :: check_stmt_list ss *)
               (* | []              -> [] *)
             in
-            let (checked_block, old_sp) =
+            let (checked_block, _) =
               (List.fold_left check_stmt_list ([], block_scope) sl)
-            in
-            let free_stmts, _ = insert_frees old_sp in
-            (match checked_block with
-               SReturn(s) :: tl -> SBlock (List.rev (SReturn(s) :: (free_stmts @ tl)))
-             | _ -> SBlock (List.rev (free_stmts @ checked_block))
+            in (SBlock(List.rev checked_block)
+            (* let free_stmts, _ = insert_frees old_sp in *)
+            (* (match checked_block with *)
+            (*    SReturn(s) :: tl -> SBlock (List.rev (SReturn(s) :: (free_stmts @ tl))) *)
+            (*  | _ -> SBlock (List.rev (free_stmts @ checked_block)) *)
             ), sp
 
         in (* body of check_function *)
@@ -418,9 +426,10 @@ let check  = function
             match check_stmt init_params (Block(func.body)) with
               (SBlock(sl), _) ->
               (match List.rev sl with (* check there is a return statement for the function *)
-                 SReturn(_) :: _ when func.t != Void -> sl
-               | _ when func.t = Void -> sl
-               | _  -> semant_err ("no return statement found for non-void function " ^ func.name))
+               _ -> sl)
+                 (* SReturn(_) :: _ | SBlock(SReturn(_) :: _) :: _ when func.t != Void -> sl *)
+               (* | _ when func.t = Void -> sl *)
+               (* | _  -> semant_err ("no return statement found for non-void function " ^ func.name)) *)
 
             | _ -> semant_err "[COMPILER BUG] block didn't become a block?"
         }

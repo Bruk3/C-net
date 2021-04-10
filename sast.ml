@@ -117,7 +117,7 @@ let string_of_svdecl_assign (t, id, e) =
     | SBlock(stmts) ->
         "{\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"
 
-    | SDelete x -> "delete " ^ (string_of_sexpr x) ^ "\n"
+    | SDelete x -> "delete " ^ (string_of_sexpr x) ^ ";\n"
 
   (* let string_of_sfdecl fdecl =
     string_of_typ fdecl.styp ^ " " ^
