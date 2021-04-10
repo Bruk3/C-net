@@ -1,0 +1,17 @@
+int main()
+{
+{
+int x = (int : 5);
+int y = (int : 10);
+{
+{
+int y = (int : 20);
+(int : x+=(int : 1));
+(int : y+=(int : 1));
+}
+int z = (int : (int : x) + (int : y));
+}
+}
+return (int : 0);
+}
+

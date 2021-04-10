@@ -1,0 +1,10 @@
+int identity(int x) {return x;}
+int main()
+{
+  {
+      int x = 5;}
+  {
+      identity(x); 
+  }
+  return 0;
+}
