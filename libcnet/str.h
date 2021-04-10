@@ -31,6 +31,8 @@ string *cnet_substring(string *s, int start, int end);
 
 string *cnet_reverse(string *s);
 
+void cpy_str(string *src, char *dst);
+
 int cnet_str_atoi(string *s);
 
 float cnet_str_atof(string *s);

@@ -12,6 +12,8 @@ int main()
 	printf("%s\n", "Listener socket created");
 	cnet_socket *conn_sock = cnet_accept_connection(listener);
 
+	printf("%s\n","Connection accepted");
+	
 	cnet_free(listener);
 	cnet_free(conn_sock);
 

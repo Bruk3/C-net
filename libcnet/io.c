@@ -4,9 +4,11 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <sys/stat.h> 
 #include <errno.h>
 #include <stdio.h>
 #include "utils.h"
+#include "str.h"
 
 static int sock_domain[] = {AF_INET, AF_INET6};
 
@@ -43,11 +45,8 @@ cnet_file *cnet_open_file(string *filename, string *mode)
 {
     char fname[filename->length+1], md[mode->length+1];
 
-    memcpy((char *)fname, filename->data, filename->length);
-    memcpy((char *)md, mode->data, mode->length);
-    
-    fname[filename->length] = '\0';
-    md[mode->length]        = '\0';
+    cpy_str(filename, fname);
+    cpy_str(mode, md);
 
 	FILE *f = fopen(fname, md);
 	
@@ -94,7 +93,7 @@ int cnet_nwrite(void *ptr, string *s, int length)
 
 int cnet_write(void *ptr, string *s)
 {
-	return cnet_nwrite(ptr, s->data, s->length);
+	return cnet_nwrite(ptr, s, s->length);
 }
 
 int cnet_writeln(void *ptr, string *s)
@@ -211,39 +210,45 @@ out:
 }
 
 /* client socket */ 
-// cnet_socket *cnet_connect_to_host(string *host_str, int port)
-// {
-//     struct sockaddr_in server_addr;
-//     struct hostent *he;
-//     cnet_socket *conn_sock;
-//     char host[host_str->length+1];
+cnet_socket *cnet_connect_to_host(string *host_str, int port, int domain, int type)
+{
+    struct sockaddr_in server_addr;
+    struct hostent *he;
+    int fd;
+    cnet_socket *conn_sock;
+    char host[host_str->length+1];
 
-//     convert string * to char*
-//     memcpy((char *)host, host_str->data, host_str->length);
-//     host[host_str->length] = '\0';
-//     // get server ip from server name
-//     if ((he = gethostbyname(host->data)) == NULL)
-//         die("gethoatbyname failed");
+   cpy_str(host_str, host);
 
-//     char *serverIP = inet_ntoa(*(struct in_addr *)he->h_addr);
+    // get server ip from server name
+    if ((he = gethostbyname(host)) == NULL)
+        die("gethostbyname failed");
 
-//     // create socket
-//     conn_sock = create_connection_socket();
+    char *serverIP = inet_ntoa(*(struct in_addr *)he->h_addr_list[0]);
 
-//     server_addr = (struct sockaddr_in)(*conn_sock->addr);
+    // create socket
+    if ((fd = socket(sock_domain[domain], ptype[type].type, ptype[type].prot)) < 0) {
+        die("socket failed");
+    }
 
-//     // construct server address
-//     memset(&server_addr, 0, sizeof(server_addr));
-//     server_addr.sin_family = AF_INET;
-//     server_addr.sin_addr.s_addr = inet_addr(serverIP);
-//     server_addr.sin_port = htons(port);
+    conn_sock = create_connection_socket();
+    conn_sock->fd = fd;
+    server_addr = *conn_sock->addr;
 
-//     // connect
-//     if (connect(conn_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
-//         die("connect failed");
+    // construct server address
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr(serverIP);
+    server_addr.sin_port = htons(port);
 
-//     return sock;
-// }
+    // connect
+    if (connect(conn_sock->fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
+        cnet_free(conn_sock);
+        die("connect failed");
+    }
+
+    return conn_sock;
+}
 
 int cnet_get_socket_port(cnet_socket *sock)
 {  

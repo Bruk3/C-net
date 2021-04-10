@@ -230,6 +230,13 @@ string *cnet_reverse(string *s)
 	return s1;
 }
 
+void cpy_str(string *src, char *dst)
+{
+	// convert string * to char*
+	memcpy(dst, src->data, src->length);
+	dst[src->length] = '\0';
+}
+
 int cnet_str_atoi(string *s)
 {
 	if (!s || !s->data)
