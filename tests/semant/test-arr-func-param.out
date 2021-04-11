@@ -4,7 +4,7 @@ int print_arr(int[] a)
 
 int main()
 {
-int[] x = (int[] : new int[(int : 5)] = {});
+int[] x = (int[] : new int[(int : 10)] = {});
 (int : print_arr((int[] : x)));
 }
 
