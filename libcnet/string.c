@@ -263,16 +263,25 @@ void cpy_str(string *src, char *dst)
 
 int cnet_str_atoi(string *s)
 {
+	char data[s->length+1];
+
 	if (!s || !s->data)
 		die("Error: Null Pointer\n");
-	return atoi(s->data);
+
+	cpy_str(s, data);
+	return atoi(data);
 }
 
 float cnet_str_atof(string *s)
 {
+	char data[s->length+1];
+
 	if (!s || !s->data)
 		die("Error: Null Pointer\n");
-	return atof(s->data);
+
+	cpy_str(s, data);
+
+	return atof(data);
 }
 
 int cnet_find_char(string *s, char c)
