@@ -157,6 +157,8 @@ let handle_strings sexp =
              assign cur_tmp (String, SCall("cnet_strmul", [the_str'; Int, the_int ])) :: cs1 ,
              (String, SId(FinalID(cur_tmp))), n' + 1
            | _ -> semant_err "[COMPILER BUG] only * should be allowed on string-int (hanlde_strings)")
+
+        | _ -> semant_err ("[COMPILER BUG] handle_string given illegal combination of expressions in binary operator")
       )
 
     |(A.String, x) -> stmts , (A.String, x), n

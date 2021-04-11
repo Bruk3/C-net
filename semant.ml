@@ -338,7 +338,8 @@ let check  = function
           let insert_frees {scp=tscp; fl=freelist; il=til} =
             let insert_free vname = SDelete (String, SId(FinalID(vname))) in
             match freelist with
-              [] -> semant_err "[COMPILER BUG] empty list passed to insert_frees"
+              [] -> [], {scp=tscp; fl=[]; il=til}
+                    (* semant_err "[COMPILER BUG] empty list passed to insert_frees"*)
             | hd :: tl -> (List.map insert_free hd), {scp=tscp; fl=tl; il=til}
           in
 
@@ -378,7 +379,7 @@ let check  = function
                         U.handle_strings (String, SBinassop(FinalID("ret_tmp"), Assign, (t, e')));
                         SReturn(String, SId(FinalID("ret_tmp")))
                       ])
-            , sp
+            , {scp=scope; fl=[]; il=inloop}
             else semant_err ("return statement in function "^ func.name ^" has type " ^ string_of_typ t ^
                              " but expected " ^ string_of_typ func.t ^ " in " ^ string_of_expr e)
 
@@ -402,13 +403,14 @@ let check  = function
               (* | s :: ss         -> fst (check_stmt s block_scope) :: check_stmt_list ss *)
               (* | []              -> [] *)
             in
-            let (checked_block, _) =
+            let (checked_block, old_sp) =
               (List.fold_left check_stmt_list ([], block_scope) sl)
-            in (SBlock(List.rev checked_block)
-            (* let free_stmts, _ = insert_frees old_sp in *)
-            (* (match checked_block with *)
-            (*    SReturn(s) :: tl -> SBlock (List.rev (SReturn(s) :: (free_stmts @ tl))) *)
-            (*  | _ -> SBlock (List.rev (free_stmts @ checked_block)) *)
+            in
+            (* (SBlock(List.rev checked_block) *)
+            let free_stmts, _ = insert_frees old_sp in
+            (match checked_block with
+               SReturn(s) :: tl -> SBlock (List.rev (SReturn(s) :: (free_stmts @ tl)))
+             | _ -> SBlock (List.rev (free_stmts @ checked_block))
             ), sp
 
         in (* body of check_function *)
@@ -426,18 +428,30 @@ let check  = function
             match check_stmt init_params (Block(func.body)) with
               (SBlock(sl), _) ->
               (match List.rev sl with (* check there is a return statement for the function *)
-               _ -> sl)
-                 (* SReturn(_) :: _ | SBlock(SReturn(_) :: _) :: _ when func.t != Void -> sl *)
-               (* | _ when func.t = Void -> sl *)
-               (* | _  -> semant_err ("no return statement found for non-void function " ^ func.name)) *)
+               (* _ -> sl) *)
+                 SReturn(_) :: _ when func.t != Void -> sl
+               | SBlock(x) :: _ when func.t != Void && (match List.rev x with
+                     SReturn(_) :: _ -> true | _ -> false)-> sl
+               | _ when func.t = Void -> sl
+               | _  -> semant_err ("no return statement found for non-void function " ^ func.name))
 
             | _ -> semant_err "[COMPILER BUG] block didn't become a block?"
         }
       in    (* (globals, List.map check_function functions) *)
 
+      let check_assign lvaluet rvaluet err =
+        if (lvaluet = rvaluet) || (lvaluet = Int && rvaluet == Char) ||
+           (lvaluet = Char && rvaluet == Int) then lvaluet
+        else semant_err err
+      in
+
       let decl_to_sdecl = function
-          GVdecl(vdecl) ->  SGVdecl_ass(vdecl, U.default_global vdecl.vtyp)
-        | GVdecl_ass(vdecl, e) -> SGVdecl_ass (vdecl, U.compute_global vdecl e)
+          GVdecl(vdecl) -> SGVdecl_ass(vdecl, U.default_global vdecl.vtyp)
+        | GVdecl_ass(vd, e) -> let t, v = U.compute_global vd e in
+          let err = "incompatible type assignment from " ^ string_of_typ vd.vtyp ^
+                    " to " ^ string_of_typ t ^ " in globale variable " ^ vd.vname
+          in
+          ignore (check_assign t vd.vtyp err); SGVdecl_ass (vd, (t,v))
         (* TODO check assignment*)
         | Sdecl(s) -> SSdecl s
         | Fdecl (func) -> SFdecl (check_function func)
