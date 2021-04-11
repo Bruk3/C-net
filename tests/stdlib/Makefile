@@ -10,11 +10,11 @@ OBJS := string.o utils.o  io.o
 OBJS := $(addprefix $(LIB_DIR)/, $(OBJS));
 DEPENDS := string.h utils.h io.h
 DEPENDS := $(addprefix $(LIB_DIR)/, $(DEPENDS));
-CTESTS := cnet_test1 cnet_test3
+CTESTS := cnet_test1 cnet_test2 cnet_test3 cnet_test5
 
 stdlib_tests: clean stdlib $(CTESTS)
 
-cnet_%: %.o
+cnet_%: %.o stdlib
 	$(CC) $(CFLAGS) -o $@ $< $(OBJS)
 	echo -e "Running" $@
 	valgrind $(VGFLAGS) ./$@
@@ -22,7 +22,7 @@ cnet_%: %.o
 %.o: .c $(DEPENDS)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 
-stdlib: 
+stdlib:
 	cd $(LIB_DIR) && make all
 
 clean:

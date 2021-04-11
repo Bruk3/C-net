@@ -36,7 +36,7 @@ static string *clone_str(string *s)
 	new_str->cnet_free  = cnet_free_str;
 	new_str->length 	= s->length;
 	new_str->data		= s->length == 0 ? NULL :
-							(char *) mem_alloc(sizeof(s->length));
+							(char *) mem_alloc(s->length);
 
 	return new_str;
 }
@@ -44,9 +44,9 @@ static void __concat_str(char **s, string *s1, string *s2)
 {
 	*s = (char *) mem_alloc(s1->length+s2->length);
 	if(s1->data)
-		memcpy(s[0], s1->data, s1->length);
+		memcpy(*s, s1->data, s1->length);
 	if(s2->data)
-		memcpy(s[s1->length], s2->data, s2->length);
+		memcpy((*s)+s1->length, s2->data, s2->length);
 }
 
 /* Constructors */ 
@@ -69,12 +69,15 @@ string *cnet_new_str(char *data, int length)
 	return new_str;
 }
 
-
-/* operator '=' (deep copy) */
+/*(deep copy) eg.
+ * string s1 = "Hi";
+ * string s2 = "Hell0";
+ * s1 = s2; 
+ */
 void cnet_strcpy(string *dst, string *src)
 {
 	if (!dst || !src)
-		die("Error: NULL Pointer\n");
+		die("Error: Null Pointer\n");
 
 	if (dst->data)
 		free(dst->data);
@@ -85,15 +88,31 @@ void cnet_strcpy(string *dst, string *src)
 	memcpy(dst->data, src->data, src->length);
 }
 
+/* operator eg.
+ * string *s = "Hell0"; 
+ * string *s1 = s; */ 
+string *cnet_strassign(string *s)
+{
+	string *str = cnet_empty_str();
+
+	cnet_strcpy(str, s);
+
+	return str;
+}
+
 /* Operator + */
 string *cnet_strcat(string *s1, string *s2)
 {
 	if (!s1 || !s2)
-		die("Error: NULL Pointer\n");
+		die("Error: Null Pointer\n");
 
+	char *temp_data;
+	__concat_str(&temp_data, s1, s2);
+	
 	string *new_str = create_str();
+
 	new_str->length = s1->length+s2->length;
-	__concat_str(&new_str->data, s1, s2);
+	new_str->data	= temp_data;
 
 	return new_str;
 }
@@ -102,12 +121,13 @@ string *cnet_strcat(string *s1, string *s2)
 void cnet_strmerge(string *s1, string *s2)
 {
 	if (!s1 || !s2)
-		die("Error: NULL Pointer\n");
+		die("Error: Null Pointer\n");
 
-	char *temp_data = (char *) mem_alloc(s2->length+s1->length);	
+	char *temp_data;
+
 	__concat_str(&temp_data, s1, s2);
 	
-	if (s1->length)
+	if (s1->data)
 		free(s1->data);
 	
 	s1->length += s2->length;
@@ -120,7 +140,7 @@ string *cnet_strmult(string *s, int mult)
 
 	if (!s || mult < 0)
 		die("Error: Invalid argument");
-	
+
 	string *new_str = cnet_empty_str();
 
 	if (s->length == 0)
@@ -131,15 +151,18 @@ string *cnet_strmult(string *s, int mult)
 
 	for (int i = 0; i < mult; i++)
 		memcpy(&new_str->data[i*s->length], s->data, s->length);
-	
+
 	return new_str;
 }
 
 /* Operator == */ 
 int cnet_strcmp(string *s1, string *s2)
 {
+	if (!s1 && !s2)
+		return 0;
+
 	if (!s1 || !s2)
-		die("Error: NULL Pointer\n");
+		return -1;
 
 	if (s1->length != s2->length)
 		return -1;
@@ -172,7 +195,7 @@ char cnet_char_at(string *str, int index)
 int cnet_strlen(string *s1)
 {
 	if (!s1)
-		die("Error: NULL Pointer\n");
+		die("Error: Null Pointer\n");
 
 	return s1->length;
 }
@@ -210,22 +233,23 @@ string *cnet_substring(string *s, int start, int end)
 		die("Error: Invalid range\n");
 	string *s1 = create_str();
 	s1->length = end - start;
-	s1->data   = (char *)mem_alloc(s1->length+1);
+	s1->data   = (char *)mem_alloc(s1->length);
 	memcpy(s1->data, s->data+start, s1->length);
-	s1->data[s->length] = '\0';
 
 	return s1;
 
 }
 
-string *cnet_reverse(string *s)
+string *cnet_reverse_str(string *s)
 {	
+	if (!s || !s->data)
+		return s;
+
 	string *s1 = clone_str(s);
 	int len = s1->length;
-	for(int i = 0; i<len/2;i++)
+	for(int i = 0; i<len;i++){
 		s1->data[i] = s->data[len-i-1];
-	
-	s1->data[s1->length] = '\0';
+	}
 
 	return s1;
 }
@@ -240,21 +264,21 @@ void cpy_str(string *src, char *dst)
 int cnet_str_atoi(string *s)
 {
 	if (!s || !s->data)
-		die("Error: NULL Pointer\n");
+		die("Error: Null Pointer\n");
 	return atoi(s->data);
 }
 
 float cnet_str_atof(string *s)
 {
 	if (!s || !s->data)
-		die("Error: NULL Pointer\n");
+		die("Error: Null Pointer\n");
 	return atof(s->data);
 }
 
 int cnet_find_char(string *s, char c)
 {
 	if (!s || !s->data)
-		die("Error: NULL Pointer\n");
+		die("Error: Null Pointer\n");
 
 	for(int i = 0; i<s->length;i++)
 		if(s->data[i] == c)

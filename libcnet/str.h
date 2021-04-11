@@ -13,9 +13,13 @@ string *cnet_new_str(char *data, int length);
 
 void cnet_strcpy(string *dst, string *src);
 
+string *cnet_strassign(string *s);
+
 string *cnet_strcat(string *s1, string *s2);
 
 void cnet_strmerge(string *s1, string *s2);
+
+string *cnet_strmult(string *s, int mult);
 
 int cnet_strcmp(string *s1, string *s2);
 
@@ -29,7 +33,7 @@ string *cnet_str_upper(string *s);
 
 string *cnet_substring(string *s, int start, int end);
 
-string *cnet_reverse(string *s);
+string *cnet_reverse_str(string *s);
 
 void cpy_str(string *src, char *dst);
 
