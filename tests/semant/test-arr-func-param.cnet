@@ -1,0 +1,6 @@
+int print_arr(int[] a) {}
+
+int main() {
+    int[] x = new int[5]; 
+    print_arr(x);
+}
