@@ -99,6 +99,7 @@ let string_of_svdecl_assign (t, id, e) =
   let rec string_of_sstmt = function
     SExpr(expr) -> string_of_sexpr expr ^ ";\n";
     | SReturn(expr) -> "return " ^ string_of_sexpr expr ^ ";\n";
+    | SDelete(expr) -> "delete " ^ string_of_sexpr expr ^ ";\n";
     | SIf(e_s_l, SExpr(Void, SNoexpr)) -> let string_of_sif ((e, _)) =
     "if (" ^ string_of_sexpr e ^ ")\n" in String.concat "else " (List.map string_of_sif e_s_l)
     | SIf(e_s_l, s) -> let string_of_sif ((e, _)) =
@@ -116,8 +117,6 @@ let string_of_svdecl_assign (t, id, e) =
 
     | SBlock(stmts) ->
         "{\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"
-
-    | SDelete x -> "delete " ^ (string_of_sexpr x) ^ ";\n"
 
   (* let string_of_sfdecl fdecl =
     string_of_typ fdecl.styp ^ " " ^

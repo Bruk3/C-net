@@ -245,14 +245,13 @@ let check  = function
             (* Determine expression type based on operator and operand types *)
             let ty = match op with
                 Add | Sub | Mul | Div when same && t1 = Int   -> Int
-              | Add when same && t1 = String -> String (* "hello" + "world" *)
-              | Mul when (t1 = String && t2 = Int) || (t1 = Int && t2 = String)
-                                                      -> String
-              (* | Add | Sub | Mul | Div when same && t1 = Float -> Float *)
+              | Add | Sub | Mul | Div when same && t1 = Float -> Float
+              | Add when same && t1 = String -> String
+              | Mul when (t1=Int && t2=String) || (t1=String && t2=Int) -> String
               (* | Add | Sub when t1 = Int && t2 = Char -> Int *)
               (* | Add | Sub when t1 = Char && t2 = Int -> Float *)
-              (* | Eq | Neq            when same               -> Int *)
-              | Lt | Leq | Gt | Geq when same && t1 = Int -> Int
+              | Eq | Neq            when same               -> Int
+              | Lt | Leq | Gt | Geq when same && (t1 = Int || t1 = Float) -> Int
               | And | Or when same && t1 = Int -> Int
               | _ -> semant_err ("illegal binary operator " ^
                                  string_of_typ t1 ^ " " ^ string_of_op op ^ " " ^
@@ -315,12 +314,11 @@ let check  = function
           in
 
 
-        (* Take the current statement and the current scope.
-         * Returns the new statement and the new scope appropriately.
-        *)
-        (* sp : contains the current scope, information about which variables need to be freed and
-         * whether the current context is a loop or not
-         *)
+          (* Take the current statement and the current scope.  Returns the new
+           * statement and the new scope appropriately.
+           * sp : contains the current scope, information about which variables
+           * need to be freed and whether the current context is a loop or not
+          *)
         let rec check_stmt (sp : stmt_params) (aexp : stmt)
           : (sstmt * stmt_params)
           =
@@ -345,7 +343,17 @@ let check  = function
 
           match aexp with
             Expr e -> U.handle_strings (expr scope e), sp
-          | Delete n -> SDelete (expr scope (Rid(n))), sp
+          | Delete n ->
+
+            let t = type_of_identifier scope n in
+            let err = "illegal identifier for delete: [" ^ string_of_typ t ^ " " ^ string_of_rid n ^
+                      "]. Identifier should be of type Struct or Array" in
+            let e = Rid(n) in
+            let check_valid_delete =  function
+                Array(_) | Struct(_) -> SDelete (expr scope e), sp
+              | _ -> semant_err (err)
+            in check_valid_delete t
+
           | Break when inloop -> SBreak, {scp = scope; fl = tofree; il = false}
           | Break -> semant_err ("break used without being in a loop")
           | Continue when inloop -> SContinue, {scp = scope; fl = tofree; il = true}

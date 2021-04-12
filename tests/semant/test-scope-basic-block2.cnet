@@ -1,0 +1,18 @@
+int main()
+{
+    {
+        int x = 5;
+        int y = 10;
+        {
+            {
+                int y = 20;
+
+                x+=1;
+
+                y+=1;
+            }
+            int z = x + y; // outer block x and y
+        }
+    }
+    return 0;
+}
