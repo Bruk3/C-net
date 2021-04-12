@@ -9,7 +9,7 @@ struct Shape {
     string type;
 };
 
-int main(int argc) {
+int main() {
     // The following line should raise a semantic error Exception
     struct Shape circle = new struct shape;
     circle.type = "circle";

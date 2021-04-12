@@ -1,5 +1,7 @@
-int main(int a,int b)
+int main(string[] argv)
 {
+int a = (int : 9);
+int b = (int : 4);
 if ((int : (int : a) > (int : b)))
 else{
 (int : stdout.println((string : "a is less or equal to b")));
