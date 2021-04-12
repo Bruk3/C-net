@@ -1,1 +1,1 @@
-Semantic error: return gives int expected void in 0
+Semantic error: return statement in function sum has type int but expected void in 0

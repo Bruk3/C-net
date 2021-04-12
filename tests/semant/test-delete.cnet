@@ -13,4 +13,6 @@ int main(){
     delete myPeople;
     delete john;
     delete myInts;
+
+    return 0;
 }

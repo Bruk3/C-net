@@ -1,5 +1,6 @@
 module A = Ast
-open Sast
+open Sast;;
+open Ast;;
 
                               (* Scanner utils *)
 let count_new_lines whitespace lexbuf =
@@ -17,15 +18,15 @@ let my_sast = (
   [
     {
       styp = A.Int;
-      sname = "main";
+      sfname = "main";
       sparameters = [];
       sbody =
         [
           SExpr( A.Int,
                  SCall
                    (
-                     A.RID(A.FinalID("stdout"), "println"),
-                     [ (A.String, SStrlit("Hello World!\n")) ]
+                     "println",
+                     [(File, SId(FinalID("stdout"))); (A.String, SStrlit("Hello World!\n")) ]
                    )
                );
           SReturn(A.Int, SIntlit(0))
@@ -60,6 +61,7 @@ let compute_global vdecl exp =
      else (semant_err ("incompatible types " ^ A.string_of_typ t1 ^ " and " ^
            A.string_of_typ t2 ^ " in global variable " ^ vdecl.A.vname))
   in
+  let bool_int b = if b then 1 else 0 in
 
   let rec eval_constant = function
       A.Noexpr | A.Binassop(_) | A.New(_) | A.ArrayLit(_) | A.Call(_) ->
@@ -73,7 +75,6 @@ let compute_global vdecl exp =
     | A.Strlit(s) -> (A.String, SStrlit(s))
     | A.Binop(e1, op, e2) -> let e1' = eval_constant e1 and e2' = eval_constant e2
       in verify_types (fst e1') (fst e2');
-      let bool_int b = if b then 1 else 0 in
       (match (e1', e2') with
          ((A.Int, SIntlit(i)), (A.Int, SIntlit(i2))) ->
          (match op with
@@ -100,6 +101,14 @@ let compute_global vdecl exp =
                                  -> semant_err "global expression type not implemented"
        | _ -> semant_err ("non-constant expression used for global variable " ^ vdecl.A.vname)
       )
+    | A.Unop(op, e) ->
+      let _, e' = eval_constant e in
+      match e' with
+        SIntlit(i) -> ( match op with
+            A.Not -> (A.Int, SIntlit(bool_int (i == 0)))
+          | A.Minus -> (A.Int, SIntlit( -1 * i ))
+        )
+      | _ -> semant_err ("operator [" ^ (A.string_of_uop op) ^ "] only valid for integers")
 
   in
   eval_constant exp ;;
@@ -108,6 +117,65 @@ let ids_to_vdecls (ids : A.id list)=
   let id_to_vdecl ((t, n) : A.id) =
     {A.vtyp = t; A.vname = n}
   in List.map id_to_vdecl ids;;
+
+(* Goes through an expression and substitues operations on strings with the call
+ * to the appropriate string library functions. It also creats temporary
+ * variables for handling return values of things
+ * *)
+let handle_strings sexp =
+  let assign a b = SVdecl_ass({A.vtyp=String; A.vname = a}, b) in
+  (* (stmt list -> sexpr -> sstmt list, sexpr) *)
+  let rec handle_helper stmts cur_exp n = match cur_exp with
+      (A.String as st, SCall(fn, args)) ->
+      let cur_tmp = "tmp" ^ (string_of_int n) in
+      assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(A.FinalID(cur_tmp))), n + 1
+
+    (* All binary assignments should have been converted to = in semant *)
+    | (A.String, SBinassop(s1, _, s2)) -> let new_stmts, s2', n' = handle_helper stmts s2 n
+      in new_stmts, (String, SCall("cnet_strcpy", [String, SId(s1); (s2')])), n'
+
+    | (A.String, SBinop((t1, e1), op, (t2, e2))) -> (match (t1, t2) with
+
+          (String, String) ->
+          (match op with
+             Add ->
+             let cs1, e1', n' = handle_helper stmts (t1, e1) n
+             in
+             let cs2, e2', n'' = handle_helper cs1 (t1,e2) n'
+             in
+             let cur_tmp = "tmp" ^ (string_of_int n'') in
+             assign cur_tmp (String, SCall("cnet_stradd", [e1'; e2'])) :: cs2,
+                (String, SId(FinalID(cur_tmp))), n'' + 1
+           | _ -> semant_err ("[COMPILER BUG] only + should be allowed on two strings (handle_strings)"))
+
+        | (String, Int) | (Int, String) ->
+          let the_str, the_int = (if t1 = String then e1, e2 else e2, e1) in
+          (match op with
+             Mul ->
+             let cs1, the_str', n' = handle_helper stmts (String, the_str) n in
+             let cur_tmp = "tmp" ^ (string_of_int n') in
+             assign cur_tmp (String, SCall("cnet_strmul", [the_str'; Int, the_int ])) :: cs1 ,
+             (String, SId(FinalID(cur_tmp))), n' + 1
+           | _ -> semant_err "[COMPILER BUG] only * should be allowed on string-int (hanlde_strings)")
+
+        | _ -> semant_err ("[COMPILER BUG] handle_string given illegal combination of expressions in binary operator")
+      )
+
+    |(A.String, x) -> stmts , (A.String, x), n
+    | _ -> stmts, cur_exp, n
+  in
+  let pre_stmts, new_exp, _  = handle_helper [] sexp 0 in
+  match pre_stmts with
+    [] -> SExpr(new_exp)
+  | l -> let convert_to_free = function
+        SVdecl_ass({vtyp=_; vname=vn}, _) -> SDelete(String, SId(FinalID(vn)))
+      | _ -> semant_err ("[COMPILER BUG] convert_to_free not setup properly")
+    in
+    let l = List.rev l in
+    let free_stmts = List.map convert_to_free l in
+    SBlock(l @ [SExpr(new_exp)] @ free_stmts)
+;;
+
 
 
 

@@ -17,8 +17,11 @@ int sum(int x, int y, int z)
 			z; /* the z from the block above */
 		}
 	}
+
+	return 0;
 }
 
 int main()
 {
+	return 0;
 }

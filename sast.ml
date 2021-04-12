@@ -26,12 +26,12 @@ and sx =
   | SId of rid
   (* Operators *)
   | SBinop of sexpr * binop * sexpr
-  | SBinassop of string * bin_assign_op * sexpr
+  | SBinassop of rid * bin_assign_op * sexpr
   | SUnop of unop * sexpr
   | SNew of newable
   | SArrayLit of typ * sexpr * sexpr list
   | SIndex of rid * sexpr
-  | SCall of rid * sexpr list
+  | SCall of string * sexpr list
 
 type sstmt =
     SExpr of sexpr
@@ -48,7 +48,7 @@ type sstmt =
 
 type sfunc = {
   styp: typ;
-  sname: string;
+  sfname: string;
   sparameters: id list;
   sbody: sstmt list
 }
@@ -82,7 +82,7 @@ type sprogram = sdecl list
     | SId(s) -> string_of_rid s
     | SBinop(e1, o, e2) ->
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
-    | SBinassop(v, o, e) -> v ^ string_of_binassop o ^ string_of_sexpr e
+    | SBinassop(v, o, e) -> string_of_rid v ^ string_of_binassop o ^ string_of_sexpr e
     | SUnop(o, e) -> string_of_uop o ^ string_of_sexpr e
     | SNew (n) -> "new " ^ string_of_newable n
     | SArrayLit (t, e, el) ->
@@ -90,7 +90,7 @@ type sprogram = sdecl list
     String.concat ", " (List.map string_of_sexpr el) ^ "}"
     | SIndex (s, e) -> string_of_rid s ^ "[" ^ string_of_sexpr e ^ "]"
     | SCall(f, el) ->
-        string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
+        f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
             ) ^ ")"
 
 let string_of_svdecl_assign (t, id, e) =
@@ -112,11 +112,11 @@ let string_of_svdecl_assign (t, id, e) =
     | SVdecl(v)           -> string_of_vdecl v
     | SVdecl_ass({vtyp; vname}, e)
       -> string_of_svdecl_assign(vtyp, vname, e)
+    | SBreak -> "break;"
+    | SContinue -> "continue;"
 
     | SBlock(stmts) ->
         "{\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"
-
-    | _ -> raise (Failure("Unimplemented statement type in sast prettyprint"))
 
   (* let string_of_sfdecl fdecl =
     string_of_typ fdecl.styp ^ " " ^
@@ -138,8 +138,8 @@ let string_of_sfunc (t, n, p, b) =
 
 let string_of_sdecl = function
   | SGVdecl_ass({vtyp; vname}, e) -> string_of_svdecl_assign(vtyp, vname, e)
-  | SSdecl({name; members}) -> string_of_strct(name, members)
-  | SFdecl({styp; sname; sparameters; sbody; _}) -> string_of_sfunc(styp, sname, sparameters, sbody)
+  | SSdecl({sname; members}) -> string_of_strct(sname, members)
+  | SFdecl({styp; sfname; sparameters; sbody; _}) -> string_of_sfunc(styp, sfname, sparameters, sbody)
   (* let string_of_sprogram ((vdecls : (vdecl * sexpr) list), (strct_decls : strct list), (fd : sfunc list))  =
     String.concat "" (List.map string_of_sfunc(fd)) ^ "\n" *)
 

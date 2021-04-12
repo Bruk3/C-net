@@ -14,5 +14,6 @@ delete (struct person : myPeople[0]);
 delete (struct person[] : myPeople);
 delete (struct person : john);
 delete (int[] : myInts);
+return (int : 0);
 }
 
