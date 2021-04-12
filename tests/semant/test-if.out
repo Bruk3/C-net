@@ -1,5 +1,6 @@
-int main(int a,string argv)
+int main(string[] argv)
 {
+int a = (int : 5);
 int b = (int : 4);
 if ((int : (int : a) > (int : b)))
 else if ((int : (int : a) == (int : b)))

@@ -1,7 +1,7 @@
-int main(int argc) {
+int main() {
     int a = 1;
-    string b = "b"; 
-    
+    string b = "b";
+
     if (b) {b;}
 
     return 0;

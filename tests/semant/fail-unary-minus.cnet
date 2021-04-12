@@ -1,4 +1,4 @@
-int main(int argc) {
+int main() {
     string a = "hi";
 
     int b = -a;

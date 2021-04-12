@@ -1,4 +1,5 @@
-int main(int a, string argv) {
+int main(string[] argv) {
+    int a = 5;
     int b = 4;
     if (a > b) {
         stdout.println("a is greater than b");

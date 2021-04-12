@@ -2,6 +2,6 @@ void sum() {
     return 0;
 }
 
-int main(int argc) {
+int main() {
     return 0;
 }

@@ -8,7 +8,7 @@ struct Shape {
     string type;
 };
 
-int main(int argc) {
+int main() {
     struct Shape circle = new struct Shape;
     circle.type = "circle";
     circle.dimension.width = 5.;

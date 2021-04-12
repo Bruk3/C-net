@@ -1,4 +1,4 @@
-int main(int argc) {
+int main() {
     return 0;
     a;
 }

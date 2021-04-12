@@ -146,8 +146,7 @@ let check  = function
       (* Ensure "main" is defined and has the correct prototype*)
       (* Allowed prototypes for main
         int main()
-        int main(int)
-        int main(int, string[])
+        int main(string[])
       *)
       let check_main =
         let {t; parameters} = try
@@ -160,8 +159,7 @@ let check  = function
         in
           match parameters with
             [] -> ()
-          | [(Int, _)] -> ()
-          | [(Int, _); (String, _)] -> ()
+          | [(Array(String), _)] -> ()
           | _ -> semant_err "Invalid prototype of main function."
 
       in
