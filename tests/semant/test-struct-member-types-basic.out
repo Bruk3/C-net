@@ -16,5 +16,6 @@ struct person s;
 (struct person : s.partner);
 (struct person : s.partner.partner);
 (int : s.partner.partner.x.id);
+return (int : 0);
 }
 

@@ -1,7 +1,7 @@
 
 int main()
 {
-	stdout.println("Hello World!");
+	/* stdout.println("Hello World!"); */ // commented until stdout is added as global file
 
 	return 0;
 }

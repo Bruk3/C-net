@@ -9,4 +9,7 @@ int main(){
     myInts = new int[4]{1,2,3,4};
     string[] myStrings = new string[2]{"hello", "world"};
     struct person[] myPeople = new struct person[2]{john, jane};
+
+
+    return 0;
 }

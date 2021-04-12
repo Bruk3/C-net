@@ -1,7 +1,7 @@
 int main()
 {
 int a = (int : 5);
-int b = (int : (int : y((int : x((int : a))))) + (int : 'a'));
+int b = (int : y((int : x((int : a)))));
 return (int : 0);
 }
 

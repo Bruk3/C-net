@@ -5,7 +5,7 @@ int sum(int x,int y,int z)
 float y;
 char[][] z;
 (float : y);
-for ((int : x=(int : 3)) ; (int : (int : x) > (int : 2)) ; (int : x-=(int : 5)))
+for ((int : x=(int : 3)) ; (int : (int : x) > (int : 2)) ; (int : x=(int : (int : x) - (int : 5))))
 	 {
 int[] y;
 (int[] : y);
@@ -13,9 +13,11 @@ int[] y;
 (char[][] : z);
 }
 }
+return (int : 0);
 }
 
 int main()
 {
+return (int : 0);
 }
 

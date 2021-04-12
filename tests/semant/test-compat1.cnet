@@ -1,5 +1,0 @@
-int main() {
-    4 + 'a';
-
-    return 0;
-}

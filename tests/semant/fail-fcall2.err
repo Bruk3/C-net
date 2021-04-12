@@ -1,1 +1,1 @@
-Semantic error: illegal argument found float expected int in b
+Semantic error: illegal argument found in call to sum : found float but expected int in b

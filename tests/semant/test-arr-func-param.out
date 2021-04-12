@@ -1,10 +1,12 @@
 int print_arr(int[] a)
 {
+return (int : 0);
 }
 
 int main()
 {
 int[] x = (int[] : new int[(int : 10)] = {});
 (int : print_arr((int[] : x)));
+return (int : 0);
 }
 

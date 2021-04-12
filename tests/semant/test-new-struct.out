@@ -11,7 +11,8 @@ struct Shape {
 int main()
 {
 struct Shape circle = (struct Shape : new struct Shape);
-(string : circle.type=(string : "circle"));
+(string : cnet_strcpy((string : circle.type), (string : "circle")));
 (float : circle.dimension.width=(float : 5.));
+return (int : 0);
 }
 

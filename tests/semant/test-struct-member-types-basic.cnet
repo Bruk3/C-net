@@ -22,4 +22,6 @@ int main() {
 
 
 	/* s.partner.partner.x.partner; ERROR */
+
+	return 0;
 }

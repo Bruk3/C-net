@@ -1,5 +1,0 @@
-int main()
-{
-(int : (int : 4) + (int : 'a'));
-}
-
