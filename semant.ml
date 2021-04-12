@@ -113,7 +113,9 @@ let check  = function
         (* TODO: catch builtin decls *)
 
 
-    (* Collect function declarations for built-in functions: no bodies *)
+(******************************************************************************
+                               Built-in functions
+*******************************************************************************)
     let built_in_decls =
       let add_bind map (return_type, name, params) = StringMap.add name {
           t = return_type;
@@ -123,7 +125,26 @@ let check  = function
           body = [] } map
         in List.fold_left add_bind StringMap.empty
           [
-            (Int, "println", [(File, "f"); (String, "s")])
+            (* I/O *)
+            (* Sockets *)
+            (File, "nopen", [(String, "name"); (String, "protocol"); (Int, "port"); (String, "type")]);
+            (Int, "println", [(Socket, "sock"); (String, "s")]);
+            (Int, "write", [(Socket, "sock"); (String, "s")]);
+            (String, "readln", [(Socket, "sock")]);
+            (String, "readln", [(Socket, "sock"); (Int, "len")]);
+
+            (* Files *)
+            (File, "fopen", [(String, "name"); (String, "mode");]);
+            (Int, "println", [(File, "f"); (String, "s")]);
+            (Int, "write", [(File, "f"); (String, "s")]);
+            (String, "read", [(File, "f"); (Int, "len")]);
+            (String, "readln", [(File, "f")]);
+
+            (* Strings *)
+            (Int, "length", [(String, "s")]);
+
+            (* Arrays *)
+            (Int, "length", [(String, "s")])
           ]
       in
 
@@ -153,20 +174,19 @@ let check  = function
         int main()
         int main(string[])
       *)
-      let check_main =
-        let {t; parameters} = try
+      let _ = (* check main *)
+        let {t=t; name=_ ;body=_ ;locals=_ ; parameters=params} = try
             find_func "main"
           with _ -> semant_err "main function not found"
         in
-          let check_return = match t with
-            Int -> true
+        let _ = match t with (* check return value *)
+            Int -> ()
           | _ -> semant_err  "return type of main must be int."
         in
-          match parameters with
-            [] -> ()
-          | [(Array(String), _)] -> ()
-          | _ -> semant_err "Invalid prototype of main function."
-
+        match params with
+          [] -> ()
+        | [(Array(String), _)] -> ()
+        | _ -> semant_err "Invalid prototype of main function."
       in
 
       let check_function func =
