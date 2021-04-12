@@ -11,6 +11,8 @@ string *cnet_empty_str();
 
 string *cnet_new_str(char *data, int length);
 
+string *cnet_new_str_nolen(char* data);
+
 void cnet_strcpy(string *dst, string *src);
 
 string *cnet_strassign(string *s);
@@ -42,5 +44,7 @@ int cnet_str_atoi(string *s);
 float cnet_str_atof(string *s);
 
 int cnet_find_char(string *s, char c);
+
+void print_cnet_str(string *s);
 
 #endif

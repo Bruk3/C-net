@@ -69,6 +69,12 @@ string *cnet_new_str(char *data, int length)
 	return new_str;
 }
 
+/* char *data must be null terminated */ 
+string *cnet_new_str_nolen(char* data)
+{
+	return cnet_new_str(data, strlen(data));
+}
+
 /*(deep copy) eg.
  * string s1 = "Hi";
  * string s2 = "Hell0";
@@ -126,7 +132,7 @@ void cnet_strmerge(string *s1, string *s2)
 	char *temp_data;
 
 	__concat_str(&temp_data, s1, s2);
-	
+
 	if (s1->data)
 		free(s1->data);
 	
@@ -294,4 +300,12 @@ int cnet_find_char(string *s, char c)
 			return i;
 
 	return -1;
+}
+
+void print_cnet_str(string *s)
+{
+	for(int i=0; i<s->length;i++){
+		printf("%c",cnet_char_at(s,i));
+	}
+
 }

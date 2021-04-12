@@ -3,6 +3,16 @@
 
 #include "utils.h"
 
+#define DEFAULT_BUF_SIZE 4096
+#define MAXPENDING 5
+
+/* IO types */
+#define CNET_FILE 0
+#define CNET_SOCKET 1  
+
+/* Socket types */ 
+#define LISTEN 0
+#define CONNECT 1
 
 cnet_file *cnet_open_file(string *filename, string *mode);
 
@@ -16,6 +26,14 @@ int cnet_nwrite(void *ptr, string *s, int length);
 
 int cnet_writeln(void *ptr, string *s);
 
-int cnet_get_fd(cnet_file *file);
+string *cnet_read(void *ptr);
+
+string *cnet_nread(void *ptr, int size);
+
+string *cnet_readln(void *ptr);
+
+cnet_socket *cnet_connect_to_host(string *host_str, int port, int domain, int type);
+
+int cnet_check_error(void *ptr);
 
 #endif

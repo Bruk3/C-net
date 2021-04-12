@@ -7,15 +7,19 @@
 
 int main()
 {
-	cnet_socket *listener = cnet_listen_socket(0, 0, 8000);
+	string *s1 = cnet_new_str("42", 2);
 
-	printf("%s\n", "Listener socket created");
-	cnet_socket *conn_sock = cnet_accept_connection(listener);
+	string *s2 = cnet_new_str("42.004", 6);
 
-	printf("%s\n","Connection accepted");
-	
-	cnet_free(listener);
-	cnet_free(conn_sock);
+	assert(cnet_str_atoi(s1) == 42);
+
+	printf("atof(\"42.004\"): %f\n", cnet_str_atof(s2));
+
+	assert(cnet_find_char(s2, '0') == 3); 
+	assert(cnet_find_char(s2, '.') == 2); 
+
+	cnet_free(s1);
+	cnet_free(s2);
 
 	return 0;
 }

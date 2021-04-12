@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -Wall -g -std=c11
+CFLAGS := -Wall -g
 OBJS := string.o utils.o io.o
 DEPENDS := string.h utils.h io.h
 
