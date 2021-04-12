@@ -1,5 +1,0 @@
-int main()
-{
-int e = (int : (int : 'a') + (int : (int : (int : 'b') * (int : 'c')) / (int : 'd')));
-}
-

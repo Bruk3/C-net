@@ -1,6 +1,8 @@
 int main() {
     int a = 5; 
     int b = y(x(a)) + 'a';
+
+    return 0;
 }
 
 int x(int b) {return b;}

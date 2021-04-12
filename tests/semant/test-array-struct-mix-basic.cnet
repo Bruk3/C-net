@@ -11,4 +11,6 @@ int main(){
 
 		x[0][0].id;
 	}
+
+	return 0;
 }

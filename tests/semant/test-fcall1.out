@@ -2,6 +2,7 @@ int main()
 {
 int a = (int : 5);
 int b = (int : (int : y((int : x((int : a))))) + (int : 'a'));
+return (int : 0);
 }
 
 int x(int b)

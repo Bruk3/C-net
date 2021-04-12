@@ -202,6 +202,7 @@ let check  = function
               (let vt = type_of_identifier scope r in
                match vt with
                  Array(at) -> at
+               | String -> Char
                | _ -> semant_err ("cannot index non-array variable " ^
                                   (string_of_rid r)))
             | ot -> semant_err ("index into an array has to be of type int, " ^
@@ -215,7 +216,7 @@ let check  = function
 (* Return a semantically-checked expression, i.e., with a type *)
 
         and expr (scope : vdecl StringMap.t list) = function
-            Charlit l -> (Int, SCharlit l)
+            Charlit l -> (Char, SCharlit l)
           | Intlit l -> (Int, SIntlit l)
           | Floatlit l -> (Float, SFloatlit l)
           | Strlit l -> (String, SStrlit l)
