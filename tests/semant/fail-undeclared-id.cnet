@@ -1,5 +1,5 @@
-int main(int argc) {
-    int a = 1; 
+int main() {
+    int a = 1;
     a = b + a;
     return 0;
 }

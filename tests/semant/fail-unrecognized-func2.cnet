@@ -2,7 +2,7 @@ void my_print_float(float a){
     printf(a);
 }
 
-int main(int argc) {
+int main() {
     int a = 4;
     int b;
     b = 5;

@@ -1,6 +1,6 @@
-int main(int argc) {
+int main() {
     return 0;
 }
-int main(int argc, int b) {
+int main() {
     return 0;
 }
