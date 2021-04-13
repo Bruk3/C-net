@@ -1,0 +1,16 @@
+CC := gcc
+CFLAGS := -Wall -g
+OBJS := string.o utils.o io.o
+DEPENDS := string.h utils.h io.h
+
+stdlib: $(OBJS)
+
+%.o: %.c $(DEPENDS)
+	$(CC) $(CFLAGS) -c $<
+
+clean:
+	rm -f *.o
+
+all: clean stdlib
+
+.PHONY: clean all
