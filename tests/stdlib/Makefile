@@ -16,8 +16,8 @@ stdlib_tests: clean stdlib $(CTESTS)
 
 cnet_%: %.o stdlib
 	$(CC) $(CFLAGS) -o $@ $< $(OBJS)
-	echo -e "Running" $@
-	valgrind $(VGFLAGS) ./$@
+	# echo -e "Running" $@
+	# valgrind $(VGFLAGS) ./$@
 
 %.o: .c $(DEPENDS)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
