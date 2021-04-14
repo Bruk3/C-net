@@ -47,6 +47,15 @@ let check  = function
         | _ -> semant_err err
     in
 
+    let builtin_vars =
+    let add_builtinvar m vd = StringMap.add vd.vname vd m in
+      List.fold_left add_builtinvar StringMap.empty
+        [
+          {vname="stdout"; vtyp=File};
+          {vname="stdin"; vtyp=File}
+        ]
+    in
+
     (* The generic checkbinds function that takes the structs as an argument
      * checks the current variable declaration with all the one's it already has
      * in the following steps
@@ -60,25 +69,29 @@ let check  = function
         ((scope : vdecl StringMap.t), (structs : strct StringMap.t)) (v : vdecl)
       : vdecl StringMap.t * strct StringMap.t
       =
-        let valid_struct (sname : string) = match StringMap.mem sname structs with
-            true -> ()
-          | false -> semant_err (v.vname ^ " has unrecognized struct type [struct " ^ sname ^ "]")
-        in
+      let _ = match StringMap.mem v.vname builtin_vars with
+          true -> semant_err (v.vname ^ " cannot be defined as a variable")
+        | false -> ()
+      in
+      let valid_struct (sname : string) = match StringMap.mem sname structs with
+          true -> ()
+        | false -> semant_err (v.vname ^ " has unrecognized struct type [struct " ^ sname ^ "]")
+      in
 
-        let _ = match v.vtyp with (* validate non-void / valid struct *)
-            Void -> semant_err (v.vname ^ " is a void type, which is illegal")
-          | Struct(s) -> valid_struct s
-          | Array(t) ->
-            ignore (check_binds_general (scope, structs) {vtyp = t; vname = v.vname ^ "[0]"}); ()
-          | _ -> ()
-        in
+      let _ = match v.vtyp with (* validate non-void / valid struct *)
+          Void -> semant_err (v.vname ^ " is a void type, which is illegal")
+        | Struct(s) -> valid_struct s
+        | Array(t) ->
+          ignore (check_binds_general (scope, structs) {vtyp = t; vname = v.vname ^ "[0]"}); ()
+        | _ -> ()
+      in
 
-        let _ = match StringMap.mem v.vname scope with (* check no duplicates in scope *)
-            true -> semant_err ("duplicate " ^ v.vname)
-          | false -> ()
-        in
+      let _ = match StringMap.mem v.vname scope with (* check no duplicates in scope *)
+          true -> semant_err ("duplicate " ^ v.vname)
+        | false -> ()
+      in
 
-        (StringMap.add v.vname v scope) , structs
+      (StringMap.add v.vname v scope) , structs
 
     in
 
@@ -118,13 +131,14 @@ let check  = function
       | scope :: tl -> (check_binds scope v) :: tl
     in
 
+
     (* Collect global variables and check their validity *)
     let globals =
       let add_global m = function
           GVdecl(vd) | GVdecl_ass(vd, _) -> check_binds m vd
         | Sdecl(_) | Fdecl(_) -> m
       in
-      List.fold_left add_global StringMap.empty all_decls
+      List.fold_left add_global builtin_vars all_decls
     in
         (* TODO: catch builtin decls *)
 
