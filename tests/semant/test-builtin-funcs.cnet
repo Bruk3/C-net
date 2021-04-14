@@ -1,0 +1,14 @@
+
+int main(string[] args)
+{
+	int argc = args.alength();
+
+	int arg1len = args[0].slength();
+
+	file arg_count = fopen("argl", "w");
+	socket send = nopen("www.google.com", "tcp", 80, "connect");
+
+	arg_count.println(soi(arg1len));
+
+	return 0;
+}
