@@ -4,7 +4,7 @@ module U = Utils
 open Ast
 open Sast
 
-module StringMap = Map.Make(String)
+module StringMap = Map.Make(String);;
 
 (* Semantic checking of the AST. Returns an SAST if successful,
    throws an exception if something is wrong.
@@ -31,6 +31,31 @@ let check  = function
 
     let functions = List.map  to_ast_func func_decl_list in
 
+    (* Raise an exception if the given rvalue type cannot be assigned to
+       the given lvalue type *)
+    let check_assign lvaluet rvaluet err =
+      if (lvaluet = rvaluet) then lvaluet
+      else semant_err err
+    in
+    let check_assign_builtin lvaluet rvaluet err =
+      if (lvaluet = rvaluet) then
+        lvaluet
+      else
+        match (lvaluet,rvaluet) with
+          (File,Socket) | (Socket,File) -> Socket
+        | (Array(Void), Array(x)) | (Array(x), Array(Void)) -> Array(x)
+        | _ -> semant_err err
+    in
+
+    let builtin_vars =
+    let add_builtinvar m vd = StringMap.add vd.vname vd m in
+      List.fold_left add_builtinvar StringMap.empty
+        [
+          {vname="stdout"; vtyp=File};
+          {vname="stdin"; vtyp=File}
+        ]
+    in
+
     (* The generic checkbinds function that takes the structs as an argument
      * checks the current variable declaration with all the one's it already has
      * in the following steps
@@ -44,25 +69,29 @@ let check  = function
         ((scope : vdecl StringMap.t), (structs : strct StringMap.t)) (v : vdecl)
       : vdecl StringMap.t * strct StringMap.t
       =
-        let valid_struct (sname : string) = match StringMap.mem sname structs with
-            true -> ()
-          | false -> semant_err (v.vname ^ " has unrecognized struct type [struct " ^ sname ^ "]")
-        in
+      let _ = match StringMap.mem v.vname builtin_vars with
+          true -> semant_err (v.vname ^ " cannot be defined as a variable")
+        | false -> ()
+      in
+      let valid_struct (sname : string) = match StringMap.mem sname structs with
+          true -> ()
+        | false -> semant_err (v.vname ^ " has unrecognized struct type [struct " ^ sname ^ "]")
+      in
 
-        let _ = match v.vtyp with (* validate non-void / valid struct *)
-            Void -> semant_err (v.vname ^ " is a void type, which is illegal")
-          | Struct(s) -> valid_struct s
-          | Array(t) ->
-            ignore (check_binds_general (scope, structs) {vtyp = t; vname = v.vname ^ "[0]"}); ()
-          | _ -> ()
-        in
+      let _ = match v.vtyp with (* validate non-void / valid struct *)
+          Void -> semant_err (v.vname ^ " is a void type, which is illegal")
+        | Struct(s) -> valid_struct s
+        | Array(t) ->
+          ignore (check_binds_general (scope, structs) {vtyp = t; vname = v.vname ^ "[0]"}); ()
+        | _ -> ()
+      in
 
-        let _ = match StringMap.mem v.vname scope with (* check no duplicates in scope *)
-            true -> semant_err ("duplicate " ^ v.vname)
-          | false -> ()
-        in
+      let _ = match StringMap.mem v.vname scope with (* check no duplicates in scope *)
+          true -> semant_err ("duplicate " ^ v.vname)
+        | false -> ()
+      in
 
-        (StringMap.add v.vname v scope) , structs
+      (StringMap.add v.vname v scope) , structs
 
     in
 
@@ -102,18 +131,24 @@ let check  = function
       | scope :: tl -> (check_binds scope v) :: tl
     in
 
+
     (* Collect global variables and check their validity *)
     let globals =
       let add_global m = function
           GVdecl(vd) | GVdecl_ass(vd, _) -> check_binds m vd
         | Sdecl(_) | Fdecl(_) -> m
       in
-      List.fold_left add_global StringMap.empty all_decls
+      List.fold_left add_global builtin_vars all_decls
     in
         (* TODO: catch builtin decls *)
 
 
-    (* Collect function declarations for built-in functions: no bodies *)
+(******************************************************************************
+                               Built-in functions
+*******************************************************************************)
+    (* @built_in_decls : this is a string -> fdecl map. However, since there can
+     *                   be multiple built-in functions with different names
+     *)
     let built_in_decls =
       let add_bind map (return_type, name, params) = StringMap.add name {
           t = return_type;
@@ -123,7 +158,27 @@ let check  = function
           body = [] } map
         in List.fold_left add_bind StringMap.empty
           [
-            (Int, "println", [(File, "f"); (String, "s")])
+            (* I/O *)
+            (* Sockets *)
+            (Socket, "nopen", [(String, "name"); (String, "protocol"); (Int, "port"); (String, "type")]);
+            (Int, "println", [(Socket, "sock"); (String, "s")]);
+            (Int, "write", [(Socket, "sock"); (String, "s")]);
+            (String, "readln", [(Socket, "sock")]);
+            (String, "read", [(Socket, "sock"); (Int, "len")]);
+
+            (* Files *)
+            (File, "fopen", [(String, "name"); (String, "mode");]);
+            (Int, "println", [(File, "f"); (String, "s")]);
+            (Int, "write", [(File, "f"); (String, "s")]);
+            (String, "readln", [(File, "f")]);
+            (String, "read", [(File, "f"); (Int, "len")]);
+
+            (* Strings *)
+            (Int, "slength", [(String, "s")]);
+            (String, "soi", [(Int, "i")]); (* string of int *)
+
+            (* Arrays *)
+            (Int, "alength", [((Array(Void)), "s")])
           ]
       in
 
@@ -153,34 +208,25 @@ let check  = function
         int main()
         int main(string[])
       *)
-      let check_main =
-        let {t; parameters} = try
+      let _ = (* check main *)
+        let {t=t; name=_ ;body=_ ;locals=_ ; parameters=params} = try
             find_func "main"
           with _ -> semant_err "main function not found"
         in
-          let check_return = match t with
-            Int -> true
+        let _ = match t with (* check return value *)
+            Int -> ()
           | _ -> semant_err  "return type of main must be int."
         in
-          match parameters with
-            [] -> ()
-          | [(Array(String), _)] -> ()
-          | _ -> semant_err "Invalid prototype of main function."
-
+        match params with
+          [] -> ()
+        | [(Array(String), _)] -> ()
+        | _ -> semant_err "Invalid prototype of main function."
       in
 
       let check_function func =
         (* Make sure no formals or locals are void or duplicates *)
         (* check_binds "formal" func.formals;
            check_binds "local" func.locals; *)
-
-        (* Raise an exception if the given rvalue type cannot be assigned to
-           the given lvalue type *)
-        let check_assign lvaluet rvaluet err =
-          if (lvaluet = rvaluet) || (lvaluet = Int && rvaluet == Char) ||
-               (lvaluet = Char && rvaluet == Int) then lvaluet
-          else semant_err err
-        in
 
         (* helper function for finding a variable in either the current scope or
          * all the scope's that include this one
@@ -276,26 +322,30 @@ let check  = function
                                  string_of_typ t2 ^ " in " ^ string_of_expr e)
             in (ty, SBinop((t1, e1'), op, (t2, e2')))
           | Call(fname, args) as call ->
-            let fd = find_func (U.final_id_of_rid fname) in
             let args = (match fname with
                   FinalID(_) -> args
                 | RID(sm,_) -> Rid(sm) :: args
                 | indx -> semant_err ("cannot call a function on index " ^ (string_of_rid indx))
               )
             in
-            let param_length = List.length fd.parameters in
-            if List.length args != param_length then
-              semant_err ("expecting " ^ string_of_int param_length ^
-                          " arguments in " ^ string_of_expr call)
-            else let check_call (ft, _) e =
-                   let (et, e') = expr scope e in
-                   let err = "illegal argument found in call to " ^ fd.name ^ " : " ^ "found " ^
-                             string_of_typ et ^ " but expected " ^ string_of_typ ft ^ " in " ^
-                             string_of_expr e
-                   in (check_assign ft et err, e')
-              in
-              let args' = List.map2 check_call fd.parameters args
-              in (fd.t, SCall(U.final_id_of_rid fname, args'))
+            let isbuiltin = StringMap.mem (U.final_id_of_rid fname) built_in_decls in
+            let fd  = find_func (U.final_id_of_rid fname) in
+            let check_call fd args =
+              let param_length = List.length fd.parameters in
+              if List.length args != param_length then
+                semant_err ("expecting " ^ string_of_int param_length ^ " arguments in " ^ string_of_expr call)
+              else begin
+                let check_call_helper (ft, _) e =
+                  let (et, e') = expr scope e in
+                  let err = "illegal argument found in call to " ^ fd.name ^ " : " ^ "found " ^
+                            string_of_typ et ^ " but expected " ^ string_of_typ ft ^ " in " ^
+                            string_of_expr e
+                  in ((if isbuiltin then check_assign_builtin else check_assign) ft et err, e')
+                in List.map2 check_call_helper fd.parameters args
+              end
+            in
+            let args' = check_call fd args in
+            (fd.t, SCall(U.final_id_of_rid fname, args'))
           | New(NStruct(sn)) ->
               let ty =  try (ignore (StringMap.find sn structs)) ; Struct(sn) with
                 Not_found -> semant_err("invalid new expression: type [struct " ^ sn ^ "] doesn't exist")
@@ -465,11 +515,6 @@ let check  = function
         }
       in    (* (globals, List.map check_function functions) *)
 
-      let check_assign lvaluet rvaluet err =
-        if (lvaluet = rvaluet) || (lvaluet = Int && rvaluet == Char) ||
-           (lvaluet = Char && rvaluet == Int) then lvaluet
-        else semant_err err
-      in
 
       let decl_to_sdecl = function
           GVdecl(vdecl) -> SGVdecl_ass(vdecl, U.default_global vdecl.vtyp)
