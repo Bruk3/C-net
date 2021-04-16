@@ -2,15 +2,23 @@ module L = Llvm
 module A = Ast
 module U = Utils
 open Sast
+open Ast
 
 
 module StringMap = Map.Make(String)
 
+(* this should see much fewere uses than SemanticError since codegen should work
+ * relatively perfectly if the semantic checking has passed
+ *)
+exception CodegenError of string * int;;
+(* The function for raising a codegen error *)
+let codegen_err (msg : string) =
+  raise (CodegenError(msg, -1));;
 
 (* translate : Sast.program -> Llvm.module *)
 let translate (sdecl_list : sprogram) =
   (* replace with (vdecls, strct_decls, fdecls) *)
-  let (_, _, fdecls) = U.decompose_program sdecl_list in
+  let (_, sdecls, fdecls) = U.decompose_program sdecl_list in
 (* let translate ((vdecls : (A.vdecl * sexpr) list), (strct_decls : strct list), (fdecls : sfunc list)) = *)
   let context    = L.global_context () in
 
@@ -26,16 +34,43 @@ let translate (sdecl_list : sprogram) =
   and float_t    = L.double_type context (* Float *)
   and void_t     = L.void_type   context in
   let str_t      = L.pointer_type i8_t in
+  let strct_t n  = L.pointer_type (L.named_struct_type context n) in
+  let arr_t t    = L.pointer_type t in
+
 
   (* Return the LLVM type for a cnet type *)
-  let ltype_of_typ (t : A.typ) : (L.lltype) = match t with
-      A.Char    -> i8_t
-    | A.Int     -> i32_t
-    | A.Float   -> float_t
-    | A.Void    -> void_t
-    | A.String  -> str_t
-    | _         -> raise (Failure("Type not yet implemented"))
+  let rec ltype_of_typ (t : A.typ) : (L.lltype) = match t with
+      A.Char            -> i8_t
+    | A.Int             -> i32_t
+    | A.Float           -> float_t
+    | A.Void            -> void_t
+    | A.String          -> str_t
+    | A.Struct(name)    -> strct_t name
+    | A.Array(typ)      -> arr_t (ltype_of_typ typ)
+    | _                 -> codegen_err "type not implemented yet"
   in
+
+(*******************************************************************************
+   *                            Declare all the structs
+ *******************************************************************************)
+  let cstructs : L.lltype StringMap.t =
+    let declare_struct m (s : strct) =
+      let cmembers =
+        Array.of_list (List.map (fun {vname=_; vtyp=t} -> ltype_of_typ t)
+                         s.members)
+      in
+      let cur_strct = L.named_struct_type context s.sname in
+      let _ = L.struct_set_body cur_strct cmembers false in
+      StringMap.add s.sname cur_strct m
+    in
+    (* TODO: instead of an empty stringmap, the list should be folded on the
+     * default struct declarations (io/string/array)
+     *)
+    List.fold_left declare_struct StringMap.empty sdecls
+  in
+
+  (* let declare_struct = *)
+
 
   (* Kidus: we don't need this part yet (for the hello world) *)
   (* (1* Create a map of global variables after creating each *1) *)

@@ -149,38 +149,7 @@ let check  = function
     (* @built_in_decls : this is a string -> fdecl map. However, since there can
      *                   be multiple built-in functions with different names
      *)
-    let built_in_decls =
-      let add_bind map (return_type, name, params) = StringMap.add name {
-          t = return_type;
-          name = name;
-          parameters = params;
-          locals = [];
-          body = [] } map
-        in List.fold_left add_bind StringMap.empty
-          [
-            (* I/O *)
-            (* Sockets *)
-            (Socket, "nopen", [(String, "name"); (String, "protocol"); (Int, "port"); (String, "type")]);
-            (Int, "println", [(Socket, "sock"); (String, "s")]);
-            (Int, "write", [(Socket, "sock"); (String, "s")]);
-            (String, "readln", [(Socket, "sock")]);
-            (String, "read", [(Socket, "sock"); (Int, "len")]);
-
-            (* Files *)
-            (File, "fopen", [(String, "name"); (String, "mode");]);
-            (Int, "println", [(File, "f"); (String, "s")]);
-            (Int, "write", [(File, "f"); (String, "s")]);
-            (String, "readln", [(File, "f")]);
-            (String, "read", [(File, "f"); (Int, "len")]);
-
-            (* Strings *)
-            (Int, "slength", [(String, "s")]);
-            (String, "soi", [(Int, "i")]); (* string of int *)
-
-            (* Arrays *)
-            (Int, "alength", [((Array(Void)), "s")])
-          ]
-      in
+    let built_in_decls = U.builtin_funcs in
 
       (* Add function name to symbol table *)
       let add_func map (fd: func) =
