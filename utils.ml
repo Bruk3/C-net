@@ -190,14 +190,12 @@ let builtin_vars =
 ;;
 
 (* the built-in functions in cnet that cannot be declared by users *)
-let builtin_funcs =
-  let add_bind map (return_type, name, params) = StringMap.add name {
-      t = return_type;
-      name = name;
-      parameters = params;
-      locals = [];
-      body = [] } map
-  in List.fold_left add_bind StringMap.empty
+let builtin_funcs, builtin_funcs_l =
+  let add_bind (map, l) (return_type, name, params) =
+    let f = { t = return_type; name = name; parameters = params; locals = []; body = [] }
+    in
+        StringMap.add name f map, f :: l
+  in List.fold_left add_bind (StringMap.empty, [])
     [
       (* I/O *)
       (* Sockets *)
@@ -236,4 +234,18 @@ let decompose_program (sprog : sdecl list) =
     | SFdecl(fd) -> (vdecls, strct_decls, fd :: fdecls)
   in
   List.fold_left helper ([], [], []) sprog
+
+
+(* the built-in structs in cnet. These MUST be in exact conjunction with those
+ * declared in the libcnet/*.c and libcnet/*.h source files
+ *)
+(* let builtin_structs = *)
+(*   let add_builtin_strct m s = StringMap.add s.sname s m in *)
+(*   List.fold_left add_builtin_strct StringMap.empty *)
+(*     [ *)
+(*       {sname=""} *)
+(*     ] *)
+
+
+(* ;; *)
 

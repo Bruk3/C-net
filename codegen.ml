@@ -69,7 +69,9 @@ let translate (sdecl_list : sprogram) =
     List.fold_left declare_struct StringMap.empty sdecls
   in
 
-  (* let declare_struct = *)
+  (* let cbuiltin_vars = *)
+
+  (* in *)
 
 
   (* Kidus: we don't need this part yet (for the hello world) *)
