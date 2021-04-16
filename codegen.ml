@@ -47,6 +47,8 @@ let translate (sdecl_list : sprogram) =
     | A.String          -> str_t
     | A.Struct(name)    -> strct_t name
     | A.Array(typ)      -> arr_t (ltype_of_typ typ)
+    | A.Socket          -> str_t (* TODO TODO *)
+    | A.File            -> str_t (* TODO TODO *)
     | _                 -> codegen_err "type not implemented yet"
   in
 
@@ -66,12 +68,19 @@ let translate (sdecl_list : sprogram) =
     (* TODO: instead of an empty stringmap, the list should be folded on the
      * default struct declarations (io/string/array)
      *)
-    List.fold_left declare_struct StringMap.empty sdecls
+    let cbuiltinstrcts =
+      StringMap.fold (fun _ s m -> declare_struct m s) U.builtin_structs StringMap.empty
+    in
+    List.fold_left declare_struct cbuiltinstrcts sdecls
   in
 
-  (* let cbuiltin_vars = *)
-
-  (* in *)
+  let cbuiltin_vars =
+    let declare_struct_var {vtyp=vt; vname=vn} =
+      let the_v  = (L.declare_global (ltype_of_typ vt) vn the_module) in
+      L.set_externally_initialized true the_v; the_v
+    in
+    StringMap.map declare_struct_var U.builtin_vars
+  in
 
 
   (* Kidus: we don't need this part yet (for the hello world) *)

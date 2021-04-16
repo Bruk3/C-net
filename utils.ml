@@ -239,13 +239,14 @@ let decompose_program (sprog : sdecl list) =
 (* the built-in structs in cnet. These MUST be in exact conjunction with those
  * declared in the libcnet/*.c and libcnet/*.h source files
  *)
-(* let builtin_structs = *)
-(*   let add_builtin_strct m s = StringMap.add s.sname s m in *)
-(*   List.fold_left add_builtin_strct StringMap.empty *)
-(*     [ *)
-(*       {sname=""} *)
-(*     ] *)
+let builtin_structs =
+  let add_builtin_strct m s = StringMap.add s.sname s m in
+  let vd t n = {vtyp=t;vname=n} in
+  List.fold_left add_builtin_strct StringMap.empty
+    [
+      {sname="string"; members=[vd String "stub"; vd String "data"; vd Int "length"]};
+    ]
 
 
-(* ;; *)
+;;
 
