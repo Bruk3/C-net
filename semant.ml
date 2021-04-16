@@ -42,7 +42,6 @@ let check  = function
         lvaluet
       else
         match (lvaluet,rvaluet) with
-          (File,Socket) | (Socket,File) -> Socket
         | (Array(Void), Array(x)) | (Array(x), Array(Void)) -> Array(x)
         | _ -> semant_err err
     in
@@ -329,7 +328,8 @@ let check  = function
             let check_call fd args =
               let param_length = List.length fd.parameters in
               if List.length args != param_length then
-                semant_err ("expecting " ^ string_of_int param_length ^ " arguments in " ^ string_of_expr call)
+                let expected = if isbuiltin then param_length - 1 else param_length in
+                semant_err ("expecting " ^ string_of_int expected ^ " arguments in " ^ string_of_expr call)
               else begin
                 let check_call_helper (ft, _) e =
                   let (et, e') = expr scope e in
