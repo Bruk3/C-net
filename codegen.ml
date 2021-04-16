@@ -34,22 +34,21 @@ let translate (sdecl_list : sprogram) =
   and float_t    = L.double_type context (* Float *)
   and void_t     = L.void_type   context in
   let str_t      = L.pointer_type i8_t in
-  let strct_t n  = L.pointer_type (L.named_struct_type context n) in
-  let arr_t t    = L.pointer_type t in
+  let ptr_t t    = L.pointer_type t in
 
 
   (* Return the LLVM type for a cnet type *)
-  let rec ltype_of_typ (t : A.typ) : (L.lltype) = match t with
+  let rec ltype_of_typ (t : A.typ) (cstrcts : L.lltype StringMap.t)
+    : (L.lltype) = match t with
       A.Char            -> i8_t
     | A.Int             -> i32_t
     | A.Float           -> float_t
     | A.Void            -> void_t
     | A.String          -> str_t
-    | A.Struct(name)    -> strct_t name
-    | A.Array(typ)      -> arr_t (ltype_of_typ typ)
-    | A.Socket          -> str_t (* TODO TODO *)
-    | A.File            -> str_t (* TODO TODO *)
-    | _                 -> codegen_err "type not implemented yet"
+    | A.Struct(n)    -> L.pointer_type (StringMap.find n cstrcts)
+    | A.Array(typ)      -> ptr_t (ltype_of_typ typ cstrcts)
+    | A.Socket          -> ptr_t (StringMap.find "cnet_socket" cstrcts)
+    | A.File            -> ptr_t (StringMap.find "cnet_file" cstrcts)
   in
 
 (*******************************************************************************
@@ -58,10 +57,10 @@ let translate (sdecl_list : sprogram) =
   let cstructs : L.lltype StringMap.t =
     let declare_struct m (s : strct) =
       let cmembers =
-        Array.of_list (List.map (fun {vname=_; vtyp=t} -> ltype_of_typ t)
+        Array.of_list (List.map (fun {vname=_; vtyp=t} -> ltype_of_typ t m)
                          s.members)
       in
-      let cur_strct = L.named_struct_type context s.sname in
+      let cur_strct = L.named_struct_type context s.sname in (* TODO add cur stack to m first *)
       let _ = L.struct_set_body cur_strct cmembers false in
       StringMap.add s.sname cur_strct m
     in
@@ -73,6 +72,8 @@ let translate (sdecl_list : sprogram) =
     in
     List.fold_left declare_struct cbuiltinstrcts sdecls
   in
+
+  let ltype_of_typ t = ltype_of_typ t cstructs in
 
   let cbuiltin_vars =
     let declare_struct_var {vtyp=vt; vname=vn} =
