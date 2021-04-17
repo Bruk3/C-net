@@ -56,13 +56,14 @@ let translate (sdecl_list : sprogram) =
  *******************************************************************************)
   let cstructs : L.lltype StringMap.t =
     let declare_struct m (s : strct) =
+      let cur_strct = L.named_struct_type context s.sname in
+      let m = StringMap.add s.sname cur_strct m in
       let cmembers =
         Array.of_list (List.map (fun {vname=_; vtyp=t} -> ltype_of_typ t m)
                          s.members)
       in
-      let cur_strct = L.named_struct_type context s.sname in (* TODO add cur stack to m first *)
       let _ = L.struct_set_body cur_strct cmembers false in
-      StringMap.add s.sname cur_strct m
+      m
     in
     (* TODO: instead of an empty stringmap, the list should be folded on the
      * default struct declarations (io/string/array)
