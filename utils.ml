@@ -2,6 +2,8 @@ module A = Ast
 open Sast;;
 open Ast;;
 
+module StringMap = Map.Make(String);;
+
                               (* Scanner utils *)
 let count_new_lines whitespace lexbuf =
   String.iter
@@ -177,9 +179,50 @@ let handle_strings sexp =
 ;;
 
 
+(* the built-in variables in cnet that cannot be declared by users *)
+let builtin_vars =
+  let add_builtinvar m vd = StringMap.add vd.vname vd m in
+  List.fold_left add_builtinvar StringMap.empty
+    [
+      {vname="stdout"; vtyp=File};
+      {vname="stdin"; vtyp=File}
+    ]
+;;
+
+(* the built-in functions in cnet that cannot be declared by users *)
+let builtin_funcs, builtin_funcs_l =
+  let add_bind (map, l) (return_type, name, params) =
+    let f = { t = return_type; name = name; parameters = params; locals = []; body = [] }
+    in
+        StringMap.add name f map, f :: l
+  in List.fold_left add_bind (StringMap.empty, [])
+    [
+      (* I/O *)
+      (* Sockets *)
+      (Socket, "nopen", [(String, "name"); (String, "protocol"); (Int, "port"); (String, "type")]);
+      (Int, "println", [(Socket, "sock"); (String, "s")]);
+      (Int, "write", [(Socket, "sock"); (String, "s")]);
+      (String, "readln", [(Socket, "sock")]);
+      (String, "read", [(Socket, "sock"); (Int, "len")]);
+
+      (* Files *)
+      (File, "fopen", [(String, "name"); (String, "mode");]);
+      (Int, "println", [(File, "f"); (String, "s")]);
+      (Int, "write", [(File, "f"); (String, "s")]);
+      (String, "readln", [(File, "f")]);
+      (String, "read", [(File, "f"); (Int, "len")]);
+
+      (* Strings *)
+      (Int, "slength", [(String, "s")]);
+      (String, "soi", [(Int, "i")]); (* string of int *)
+
+      (* Arrays *)
+      (Int, "alength", [((Array(Void)), "s")])
+    ]
+;;
 
 
-                              (* Codegen utils *)
+(* Codegen utils *)
 (* Changes the format of an sast program, which is a list of sdecls, to one the
  * codegen can accept, which is a tuple of lists of vdecls, struct_decls and
  * fdecls
@@ -191,4 +234,20 @@ let decompose_program (sprog : sdecl list) =
     | SFdecl(fd) -> (vdecls, strct_decls, fd :: fdecls)
   in
   List.fold_left helper ([], [], []) sprog
+
+
+(* the built-in structs in cnet. These MUST be in exact conjunction with those
+ * declared in the libcnet/*.c and libcnet/*.h source files
+ *)
+let builtin_structs =
+  let add_builtin_strct m s = StringMap.add s.sname s m in
+  let vd t n = {vtyp=t;vname=n} in
+  List.fold_left add_builtin_strct StringMap.empty
+    [
+      {sname="string"; members=[vd String "stub"; vd String "data"; vd Int "length"]};
+      {sname="cnet_file"; members=[vd String "stub"; vd String "f"; vd Int "io_type"]}
+    ]
+
+
+;;
 

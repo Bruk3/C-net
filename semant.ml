@@ -42,7 +42,6 @@ let check  = function
         lvaluet
       else
         match (lvaluet,rvaluet) with
-          (File,Socket) | (Socket,File) -> Socket
         | (Array(Void), Array(x)) | (Array(x), Array(Void)) -> Array(x)
         | _ -> semant_err err
     in
@@ -146,41 +145,15 @@ let check  = function
 (******************************************************************************
                                Built-in functions
 *******************************************************************************)
-    (* @built_in_decls : this is a string -> fdecl map. However, since there can
-     *                   be multiple built-in functions with different names
+    (* @built_in_decls  : this is a string -> fdecl map. However, since there can
+     *                    be multiple built-in functions with different names
+     * @builtin_funcs_l : this is a list of all the builtin declarations. This
+     *                    is required because the map cannot have two entries of
+     *                    the same name, but some functions such as length are
+     *                    defined for multiple objects.
      *)
-    let built_in_decls =
-      let add_bind map (return_type, name, params) = StringMap.add name {
-          t = return_type;
-          name = name;
-          parameters = params;
-          locals = [];
-          body = [] } map
-        in List.fold_left add_bind StringMap.empty
-          [
-            (* I/O *)
-            (* Sockets *)
-            (Socket, "nopen", [(String, "name"); (String, "protocol"); (Int, "port"); (String, "type")]);
-            (Int, "println", [(Socket, "sock"); (String, "s")]);
-            (Int, "write", [(Socket, "sock"); (String, "s")]);
-            (String, "readln", [(Socket, "sock")]);
-            (String, "read", [(Socket, "sock"); (Int, "len")]);
-
-            (* Files *)
-            (File, "fopen", [(String, "name"); (String, "mode");]);
-            (Int, "println", [(File, "f"); (String, "s")]);
-            (Int, "write", [(File, "f"); (String, "s")]);
-            (String, "readln", [(File, "f")]);
-            (String, "read", [(File, "f"); (Int, "len")]);
-
-            (* Strings *)
-            (Int, "slength", [(String, "s")]);
-            (String, "soi", [(Int, "i")]); (* string of int *)
-
-            (* Arrays *)
-            (Int, "alength", [((Array(Void)), "s")])
-          ]
-      in
+    let built_in_decls = U.builtin_funcs in
+    let builtin_funcs_l = U.builtin_funcs_l in
 
       (* Add function name to symbol table *)
       let add_func map (fd: func) =
@@ -201,6 +174,18 @@ let check  = function
       let find_func (s : string) =
         try StringMap.find s function_decls
         with Not_found -> semant_err ("unrecognized function " ^ s)
+      in
+
+      (* return a builtin function matched on its name and first parameter *)
+      let find_builtin_func name paramt =
+        let match_fun = function
+            {t=_; name=n; parameters=f :: _; body=_; locals=_} ->
+            (if n = name && (fst f = paramt || fst f = Array(Void)) then true else false)
+          | _ -> false
+        in
+        match List.filter match_fun builtin_funcs_l with
+          hd :: [] -> hd
+        | _ -> semant_err ("find_builtin_func asked for " ^ name ^ " that doesn't exist")
       in
 
       (* Ensure "main" is defined and has the correct prototype*)
@@ -322,18 +307,29 @@ let check  = function
                                  string_of_typ t2 ^ " in " ^ string_of_expr e)
             in (ty, SBinop((t1, e1'), op, (t2, e2')))
           | Call(fname, args) as call ->
+            let isbuiltin = StringMap.mem (U.final_id_of_rid fname) built_in_decls in
             let args = (match fname with
                   FinalID(_) -> args
-                | RID(sm,_) -> Rid(sm) :: args
+                | RID(sm,_) when isbuiltin -> Rid(sm) :: args
+                | RID(_,_) -> semant_err ("function call on member only allowed for builtin functions")
                 | indx -> semant_err ("cannot call a function on index " ^ (string_of_rid indx))
               )
             in
-            let isbuiltin = StringMap.mem (U.final_id_of_rid fname) built_in_decls in
-            let fd  = find_func (U.final_id_of_rid fname) in
+
+            let fd  = if isbuiltin then
+                match args with
+                  f :: _  -> find_builtin_func (U.final_id_of_rid fname) (fst (expr scope f))
+                | _ -> semant_err "built-in function called with no arguments"
+              else
+                (find_func (U.final_id_of_rid fname))
+
+            in
+
             let check_call fd args =
               let param_length = List.length fd.parameters in
               if List.length args != param_length then
-                semant_err ("expecting " ^ string_of_int param_length ^ " arguments in " ^ string_of_expr call)
+                let expected = if isbuiltin then param_length - 1 else param_length in
+                semant_err ("expecting " ^ string_of_int expected ^ " arguments in " ^ string_of_expr call)
               else begin
                 let check_call_helper (ft, _) e =
                   let (et, e') = expr scope e in
