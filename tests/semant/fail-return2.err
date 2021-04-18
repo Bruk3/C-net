@@ -1,1 +1,1 @@
-Semantic error: return gives string expected int in "incorrect sum"
+Semantic error: return statement in function main has type string but expected int in "incorrect sum"

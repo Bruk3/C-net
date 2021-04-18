@@ -1,1 +1,1 @@
-Semantic error: return gives float expected int in 2.
+Semantic error: return statement in function main has type float but expected int in 2
