@@ -1,5 +1,0 @@
-int main(int argc) {
-    float b= 2.0; 
-
-    return b;
-}
