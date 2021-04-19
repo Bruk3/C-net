@@ -52,7 +52,7 @@ let default_global = function
   | A.Float -> (A.Float, SFloatlit(0.0))
   | A.String -> (A.String, SStrlit(""))
   | A.Void   -> semant_err "[COMPILER BUG] uncaught void global variable detected"
-  | _ -> (A.Void, SNoexpr)
+  | t -> (t, SNoexpr)
 ;;
 
 (* compute the value of a global variable assignment at compile time. Global
@@ -229,7 +229,7 @@ let builtin_funcs, builtin_funcs_l =
  *)
 let decompose_program (sprog : sdecl list) =
   let helper (vdecls, strct_decls, fdecls) decl = match decl with
-    | SGVdecl_ass (vd, _) -> (vd :: vdecls, strct_decls, fdecls) (* TODO: handle SGVdecl_ass properly *)
+    | SGVdecl_ass (vd, v) -> ((vd, v) :: vdecls, strct_decls, fdecls) (* TODO: handle SGVdecl_ass properly *)
     | SSdecl(sd) -> (vdecls, sd :: strct_decls, fdecls)
     | SFdecl(fd) -> (vdecls, strct_decls, fd :: fdecls)
   in
@@ -239,16 +239,26 @@ let decompose_program (sprog : sdecl list) =
 (* the built-in structs in cnet. These MUST be in exact conjunction with those
  * declared in the libcnet/*.c and libcnet/*.h source files
  *)
-let builtin_structs =
-  let add_builtin_strct m s = StringMap.add s.sname s m in
+let builtin_structs_l =
   let vd t n = {vtyp=t;vname=n} in
-  List.fold_left add_builtin_strct StringMap.empty
     [
       {sname="string"; members=[vd String "stub"; vd String "data"; vd Int "length"]};
       {sname="cnet_file"; members=[vd String "stub"; vd String "f"; vd Int "io_type"]};
-      {sname="cnet_file"; members=[vd String "stub"; vd String "f"; vd Int "io_type"; vd Int "fd"; vd Int "port"; vd Int "type" ]}
+      {sname="cnet_socket"; members=[vd String "stub"; vd String "f"; vd Int "io_type"; vd Int "fd"; vd Int "port"; vd Int "type" ]}
     ]
-
-
 ;;
 
+let builtin_structs =
+  let add_builtin_strct m s = StringMap.add s.sname s m in
+  List.fold_left add_builtin_strct StringMap.empty
+    builtin_structs_l
+;;
+
+
+let mem_to_idx sd member =
+  let rec helper n l = match l with
+    hd :: tl when hd.vname = member -> n
+    | hd :: tl -> helper (n + 1) tl
+  in
+  helper 0 sd.members
+;;

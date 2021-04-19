@@ -43,8 +43,8 @@ let translate (sdecl_list : sprogram) =
       A.Char            -> i8_t
     | A.Int             -> i32_t
     | A.Float           -> float_t
-    | A.Void            -> void_t
-    | A.String          -> str_t
+    | A.Void            -> ptr_t void_t
+    | A.String          -> ptr_t (StringMap.find "string" cstrcts)
     | A.Struct(n)       -> ptr_t (StringMap.find n cstrcts)
     | A.Array(typ)      -> ptr_t (ltype_of_typ typ cstrcts)
     | A.Socket          -> ptr_t (StringMap.find "cnet_socket" cstrcts)
@@ -69,7 +69,8 @@ let translate (sdecl_list : sprogram) =
      * default struct declarations (io/string/array)
      *)
     let cbuiltinstrcts =
-      StringMap.fold (fun _ s m -> declare_struct m s) U.builtin_structs StringMap.empty
+      List.fold_left declare_struct StringMap.empty
+        U.builtin_structs_l
     in
     List.fold_left declare_struct cbuiltinstrcts sdecls
   in
@@ -87,10 +88,14 @@ let translate (sdecl_list : sprogram) =
 
   (* (1* Create a map of global variables after creating each 1 *)
   let global_decls : L.llvalue StringMap.t =
-    let global_vdecl m {vtyp=typ;vname=name} =
-      let init = match typ with
-          A.Float -> L.const_float (ltype_of_typ typ) 0.0
-        | _ -> L.const_int (ltype_of_typ typ) 0
+    let global_vdecl m ({vtyp=typ;vname=name}, e) =
+      let init = match e with
+          A.Float, SFloatlit(f) -> L.const_float (ltype_of_typ A.Float) f
+        | A.Int, SIntlit(i)     -> L.const_int (ltype_of_typ A.Int) i
+        | A.Char, SCharlit(c)   -> L.const_int (ltype_of_typ A.Char) c
+        | A.Struct(n) as t, _   -> L.const_pointer_null (ltype_of_typ t)
+        (* | A.String, SStrlit(s)  -> L. *)
+        (* | _ -> L.const_int (ltype_of_typ A.Void) 0 *)
       in StringMap.add name (L.define_global name init the_module) m in
      List.fold_left global_vdecl cbuiltin_vars vdecls in
 
@@ -140,37 +145,52 @@ let translate (sdecl_list : sprogram) =
        declared variables.  Allocate each on the stack, initialize their
        value, if appropriate, and remember their values in the "locals" map *)
       let local_vars =
-        let add_formal m (t, n) p = 
+        let add_formal m (t, n) p =
           L.set_value_name n p;
           let local = L.build_alloca (ltype_of_typ t) n builder in
                 ignore (L.build_store p local builder);
-          StringMap.add n local m 
+          StringMap.add n local m
 
         and add_local m (t, n) =
           let local_var = L.build_alloca (ltype_of_typ t) n builder
-          in StringMap.add n local_var m 
-      
+          in StringMap.add n local_var m
+
       in
       List.fold_left2 add_formal StringMap.empty fdecl.sparameters
-            (Array.to_list (L.params the_function)) 
+            (Array.to_list (L.params the_function))
         (* in *)
       (* List.fold_left add_local formals fdecl.sparameters *)
-      in 
+      in
       let func_scope = local_vars :: [global_decls]
       in
       (* Return the value for a variable or formal argument.
         Check local names first, then global names *)
-      let rec lookup_scope n scope =  match n with
-                    FinalID s ->  if ((try StringMap.find s (List.hd scope) with Not_found -> None) != None) 
-                                  then List.hd scope
-                                  else lookup_scope n (List.tl scope)
-                    | RID(r, member) -> lookup_scope r scope 
-                    | Index(r,e)     -> lookup_scope r scope                      
+      let rec lookup_helper (n : string) scope : Llvm.llvalue = match scope with
+          [] -> codegen_err ("[COMPILER BUG] cannot find variable" ^ n)
+        | hd :: tl ->
+          if StringMap.mem n hd then
+            StringMap.find n hd
+          else
+            lookup_helper n tl
       in
-      let rec lookup_helper n curr_scope = match n with
-          FinalID s -> StringMap.find s curr_scope
-          | RID(r, member) -> lookup_helper r curr_scope  (*This is wrong, need to fix*)
-          | Index(r,e)     -> lookup_helper r curr_scope   (*This is wrong, need to fix*)
+
+      let rec lookup n (t : A.typ) scope builder = match n with
+          FinalID s -> lookup_helper s scope
+        | RID(r, member) -> let s = lookup r t scope builder in
+          let struct_name =
+            "my_struct" in
+            (* Printf.printf "type: %s name: %s" (A.string_of_typ *)
+            (*                                                      t) *)
+            (*   (A.string_of_rid r);match t with A.Struct(sn) -> sn in *)
+          let sd = match (List.filter (fun sd -> sd.sname = struct_name) sdecls) with
+            hd :: [] -> hd
+          in
+          Printf.printf "index: %d\n" (U.mem_to_idx sd member);
+          (* s *)
+          L.build_struct_gep s (U.mem_to_idx sd member) "tmp" builder
+
+          (*   lookup_helper r curr_scope  (*This is wrong, need to fix*)*)
+          (* | Index(r,e)     -> lookup_helper r curr_scope   (*This is wrong, need to fix*)*)
           (* | RID(r, member) ->
             let the_struct = lookup_helper r scope
             in (match the_struct with
@@ -179,35 +199,33 @@ let translate (sdecl_list : sprogram) =
                  match List.filter (fun t -> t.vname = member) the_struct.members with
                    m :: [] -> m)
 
-          | Index(r, e) -> 
+          | Index(r, e) ->
             let (t, _) = expr builder e scope in *)
-            
 
-               
-      in 
-      (* Todo: Recursive lookup for complex data types*)
-      let lookup n scopes = lookup_helper n (lookup_scope n scopes) 
+
+
       in
+      (* Todo: Recursive lookup for complex data types*)
+      (* let lookup n scopes = lookup_helper n (lookup_scope n scopes) *)
+      (* in *)
 
     (* Construct code for an expression; return its value *)
 
-    let rec expr builder ((_, e) : sexpr) = match e with
-        SNoexpr     -> L.const_int i32_t 0  
+    let rec expr builder ((t, e) : sexpr) = match e with
+        SNoexpr     -> L.const_int i32_t 0
       | SIntlit i   -> L.const_int i32_t i
       | SCharlit c  -> L.const_int i8_t c
-      | SId s       -> L.build_load (lookup s func_scope) s builder
-      | SBinassop (s, op, e) -> let e' =  ( match op with
-                                      Assign -> expr builder e
-                                    | _      -> expr builder e (*Not yet implemented*))
-                                  in ignore(L.build_store e' (lookup s func_scope) builder); e'
+      | SId s       -> L.build_load (lookup s t func_scope builder) (U.final_id_of_rid s ) builder
+      | SBinassop (s, op, e) -> let e' =  expr builder e
+                                  in ignore(L.build_store e' (lookup s t func_scope builder) builder); e'
       | SBinop ((A.Float,_ ) as e1, op, e2) ->
         let e1' = expr builder e1
         and e2' = expr builder e2 in
-        (match op with 
+        (match op with
           A.Add     -> L.build_fadd
           | A.Sub     -> L.build_fsub
           | A.Mul    -> L.build_fmul
-          | A.Div     -> L.build_fdiv 
+          | A.Div     -> L.build_fdiv
           | A.Eq      -> L.build_fcmp L.Fcmp.Oeq
           | A.Neq     -> L.build_fcmp L.Fcmp.One
           | A.Lt      -> L.build_fcmp L.Fcmp.Olt
