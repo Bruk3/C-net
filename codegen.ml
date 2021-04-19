@@ -51,6 +51,7 @@ let translate (sdecl_list : sprogram) =
     | A.File            -> ptr_t (snd (StringMap.find "cnet_file" cstrcts))
   in
 
+
 (*******************************************************************************
    *                            Declare all the structs
  *******************************************************************************)
@@ -180,7 +181,8 @@ let translate (sdecl_list : sprogram) =
           let vd, ll = lookup r t scope builder in
           let sname = match vd.vtyp with Struct(n) -> n in
           let sd,s = StringMap.find sname cstructs in
-          (vd, L.build_struct_gep ll (U.mem_to_idx sd member) "tmp" builder)
+          let the_struct = L.build_load ll "tmp" builder in
+          (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "tmp" builder)
 
           (*   lookup_helper r curr_scope  (*This is wrong, need to fix*)*)
           (* | Index(r,e)     -> lookup_helper r curr_scope   (*This is wrong, need to fix*)*)
