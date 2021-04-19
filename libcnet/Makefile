@@ -5,6 +5,7 @@ DEPENDS := string.h utils.h io.h
 
 libcnet.a: stdlib
 	ar -cq libcnet.a *.o
+	rm -f *.o # clean up object files cause we don't need them
 
 stdlib: $(OBJS)
 
@@ -14,6 +15,6 @@ stdlib: $(OBJS)
 clean:
 	rm -f *.o *.a
 
-all: clean stdlib
+all: clean libcnet.a
 
 .PHONY: clean all
