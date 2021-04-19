@@ -1,9 +1,10 @@
-#!/bin/python3
+#!/usr/bin/env python3
 
 import getopt
 import sys
 import os
 import subprocess
+import stat
 
 CC		= "gcc"			# C compiler
 LLC		= "llc"			# LLVM compiler
@@ -64,6 +65,7 @@ def handle_full(options, sourcef):
 		if 'o' in options: # user specified a file
 				with open(options['o'], 'wb') as outfile:
 						outfile.write(ret.stdout)
+				os.chmod(options['o'], 0o755) # make it executable
 				sys.exit(0)
 		# else:
 		# 		outputf = sourcef.split('.')
@@ -95,7 +97,8 @@ def main():
 				sys.exit(1)
 
 
-		if "b" not in options and len(options) > 0: # not a full compilation
+		if "b" not in options and len(options) > 0 and \
+		not (len(options) == 1 and 'o' in options): # not a full compilation
 				handle_normal(options, source[0])
 		else:
 				handle_full(options, source[0])
