@@ -160,16 +160,17 @@ let translate (sdecl_list : sprogram) =
       in
       (* Return the value for a variable or formal argument.
         Check local names first, then global names *)
-      let rec lookup_scope n scope = match scope with
-          []    -> codegen_err
-        | scope -> match n with
-                    FinalID s -> try StringMap.find s (List.hd scope)
-                                  with Not_found -> lookup_scope n (List.tl scope)
-                    | _       -> codegen_err   (*Not yet implemented*)                     
+      let rec lookup_scope n scope =  match n with
+                    FinalID s ->  if ((try StringMap.find s (List.hd scope) with Not_found -> None) != None) 
+                                  then List.hd scope
+                                  else lookup_scope n (List.tl scope)
+                    | RID(r, member) -> lookup_scope r scope 
+                    | Index(r,e)     -> lookup_scope r scope                      
       in
-      let lookup_helper n scope = match n with
-          FinalID s -> StringMap.find s scope
-          | _       -> codegen_err (*Not yet implemented*)
+      let rec lookup_helper n curr_scope = match n with
+          FinalID s -> StringMap.find s curr_scope
+          | RID(r, member) -> lookup_helper r curr_scope  (*This is wrong, need to fix*)
+          | Index(r,e)     -> lookup_helper r curr_scope   (*This is wrong, need to fix*)
           (* | RID(r, member) ->
             let the_struct = lookup_helper r scope
             in (match the_struct with
@@ -185,7 +186,7 @@ let translate (sdecl_list : sprogram) =
                
       in 
       (* Todo: Recursive lookup for complex data types*)
-      let lookup n scope = lookup_helper n (lookup_scope n scope) 
+      let lookup n scopes = lookup_helper n (lookup_scope n scopes) 
       in
 
     (* Construct code for an expression; return its value *)
@@ -194,12 +195,11 @@ let translate (sdecl_list : sprogram) =
         SNoexpr     -> L.const_int i32_t 0  
       | SIntlit i   -> L.const_int i32_t i
       | SCharlit c  -> L.const_int i8_t c
-      | SId s       -> L.build_load (lookup s.rid func_scope) s.rid builder
-      | SBinassop (r, op, e) -> let e' =  ( match op with
+      | SId s       -> L.build_load (lookup s func_scope) s builder
+      | SBinassop (s, op, e) -> let e' =  ( match op with
                                       Assign -> expr builder e
-                                    | PlusEq -> expr builder Sexpr(s.typ,SBinop(s,A.Add,e))
-                                    | MinusEq -> expr builder Sexpr(s.typ,SBinop(s,A.Sub,e)) )
-                                  in ignore(L.build_store e' (lookup r func_scope) builder); e'
+                                    | _      -> expr builder e (*Not yet implemented*))
+                                  in ignore(L.build_store e' (lookup s func_scope) builder); e'
       | SBinop ((A.Float,_ ) as e1, op, e2) ->
         let e1' = expr builder e1
         and e2' = expr builder e2 in
