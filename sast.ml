@@ -71,6 +71,17 @@ type sprogram = sdecl list
    *)
   (* Pretty-printing functions *)
 
+let contains s1 s2 =
+  let re = Str.regexp_string s2
+  in
+      try ignore (Str.search_forward re s1 0); true
+      with Not_found -> false
+
+let remove_prefix (str: string) (prefix: string) =
+  let strlen = String.length str in
+  let prelen = String.length prefix in
+  let prefix_found = contains str prefix in
+   if prefix_found then String.sub str prelen (strlen - prelen) else str
 
   let rec string_of_sexpr (t, e) =
     "(" ^ string_of_typ t ^ " : " ^ (match e with
@@ -90,33 +101,33 @@ type sprogram = sdecl list
     String.concat ", " (List.map string_of_sexpr el) ^ "}"
     | SIndex (s, e) -> string_of_rid s ^ "[" ^ string_of_sexpr e ^ "]"
     | SCall(f, el) ->
-        f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
+        remove_prefix f "user_" ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
             ) ^ ")"
 
 let string_of_svdecl_assign (t, id, e) =
   string_of_typ t ^ " " ^ id ^ " = " ^ string_of_sexpr e ^ ";\n"
 
-  let rec string_of_sstmt = function
-    SExpr(expr) -> string_of_sexpr expr ^ ";\n";
-    | SReturn(expr) -> "return " ^ string_of_sexpr expr ^ ";\n";
-    | SDelete(expr) -> "delete " ^ string_of_sexpr expr ^ ";\n";
-    | SIf(e_s_l, SExpr(Void, SNoexpr)) -> let string_of_sif ((e, _)) =
-    "if (" ^ string_of_sexpr e ^ ")\n" in String.concat "else " (List.map string_of_sif e_s_l)
-    | SIf(e_s_l, s) -> let string_of_sif ((e, _)) =
-        "if (" ^ string_of_sexpr e ^ ")\n" in String.concat "else " (List.map string_of_sif e_s_l)  ^
-        "else{\n" ^ string_of_sstmt s ^ "}\n";
-    | SFor(e1, e2, e3, s) ->
-        "for (" ^ string_of_sexpr e1  ^ " ; " ^ string_of_sexpr e2 ^ " ; " ^
-        string_of_sexpr e3  ^ ")\n\t " ^ string_of_sstmt s
-    | SWhile(e, s) -> "while (" ^ string_of_sexpr e ^ ") " ^ string_of_sstmt s
-    | SVdecl(v)           -> string_of_vdecl v
-    | SVdecl_ass({vtyp; vname}, e)
-      -> string_of_svdecl_assign(vtyp, vname, e)
-    | SBreak -> "break;"
-    | SContinue -> "continue;"
+let rec string_of_sstmt = function
+  SExpr(expr) -> string_of_sexpr expr ^ ";\n";
+  | SReturn(expr) -> "return " ^ string_of_sexpr expr ^ ";\n";
+  | SDelete(expr) -> "delete " ^ string_of_sexpr expr ^ ";\n";
+  | SIf(e_s_l, SExpr(Void, SNoexpr)) -> let string_of_sif ((e, _)) =
+  "if (" ^ string_of_sexpr e ^ ")\n" in String.concat "else " (List.map string_of_sif e_s_l)
+  | SIf(e_s_l, s) -> let string_of_sif ((e, _)) =
+      "if (" ^ string_of_sexpr e ^ ")\n" in String.concat "else " (List.map string_of_sif e_s_l)  ^
+      "else{\n" ^ string_of_sstmt s ^ "}\n";
+  | SFor(e1, e2, e3, s) ->
+      "for (" ^ string_of_sexpr e1  ^ " ; " ^ string_of_sexpr e2 ^ " ; " ^
+      string_of_sexpr e3  ^ ")\n\t " ^ string_of_sstmt s
+  | SWhile(e, s) -> "while (" ^ string_of_sexpr e ^ ") " ^ string_of_sstmt s
+  | SVdecl(v)           -> string_of_vdecl v
+  | SVdecl_ass({vtyp; vname}, e)
+    -> string_of_svdecl_assign(vtyp, vname, e)
+  | SBreak -> "break;"
+  | SContinue -> "continue;"
 
-    | SBlock(stmts) ->
-        "{\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"
+  | SBlock(stmts) ->
+      "{\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"
 
   (* let string_of_sfdecl fdecl =
     string_of_typ fdecl.styp ^ " " ^

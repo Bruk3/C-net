@@ -199,14 +199,14 @@ let builtin_funcs, builtin_funcs_l =
     [
       (* I/O *)
       (* Sockets *)
-      (Socket, "nopen", [(String, "name"); (String, "protocol"); (Int, "port"); (String, "type")]);
+      (Socket, "user_nopen", [(String, "name"); (String, "protocol"); (Int, "port"); (String, "type")]);
       (Int, "println", [(Socket, "sock"); (String, "s")]);
       (Int, "write", [(Socket, "sock"); (String, "s")]);
       (String, "readln", [(Socket, "sock")]);
       (String, "read", [(Socket, "sock"); (Int, "len")]);
 
       (* Files *)
-      (File, "fopen", [(String, "name"); (String, "mode");]);
+      (File, "user_fopen", [(String, "name"); (String, "mode");]);
       (Int, "println", [(File, "f"); (String, "s")]);
       (Int, "write", [(File, "f"); (String, "s")]);
       (String, "readln", [(File, "f")]);
@@ -214,7 +214,7 @@ let builtin_funcs, builtin_funcs_l =
 
       (* Strings *)
       (Int, "slength", [(String, "s")]);
-      (String, "soi", [(Int, "i")]); (* string of int *)
+      (String, "user_soi", [(Int, "i")]); (* string of int *)
 
       (* Arrays *)
       (Int, "alength", [((Array(Void)), "s")])
