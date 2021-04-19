@@ -242,9 +242,15 @@ let decompose_program (sprog : sdecl list) =
 let builtin_structs_l =
   let vd t n = {vtyp=t;vname=n} in
     [
+      (* Some of the String types here are actually just void *s that will be
+       * cast later.
+       *)
       {sname="string"; members=[vd String "stub"; vd String "data"; vd Int "length"]};
+      {sname="array"; members=[vd String "stub"; vd Int "length"; vd Int "i_t"]};
       {sname="cnet_file"; members=[vd String "stub"; vd String "f"; vd Int "io_type"]};
-      {sname="cnet_socket"; members=[vd String "stub"; vd String "f"; vd Int "io_type"; vd Int "fd"; vd Int "port"; vd Int "type" ]}
+      {sname="cnet_socket"; members=[vd String "stub"; vd String "f"; vd Int
+                                       "io_type"; vd Int "fd"; vd Int "port"; vd
+                                       Int "type"; vd String "addr"]}
     ]
 ;;
 
