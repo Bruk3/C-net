@@ -159,7 +159,7 @@ let check  = function
       let add_func map (fd: func) =
         let built_in_err = "function " ^ fd.name ^ " may not be defined"
         and dup_err = "duplicate function " ^ fd.name
-        and n = fd.name (* Name of the function *)
+        and n = "user_" ^ fd.name (* Name of the function prefixed with user_ *)
         in match fd with (* No duplicate functions or redefinitions of built-ins *)
           _ when StringMap.mem n built_in_decls -> semant_err built_in_err
         | _ when StringMap.mem n map -> semant_err dup_err
@@ -173,7 +173,7 @@ let check  = function
       (* Return a function from our symbol table *)
       let find_func (s : string) =
         try StringMap.find s function_decls
-        with Not_found -> semant_err ("unrecognized function " ^ s)
+        with Not_found -> semant_err ("unrecognized function " ^ remove_prefix s "user_")
       in
 
       (* return a builtin function matched on its name and first parameter *)
@@ -195,7 +195,7 @@ let check  = function
       *)
       let _ = (* check main *)
         let {t=t; name=_ ;body=_ ;locals=_ ; parameters=params} = try
-            find_func "main"
+            find_func "user_main"
           with _ -> semant_err "main function not found"
         in
         let _ = match t with (* check return value *)
@@ -307,6 +307,13 @@ let check  = function
                                  string_of_typ t2 ^ " in " ^ string_of_expr e)
             in (ty, SBinop((t1, e1'), op, (t2, e2')))
           | Call(fname, args) as call ->
+
+            let fname = (match fname with
+                FinalID(f_name) -> FinalID("user_" ^ f_name)
+                | _ -> fname
+
+            ) in
+
             let isbuiltin = StringMap.mem (U.final_id_of_rid fname) built_in_decls in
             let args = (match fname with
                   FinalID(_) -> args
