@@ -276,14 +276,17 @@ let translate (sdecl_list : sprogram) =
         let ll_va_args = arr_len :: size_t :: ll_arr_lit in 
         L.build_call (init_array_func t) (Array.of_list ll_va_args) "cnet_init_array" builder
       (* | SIndex (r, s) ->  *)
-      (* | SCall (n, args) -> 
-        let (fdef, fdecl) = StringMap.find f function_decls in
+      | SCall (n, args) -> 
+        let (fdef, fdecl) = StringMap.find n function_decls in
         let llargs = List.rev (List.map (fun a -> expr builder a scope) (List.rev args)) in
         let result = (match fdecl.styp with 
                             A.Void -> ""
-                          | _ -> f ^ "_result") in
-              L.build_call fdef (Array.of_list llargs) result builder
-         *)
+                          | _ -> n ^ "_result") in
+              L.build_call fdef (Array.of_list llargs) result builder in
+        let add_terminal builder instr =
+          match L.block_terminator (L.insertion_block builder) with
+            Some _ -> ()
+          | None -> ignore (instr builder) 
         
 
 
