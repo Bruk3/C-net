@@ -159,7 +159,7 @@ let check  = function
       let add_func map (fd: func) =
         let built_in_err = "function " ^ fd.name ^ " may not be defined"
         and dup_err = "duplicate function " ^ fd.name
-        and n = "user_" ^ fd.name (* Name of the function prefixed with user_ *)
+        and n = if fd.name = "main" then fd.name else "user_" ^ fd.name (* Name of the function prefixed with user_ *)
         in match fd with (* No duplicate functions or redefinitions of built-ins *)
           _ when StringMap.mem n built_in_decls -> semant_err built_in_err
         | _ when StringMap.mem n map -> semant_err dup_err
@@ -195,7 +195,7 @@ let check  = function
       *)
       let _ = (* check main *)
         let {t=t; name=_ ;body=_ ;locals=_ ; parameters=params} = try
-            find_func "user_main"
+            find_func "main"
           with _ -> semant_err "main function not found"
         in
         let _ = match t with (* check return value *)
