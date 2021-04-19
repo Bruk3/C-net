@@ -1,0 +1,5 @@
+int main(){
+    string a = "abcdef";
+    slength(a);
+    return 0;
+}
