@@ -205,21 +205,23 @@ let translate (sdecl_list : sprogram) =
 
     (* Construct code for an expression; return its value *)
 
-    let rec expr builder ((t, e) : sexpr) = match e with
+    let rec expr builder ((t, e) : sexpr) (scope :  = match e with
         SNoexpr     -> L.const_int i32_t 0
       | SIntlit i   -> L.const_int i32_t i
       | SCharlit c  -> L.const_int i8_t c
-      | SId s       -> L.build_load (lookup s t func_scope builder) (U.final_id_of_rid s ) builder
+      | SFloatlit f -> L.const_float float_t f
+      | SId s       -> L.build_load (lookup s t scope builder) (U.final_id_of_rid s ) builder
       | SBinassop (s, op, e) -> let e' =  expr builder e
-                                  in ignore(L.build_store e' (lookup s t func_scope builder) builder); e'
+                                  in ignore(L.build_store e' (lookup s t scope builder) builder); e'
       | SBinop ((A.Float,_ ) as e1, op, e2) ->
         let e1' = expr builder e1
         and e2' = expr builder e2 in
         (match op with
-          A.Add     -> L.build_fadd
+            A.Add     -> L.build_fadd
           | A.Sub     -> L.build_fsub
-          | A.Mul    -> L.build_fmul
+          | A.Mul     -> L.build_fmul
           | A.Div     -> L.build_fdiv
+          | A.Mod     -> L.build_frem
           | A.Eq      -> L.build_fcmp L.Fcmp.Oeq
           | A.Neq     -> L.build_fcmp L.Fcmp.One
           | A.Lt      -> L.build_fcmp L.Fcmp.Olt
@@ -229,30 +231,54 @@ let translate (sdecl_list : sprogram) =
           | A.And | A.Or ->
               raise (Failure "internal error: semant should have rejected and/or on float")
           ) e1' e2' "tmp" builder
-          | SBinop (e1, op, e2) ->
-        let e1' = expr builder e1
-        and e2' = expr builder e2 in
-        (match op with
-                              A.Add     -> L.build_add
-                              | A.Sub     -> L.build_sub
-                              | A.Mul    -> L.build_mul
-                              | A.Div     -> L.build_sdiv
-                              | A.And     -> L.build_and
-                              | A.Or      -> L.build_or
-                              | A.Eq      -> L.build_icmp L.Icmp.Eq
-                              | A.Neq     -> L.build_icmp L.Icmp.Ne
-                              | A.Lt      -> L.build_icmp L.Icmp.Slt
-                              | A.Leq     -> L.build_icmp L.Icmp.Sle
-                              | A.Gt      -> L.build_icmp L.Icmp.Sgt
-                              | A.Geq     -> L.build_icmp L.Icmp.Sge
-                              ) e1' e2' "tmp" builder
-      | SStrlit s   -> L.build_global_stringptr (s ^ "\n") "tmp" builder
-      | SCall("println", (A.String, SId(A.FinalID("stdout"))) :: (A.String, SStrlit(s)) :: []) ->
-        L.build_call println_func
+      | SBinop (e1, op, e2) ->
+                let e1' = expr builder e1
+                and e2' = expr builder e2 in
+                (match op with
+                    A.Add       -> L.build_add
+                    | A.Sub     -> L.build_sub
+                    | A.Mul     -> L.build_mul
+                    | A.Div     -> L.build_sdiv
+                    | A.Mod     -> L.build_srem
+                    | A.And     -> L.build_and
+                    | A.Or      -> L.build_or
+                    | A.Eq      -> L.build_icmp L.Icmp.Eq
+                    | A.Neq     -> L.build_icmp L.Icmp.Ne
+                    | A.Lt      -> L.build_icmp L.Icmp.Slt
+                    | A.Leq     -> L.build_icmp L.Icmp.Sle
+                    | A.Gt      -> L.build_icmp L.Icmp.Sgt
+                    | A.Geq     -> L.build_icmp L.Icmp.Sge
+                ) e1' e2' "tmp" builder
+      | SUnop (op,  ((t, _) as e)) -> let e' = expr builder e in
+                                            (match op with
+                                                A.Neg when t = A.Float -> L.build_fneg
+                                              | A.Neg                  -> L.build_neg
+                                              | A.Not                  -> L.build_not) e' "tmp" builder
+      | SStrlit s   -> L.build_global_stringptr s "tmp" builder
+      (* | SCall("println", (A.String, SId(A.FinalID("stdout"))) :: (A.String, SStrlit(s)) :: []) -> *)
+        (* L.build_call println_func
           [| L.const_int i32_t 1;
              (expr builder (A.String, SStrlit(s)));
              L.const_int i32_t (String.length s )
-          |]
+          |] *)
+      | SCall (f, args) ->
+            let (fdef, fdecl) = StringMap.find f function_decls in
+      let llargs = List.rev (List.map (expr builder) (List.rev args)) in
+      let result = (match fdecl.styp with 
+                           A.Void -> ""
+                         | _ -> f ^ "_result") in
+            L.build_call fdef (Array.of_list llargs) result builder
+       in
+       
+       (* LLVM insists each basic block end with exactly one "terminator" 
+          instruction that transfers control.  This function runs "instr builder"
+          if the current block does not already have a terminator.  Used,
+          e.g., to handle the "fall off the end of the function" case. *)
+       let add_terminal builder instr =
+         match L.block_terminator (L.insertion_block builder) with
+     Some _ -> ()
+         | None -> ignore (instr builder) in
+   
           "" builder
       | _ -> raise (Failure("Expression type not implemented"))
     in

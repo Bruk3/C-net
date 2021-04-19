@@ -57,7 +57,7 @@ and expr =
   (* Operators *)
   | Binop of expr * binop * expr
   | Unop of unop * expr
-  | Binassop of rid * bin_assign_op      * expr
+  | Binassop of rid * bin_assign_op * expr
   (* Arrays and new/delete *)
   | New of newable
   | ArrayLit of typ * expr * expr list (* expr:length and expr list:array literal *)
