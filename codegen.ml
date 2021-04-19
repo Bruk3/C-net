@@ -54,10 +54,10 @@ let translate (sdecl_list : sprogram) =
 (*******************************************************************************
    *                            Declare all the structs
  *******************************************************************************)
-  let cstructs : L.lltype StringMap.t =
+  let cstructs : (A.strct * L.lltype) StringMap.t =
     let declare_struct m (s : strct) =
       let cur_strct = L.named_struct_type context s.sname in
-      let m = StringMap.add s.sname cur_strct m in
+      let m = StringMap.add s.sname (s, cur_strct) m in
       let cmembers =
         Array.of_list (List.map (fun {vname=_; vtyp=t} -> ltype_of_typ t m)
                          s.members)
@@ -80,7 +80,7 @@ let translate (sdecl_list : sprogram) =
   let cbuiltin_vars =
     let declare_struct_var {vtyp=vt; vname=vn} =
       let the_v  = (L.declare_global (ltype_of_typ vt) vn the_module) in
-      L.set_externally_initialized true the_v; the_v
+      L.set_externally_initialized true the_v; ({vtyp=vt; vname=vn}, the_v)
     in
     StringMap.map declare_struct_var U.builtin_vars
   in
@@ -176,18 +176,12 @@ let translate (sdecl_list : sprogram) =
 
       let rec lookup n (t : A.typ) scope builder = match n with
           FinalID s -> lookup_helper s scope
-        | RID(r, member) -> let s = lookup r t scope builder in
-          let struct_name =
-            "my_struct" in
-            (* Printf.printf "type: %s name: %s" (A.string_of_typ *)
-            (*                                                      t) *)
-            (*   (A.string_of_rid r);match t with A.Struct(sn) -> sn in *)
-          let sd = match (List.filter (fun sd -> sd.sname = struct_name) sdecls) with
-            hd :: [] -> hd
-          in
-          Printf.printf "index: %d\n" (U.mem_to_idx sd member);
-          (* s *)
-          L.build_struct_gep s (U.mem_to_idx sd member) "tmp" builder
+        | RID(r, member) ->
+          let vd, ll = lookup r t scope builder in
+
+          let sname = match vd.vtyp with Struct(n) -> n in
+          let sd,s = StringMap.find sname cstructs in
+          (vd, L.build_struct_gep s (U.mem_to_idx sd member) "tmp" builder)
 
           (*   lookup_helper r curr_scope  (*This is wrong, need to fix*)*)
           (* | Index(r,e)     -> lookup_helper r curr_scope   (*This is wrong, need to fix*)*)
