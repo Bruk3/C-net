@@ -414,7 +414,7 @@ let check  = function
                       "]. Identifier should be of type Struct or Array" in
             let e = Rid(n) in
             let check_valid_delete =  function
-                Array(_) | Struct(_) -> SDelete (expr scope e), sp
+                Array(_) | Struct(_) -> SDelete (expr scope e), sp (* Delete should only be called on arrays and structs *)
               | _ -> semant_err (err)
             in check_valid_delete t
 
