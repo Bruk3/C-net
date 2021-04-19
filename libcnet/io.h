@@ -7,8 +7,10 @@
 #define MAXPENDING 5
 
 /* IO types */
-#define CNET_FILE 0
-#define CNET_SOCKET 1  
+#define CNET_FILE_STDIN 0
+#define CNET_FILE_STDOUT 1
+#define CNET_FILE 2
+#define CNET_SOCKET 3  
 
 /* Socket types */ 
 #define LISTEN 0

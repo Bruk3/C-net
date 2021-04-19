@@ -23,7 +23,7 @@ and sx =
   | SCharlit of int
   | SFloatlit of float
   | SStrlit of string
-  | SId of (typ * rid)
+  | SId of rid
   (* Operators *)
   | SBinop of sexpr * binop * sexpr
   | SBinassop of rid * bin_assign_op * sexpr

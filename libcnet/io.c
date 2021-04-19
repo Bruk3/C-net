@@ -372,21 +372,14 @@ int cnet_check_error(void *ptr)
     return (cnet_io *)ptr == NULL;
 }
 
-
-const cnet_file stdin = {
+const cnet_file cnet_stdin = {
     .cnet_free = NULL,
-    .f         = fdopen(0),
-    io_type    = CNET_FILE
+    .f         = NULL,
+    .io_type    = CNET_FILE_STDIN
 };
 
-const cnet_file stdout = {
+const cnet_file cnet_stdout = {
     .cnet_free = NULL,
-    .f         = fdopen(1),
-    io_type    = CNET_FILE
+    .f         = NULL,
+    .io_type    = CNET_FILE_STDOUT
 };
-
-void cnet_cleanup()
-{
-    cnet_close_file(stdin.f);
-    cnet_close_file(stdout.f);
-}

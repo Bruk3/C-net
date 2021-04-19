@@ -38,17 +38,17 @@ let translate (sdecl_list : sprogram) =
 
 
   (* Return the LLVM type for a cnet type *)
-  let rec ltype_of_typ (t : A.typ) (cstrcts : L.lltype StringMap.t)
+  let rec ltype_of_typ (t : A.typ) (cstrcts : (A.strct * L.lltype) StringMap.t)
     : (L.lltype) = match t with
       A.Char            -> i8_t
     | A.Int             -> i32_t
     | A.Float           -> float_t
     | A.Void            -> ptr_t void_t
-    | A.String          -> ptr_t (StringMap.find "string" cstrcts)
-    | A.Struct(n)       -> ptr_t (StringMap.find n cstrcts)
-    | A.Array(typ)      -> ptr_t (ltype_of_typ typ cstrcts)
-    | A.Socket          -> ptr_t (StringMap.find "cnet_socket" cstrcts)
-    | A.File            -> ptr_t (StringMap.find "cnet_file" cstrcts)
+    | A.String          -> ptr_t (snd (StringMap.find "string" cstrcts))
+    | A.Struct(n)       -> ptr_t (snd (StringMap.find n cstrcts))
+    | A.Array(typ)      -> ptr_t (snd (StringMap.find "array" cstrcts))
+    | A.Socket          -> ptr_t (snd (StringMap.find "cnet_socket" cstrcts))
+    | A.File            -> ptr_t (snd (StringMap.find "cnet_file" cstrcts))
   in
 
 (*******************************************************************************
@@ -87,8 +87,8 @@ let translate (sdecl_list : sprogram) =
 
 
   (* (1* Create a map of global variables after creating each 1 *)
-  let global_decls : L.llvalue StringMap.t =
-    let global_vdecl m ({vtyp=typ;vname=name}, e) =
+  let global_decls : (A.vdecl * L.llvalue) StringMap.t =
+    let global_vdecl m (vd, e) =
       let init = match e with
           A.Float, SFloatlit(f) -> L.const_float (ltype_of_typ A.Float) f
         | A.Int, SIntlit(i)     -> L.const_int (ltype_of_typ A.Int) i
@@ -96,7 +96,7 @@ let translate (sdecl_list : sprogram) =
         | A.Struct(n) as t, _   -> L.const_pointer_null (ltype_of_typ t)
         (* | A.String, SStrlit(s)  -> L. *)
         (* | _ -> L.const_int (ltype_of_typ A.Void) 0 *)
-      in StringMap.add name (L.define_global name init the_module) m in
+      in StringMap.add vd.vname (vd, (L.define_global vd.vname init the_module)) m in
      List.fold_left global_vdecl cbuiltin_vars vdecls in
 
 
@@ -144,16 +144,16 @@ let translate (sdecl_list : sprogram) =
     (* Construct the function's "locals": formal arguments and locally
        declared variables.  Allocate each on the stack, initialize their
        value, if appropriate, and remember their values in the "locals" map *)
-      let local_vars =
+      let local_vars : (A.vdecl * L.llvalue) StringMap.t=
         let add_formal m (t, n) p =
           L.set_value_name n p;
           let local = L.build_alloca (ltype_of_typ t) n builder in
                 ignore (L.build_store p local builder);
-          StringMap.add n local m
+          StringMap.add n ({vtyp=t;vname=n},local) m
 
         and add_local m (t, n) =
           let local_var = L.build_alloca (ltype_of_typ t) n builder
-          in StringMap.add n local_var m
+          in StringMap.add n ({vtyp=t;vname=n}, local_var) m
 
       in
       List.fold_left2 add_formal StringMap.empty fdecl.sparameters
@@ -165,7 +165,7 @@ let translate (sdecl_list : sprogram) =
       in
       (* Return the value for a variable or formal argument.
         Check local names first, then global names *)
-      let rec lookup_helper (n : string) scope : Llvm.llvalue = match scope with
+      let rec lookup_helper (n : string) scope : (A.vdecl * L.llvalue) = match scope with
           [] -> codegen_err ("[COMPILER BUG] cannot find variable" ^ n)
         | hd :: tl ->
           if StringMap.mem n hd then
@@ -178,10 +178,9 @@ let translate (sdecl_list : sprogram) =
           FinalID s -> lookup_helper s scope
         | RID(r, member) ->
           let vd, ll = lookup r t scope builder in
-
           let sname = match vd.vtyp with Struct(n) -> n in
           let sd,s = StringMap.find sname cstructs in
-          (vd, L.build_struct_gep s (U.mem_to_idx sd member) "tmp" builder)
+          (vd, L.build_struct_gep ll (U.mem_to_idx sd member) "tmp" builder)
 
           (*   lookup_helper r curr_scope  (*This is wrong, need to fix*)*)
           (* | Index(r,e)     -> lookup_helper r curr_scope   (*This is wrong, need to fix*)*)
@@ -209,9 +208,9 @@ let translate (sdecl_list : sprogram) =
         SNoexpr     -> L.const_int i32_t 0
       | SIntlit i   -> L.const_int i32_t i
       | SCharlit c  -> L.const_int i8_t c
-      | SId s       -> L.build_load (lookup s t func_scope builder) (U.final_id_of_rid s ) builder
+      | SId s       -> L.build_load (snd (lookup s t func_scope builder)) (U.final_id_of_rid s ) builder
       | SBinassop (s, op, e) -> let e' =  expr builder e
-                                  in ignore(L.build_store e' (lookup s t func_scope builder) builder); e'
+                                  in ignore(L.build_store e' (snd (lookup s t func_scope builder)) builder); e'
       | SBinop ((A.Float,_ ) as e1, op, e2) ->
         let e1' = expr builder e1
         and e2' = expr builder e2 in
