@@ -245,7 +245,8 @@ let builtin_structs =
   List.fold_left add_builtin_strct StringMap.empty
     [
       {sname="string"; members=[vd String "stub"; vd String "data"; vd Int "length"]};
-      {sname="cnet_file"; members=[vd String "stub"; vd String "f"; vd Int "io_type"]}
+      {sname="cnet_file"; members=[vd String "stub"; vd String "f"; vd Int "io_type"]};
+      {sname="cnet_file"; members=[vd String "stub"; vd String "f"; vd Int "io_type"; vd Int "fd"; vd Int "port"; vd Int "type" ]}
     ]
 
 

@@ -18,7 +18,7 @@ let codegen_err (msg : string) =
 (* translate : Sast.program -> Llvm.module *)
 let translate (sdecl_list : sprogram) =
   (* replace with (vdecls, strct_decls, fdecls) *)
-  let (_, sdecls, fdecls) = U.decompose_program sdecl_list in
+  let (vdecls, sdecls, fdecls) = U.decompose_program sdecl_list in
 (* let translate ((vdecls : (A.vdecl * sexpr) list), (strct_decls : strct list), (fdecls : sfunc list)) = *)
   let context    = L.global_context () in
 
@@ -33,7 +33,7 @@ let translate (sdecl_list : sprogram) =
   and i32_t      = L.i32_type    context (* Int *)
   and float_t    = L.double_type context (* Float *)
   and void_t     = L.void_type   context in
-  let str_t      = L.pointer_type i8_t in
+  let str_t      = L.pointer_type i8_t in (*Need to fix*)
   let ptr_t t    = L.pointer_type t in
 
 
@@ -45,7 +45,7 @@ let translate (sdecl_list : sprogram) =
     | A.Float           -> float_t
     | A.Void            -> void_t
     | A.String          -> str_t
-    | A.Struct(n)    -> L.pointer_type (StringMap.find n cstrcts)
+    | A.Struct(n)       -> ptr_t (StringMap.find n cstrcts)
     | A.Array(typ)      -> ptr_t (ltype_of_typ typ cstrcts)
     | A.Socket          -> ptr_t (StringMap.find "cnet_socket" cstrcts)
     | A.File            -> ptr_t (StringMap.find "cnet_file" cstrcts)
@@ -85,15 +85,14 @@ let translate (sdecl_list : sprogram) =
   in
 
 
-  (* Kidus: we don't need this part yet (for the hello world) *)
-  (* (1* Create a map of global variables after creating each *1) *)
-  (* let global_decls : L.llvalue StringMap.t = *)
-  (*   let global_vdecl m (typ, name) = *)
-  (*     let init = match typ with *)
-  (*         A.Float -> L.const_float (ltype_of_typ typ) 0.0 *)
-  (*       | _ -> L.const_int (ltype_of_typ typ) 0 *)
-  (*     in StringMap.add name (L.define_global name init the_module) m in *)
-  (*   List.fold_left global_vdecl StringMap.empty vdecls in *)
+  (* (1* Create a map of global variables after creating each 1 *)
+  let global_decls : L.llvalue StringMap.t =
+    let global_vdecl m {vtyp=typ;vname=name} =
+      let init = match typ with
+          A.Float -> L.const_float (ltype_of_typ typ) 0.0
+        | _ -> L.const_int (ltype_of_typ typ) 0
+      in StringMap.add name (L.define_global name init the_module) m in
+     List.fold_left global_vdecl cbuiltin_vars vdecls in
 
 
   (*******************************************************************************
@@ -140,13 +139,101 @@ let translate (sdecl_list : sprogram) =
     (* Construct the function's "locals": formal arguments and locally
        declared variables.  Allocate each on the stack, initialize their
        value, if appropriate, and remember their values in the "locals" map *)
+      let local_vars =
+        let add_formal m (t, n) p = 
+          L.set_value_name n p;
+          let local = L.build_alloca (ltype_of_typ t) n builder in
+                ignore (L.build_store p local builder);
+          StringMap.add n local m 
 
+        and add_local m (t, n) =
+          let local_var = L.build_alloca (ltype_of_typ t) n builder
+          in StringMap.add n local_var m 
+      
+      in
+      List.fold_left2 add_formal StringMap.empty fdecl.sparameters
+            (Array.to_list (L.params the_function)) 
+        (* in *)
+      (* List.fold_left add_local formals fdecl.sparameters *)
+      in 
+      let func_scope = local_vars :: [global_decls]
+      in
+      (* Return the value for a variable or formal argument.
+        Check local names first, then global names *)
+      let rec lookup_scope n scope = match scope with
+          []    -> codegen_err
+        | scope -> match n with
+                    FinalID s -> try StringMap.find s (List.hd scope)
+                                  with Not_found -> lookup_scope n (List.tl scope)
+                    | _       -> codegen_err   (*Not yet implemented*)                     
+      in
+      let lookup_helper n scope = match n with
+          FinalID s -> StringMap.find s scope
+          | _       -> codegen_err (*Not yet implemented*)
+          (* | RID(r, member) ->
+            let the_struct = lookup_helper r scope
+            in (match the_struct with
+              Struct(sname) ->
+                 let the_struct = StringMap.find sname cstructs in (*This is wrong, need to fix*)
+                 match List.filter (fun t -> t.vname = member) the_struct.members with
+                   m :: [] -> m)
+
+          | Index(r, e) -> 
+            let (t, _) = expr builder e scope in *)
+            
+
+               
+      in 
+      (* Todo: Recursive lookup for complex data types*)
+      let lookup n scope = lookup_helper n (lookup_scope n scope) 
+      in
 
     (* Construct code for an expression; return its value *)
 
-    (* Kidus: I've deleted all but the ones we need for hello world *)
     let rec expr builder ((_, e) : sexpr) = match e with
-        SIntlit i   -> L.const_int i32_t i
+        SNoexpr     -> L.const_int i32_t 0  
+      | SIntlit i   -> L.const_int i32_t i
+      | SCharlit c  -> L.const_int i8_t c
+      | SId s       -> L.build_load (lookup s.rid func_scope) s.rid builder
+      | SBinassop (r, op, e) -> let e' =  ( match op with
+                                      Assign -> expr builder e
+                                    | PlusEq -> expr builder Sexpr(s.typ,SBinop(s,A.Add,e))
+                                    | MinusEq -> expr builder Sexpr(s.typ,SBinop(s,A.Sub,e)) )
+                                  in ignore(L.build_store e' (lookup r func_scope) builder); e'
+      | SBinop ((A.Float,_ ) as e1, op, e2) ->
+        let e1' = expr builder e1
+        and e2' = expr builder e2 in
+        (match op with 
+          A.Add     -> L.build_fadd
+          | A.Sub     -> L.build_fsub
+          | A.Mul    -> L.build_fmul
+          | A.Div     -> L.build_fdiv 
+          | A.Eq      -> L.build_fcmp L.Fcmp.Oeq
+          | A.Neq     -> L.build_fcmp L.Fcmp.One
+          | A.Lt      -> L.build_fcmp L.Fcmp.Olt
+          | A.Leq     -> L.build_fcmp L.Fcmp.Ole
+          | A.Gt      -> L.build_fcmp L.Fcmp.Ogt
+          | A.Geq     -> L.build_fcmp L.Fcmp.Oge
+          | A.And | A.Or ->
+              raise (Failure "internal error: semant should have rejected and/or on float")
+          ) e1' e2' "tmp" builder
+          | SBinop (e1, op, e2) ->
+        let e1' = expr builder e1
+        and e2' = expr builder e2 in
+        (match op with
+                              A.Add     -> L.build_add
+                              | A.Sub     -> L.build_sub
+                              | A.Mul    -> L.build_mul
+                              | A.Div     -> L.build_sdiv
+                              | A.And     -> L.build_and
+                              | A.Or      -> L.build_or
+                              | A.Eq      -> L.build_icmp L.Icmp.Eq
+                              | A.Neq     -> L.build_icmp L.Icmp.Ne
+                              | A.Lt      -> L.build_icmp L.Icmp.Slt
+                              | A.Leq     -> L.build_icmp L.Icmp.Sle
+                              | A.Gt      -> L.build_icmp L.Icmp.Sgt
+                              | A.Geq     -> L.build_icmp L.Icmp.Sge
+                              ) e1' e2' "tmp" builder
       | SStrlit s   -> L.build_global_stringptr (s ^ "\n") "tmp" builder
       | SCall("println", (A.String, SId(A.FinalID("stdout"))) :: (A.String, SStrlit(s)) :: []) ->
         L.build_call println_func

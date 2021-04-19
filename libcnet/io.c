@@ -21,7 +21,7 @@ static prot_type ptype[] = {
 
 static void cnet_close_file(FILE *f)
 {
-	if (fclose(f) < 0)
+	if (!f && (fclose(f) < 0))
 		fprintf(stderr, "error: %s\n", strerror(errno));
 
 }
@@ -370,4 +370,23 @@ int cnet_get_socket_port(cnet_socket *sock)
 int cnet_check_error(void *ptr)
 {
     return (cnet_io *)ptr == NULL;
+}
+
+
+const cnet_file stdin = {
+    .cnet_free = NULL,
+    .f         = fdopen(0),
+    io_type    = CNET_FILE
+};
+
+const cnet_file stdout = {
+    .cnet_free = NULL,
+    .f         = fdopen(1),
+    io_type    = CNET_FILE
+};
+
+void cnet_cleanup()
+{
+    cnet_close_file(stdin.f);
+    cnet_close_file(stdout.f);
 }
