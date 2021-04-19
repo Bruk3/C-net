@@ -46,10 +46,10 @@ ast: ast.ml
 .PHONY: stdlib stdlib_tests
 
 stdlib_tests:
-	cd $(CTEST_DIR) && make all
+	cd $(CTEST_DIR) && make all && make clean
 
 stdlib:
-	cd $(LIB_DIR) && make all
+	cd $(LIB_DIR) && make all && make clean
 
 #############################  Other targets  #################################
 .PHONY: clean
