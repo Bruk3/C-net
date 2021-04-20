@@ -273,6 +273,9 @@ let translate (sdecl_list : sprogram) =
                                               | A.Minus                  -> L.build_neg
                                               | A.Not                  -> L.build_not) e' "tmp" builder
       | SStrlit s   -> L.build_global_stringptr s "tmp" builder
+      | SNew s      -> 
+        let _, ll_strct = StringMap.find s cstructs in 
+        L.build_malloc ll_strct "tmp" builder
       | SArrayLit (t, s, arr_lit) -> 
         let size_t = expr builder (A.Int,SIntlit((size_of t))) scope in
         let arr_len = expr builder s scope in 
