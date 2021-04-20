@@ -93,12 +93,13 @@ string *cnet_nread(void *ptr, int size)
     if (check_socket_type(io))
         return res;
 
-    int buf_size = DEFAULT_BUF_SIZE;
+    int buf_size = (DEFAULT_BUF_SIZE > size) ? size : DEFAULT_BUF_SIZE;
     char buf[buf_size];
 
     while(size >= 0 && (n = fread(buf, 1, buf_size, io->f)) > 0){
         cnet_strmerge_custom(res, buf, n);
         size -= n;
+        buf_size = (DEFAULT_BUF_SIZE > size) ? size : DEFAULT_BUF_SIZE;
     }
 
     if (ferror(io->f)){
@@ -134,19 +135,21 @@ string *cnet_read(void *ptr)
 
 }
 
-static int find_nl_index(char *buf, int n)
-{
-    for (int i =0; i < n-1; i++){
-        if(buf[i] == '\n' || (buf[i] == '\r' && buf[i+1] == '\n'))
-            return i+1;
-    }
+/* Deprecated */
+// static int find_nl_index(char *buf, int n)
+// {
+//     for (int i =0; i < n-1; i++){
+//         if(buf[i] == '\n' || (buf[i] == '\r' && buf[i+1] == '\n'))
+//             return i+1;
+//     }
 
-    if(buf[n-1] == '\n')
-        return n;
+//     if(buf[n-1] == '\n')
+//         return n;
 
-    return n+1;
+//     return n+1;
 
-}
+// }
+
 string *cnet_read_until(void *ptr, char *delim, int len){
     cnet_io *io = (cnet_io *) ptr;
     string *res = cnet_empty_str();
