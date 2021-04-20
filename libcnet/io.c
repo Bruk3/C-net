@@ -195,44 +195,13 @@ string *cnet_read_until(void *ptr, char *delim, int len){
     return res;
 }
 
-string *cnet_readln(void *ptr)
+string *cnet_readln(void *ptr, int max)
 {
+    // if (max <= 0) {
+    //     return cnet_read_until(ptr, "\n");
+    // }
+
     return cnet_read_until(ptr, "\n", 1);
-    // int n, idx;
-    // cnet_io *io = (cnet_io *)ptr;
-    // printf("reading line\n");
-    // if (check_socket_type(io))
-    //     return 0;
-
-    // string *res = cnet_empty_str();
-    // int buf_size = DEFAULT_BUF_SIZE;
-    // char buf[buf_size];
-
-    // while(fgets(buf, buf_size, io->f) != NULL){
-    //     if (ferror(io->f)) {
-    //         die("Error in readln");
-    //     }
-
-    //     if (feof(io->f)) {
-    //         cnet_strmerge_custom(res, buf, n);
-    //         break;
-    //     }
-
-
-    // while((n = fread(buf, 1, 1, io->f)) > 0){
-    //     printf("in the loop trying to read\n");
-    //     idx = find_nl_index(buf, n);
-    //     cnet_strmerge_custom(res, buf, ((idx < n)?idx:n));
-    //     if (idx <= n)
-    //         break;
-    // }
-
-    // if (ferror(io->f)){
-    //     cnet_free(res);
-    //     perror("fread failed");
-    // }
-
-    // return res;
 
 }
 

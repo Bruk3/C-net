@@ -178,7 +178,7 @@ int cnet_strcmp(string *s1, string *s2)
 	//  before null-terminating
 	if (!s1->data && !s2->data)
 		return 0;
-	
+
 	if (!s1->data || !s2->data)
 		return -1;
 
@@ -297,6 +297,27 @@ float cnet_str_atof(string *s)
 	return atof(s->data);
 }
 
+
+string **cnet_str_split(string *s,  string *delimiter)
+{
+	if (!s || !s->data)
+		die("Error: Null Pointer\n");
+
+	char *token = strtok(s, delimiter);
+	string **tokens;
+
+	int i = 0;
+	while (token != NULL ){
+		printf("in str_split %s\n", token);
+		tokens[i] = cnet_new_str_nolen(token);
+		token = strtok(NULL, delimiter);
+		i += 1;
+	}
+
+	return tokens;
+}
+
+
 int cnet_find_char(string *s, char c)
 {
 	if (!s || !s->data)
@@ -317,8 +338,5 @@ void print_cnet_str(string *s)
 	s->data[s->length] = '\0';
 	printf("%s", s->data);
 
-	// for(int i=0; i<s->length;i++){
-	// 	printf("%c",cnet_char_at(s,i));
-	// }
 
 }
