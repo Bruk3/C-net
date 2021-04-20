@@ -192,9 +192,6 @@ string *cnet_read_until(void *ptr, char *delim, int len){
         die("read_until failed");
     }
 
-    if (total == 0)
-        return NULL;
-
     return res;
 }
 
