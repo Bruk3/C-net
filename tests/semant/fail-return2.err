@@ -1,0 +1,1 @@
+Semantic error: return statement in function main has type string but expected int in "incorrect sum"
