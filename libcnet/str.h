@@ -4,7 +4,7 @@
 
 #define DEFAULT_LENGTH 20
 
-/*string * can be casted to char * if needed */ 
+/*string * can be casted to char * if needed */
 
 
 string *cnet_empty_str();
@@ -13,13 +13,13 @@ string *cnet_new_str(char *data, int length);
 
 string *cnet_new_str_nolen(char* data);
 
-void cnet_strcpy(string *dst, string *src);
+string *cnet_strcpy(string *dst, string *src);
 
 string *cnet_strassign(string *s);
 
 string *cnet_strcat(string *s1, string *s2);
 
-void cnet_strmerge(string *s1, string *s2);
+string *cnet_strmerge(string *s1, string *s2);
 
 string *cnet_strmult(string *s, int mult);
 
@@ -37,7 +37,9 @@ string *cnet_substring(string *s, int start, int end);
 
 string *cnet_reverse_str(string *s);
 
-void cpy_str(string *src, char *dst);
+// Bruk: This is deprecated because of the new one more extra byte allocation
+// That extra byte is used to store a null terminator on demand.
+/* void cpy_str(string *src, char *dst); */
 
 int cnet_str_atoi(string *s);
 
