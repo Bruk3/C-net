@@ -125,8 +125,8 @@ let translate (sdecl_list : sprogram) =
       L.declare_function "cnet_init_array" (arr_t t) the_module in
   let arr_idx_t t: L.lltype = 
     L.function_type (ltype_of_typ t) [| L.pointer_type (ltype_of_typ t) ; i32_t|] in
-  let get_arr_index_func t: L.llvalue = 
-    L.declare_function "get_arr_index" (arr_idx_t t) the_module in 
+  let cnet_index_arr_func t: L.llvalue = 
+    L.declare_function "cnet_index_arr" (arr_idx_t t) the_module in 
   (* TODO: read_line, read, print, send, atoi, ... *)
 
   (*******************************************************************************
@@ -286,7 +286,7 @@ let translate (sdecl_list : sprogram) =
         let s' = expr builder s scope in 
         let vd, ll = lookup r t scope builder in
         let vd_ll = L.build_load ll (U.final_id_of_rid r) builder in 
-        L.build_call (get_arr_index_func vd.vtyp) [|vd_ll; s'|] "cnet_arr_index" builder
+        L.build_call (cnet_index_arr_func vd.vtyp) [|vd_ll; s'|] "cnet_arr_index" builder
       | SCall (n, args) -> 
         let (fdef, fdecl) = StringMap.find n function_decls in
         let llargs = List.rev (List.map (fun a -> expr builder a scope) (List.rev args)) in
