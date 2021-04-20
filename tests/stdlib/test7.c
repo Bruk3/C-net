@@ -7,7 +7,7 @@
 
 int main()
 {
-	int port 	 = 8000;
+	int port 	 = 10000;
 	char *host = "localhost";
 	string *host_str = cnet_new_str_nolen(host);
 
@@ -17,10 +17,12 @@ int main()
 		goto failed;
 
 	printf("Connected to host %s\n", host);
+	string *s;
+	while ((s = cnet_readln(client_sock))) {
+		printf("Length: %d, String: ", s->length);
+		print_cnet_str(s);
+	}
 
-	string *s = cnet_readln(client_sock);
-	printf("%s", "Read from socket: ");
-	print_cnet_str(s);
 	cnet_free(s);
 
 failed:
