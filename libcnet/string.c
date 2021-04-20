@@ -308,7 +308,7 @@ void cnet_str_split(string *s,  string *delim, string **dest, int max)
 	char *token = strtok(s->data, delim->data);
 
 	int i = 0;
-	while (token != NULL && i <= max){
+	while (token != NULL && i < max){
 		string *new_str = cnet_new_str_nolen(token);
 		dest[i] = new_str;
 		token = strtok(NULL, delim->data);

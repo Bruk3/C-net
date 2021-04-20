@@ -26,7 +26,7 @@ stdlib:
 	cd $(LIB_DIR) && make all
 
 clean:
-	rm -f *.o cnet_* stdlib_tests_logs
+	rm -rf *.o cnet_* stdlib_tests_logs .dSYM
 
 all: clean stdlib_tests
 
