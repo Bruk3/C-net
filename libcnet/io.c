@@ -73,7 +73,7 @@ cnet_file *cnet_open_file(string *filename, string *mode)
     cpy_str(mode, md);
 
 
-	FILE *f = open(fname, md);
+	FILE *f = fopen(fname, md);
 
     if (!f) {
 		perror("can't open file");

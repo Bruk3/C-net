@@ -28,7 +28,7 @@ and sx =
   | SBinop of sexpr * binop * sexpr
   | SBinassop of rid * bin_assign_op * sexpr
   | SUnop of unop * sexpr
-  | SNew of newable
+  | SNew of string
   | SArrayLit of typ * sexpr * sexpr list
   | SIndex of rid * sexpr
   | SCall of string * sexpr list
@@ -84,7 +84,7 @@ type sprogram = sdecl list
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
     | SBinassop(v, o, e) -> string_of_rid v ^ string_of_binassop o ^ string_of_sexpr e
     | SUnop(o, e) -> string_of_uop o ^ string_of_sexpr e
-    | SNew (n) -> "new " ^ string_of_newable n
+    | SNew (n) -> "new " ^ n
     | SArrayLit (t, e, el) ->
     "new " ^ string_of_typ t ^ "[" ^ string_of_sexpr e ^ "] = {" ^
     String.concat ", " (List.map string_of_sexpr el) ^ "}"
