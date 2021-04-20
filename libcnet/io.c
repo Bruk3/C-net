@@ -195,7 +195,7 @@ string *cnet_read_until(void *ptr, char *delim, int len){
     return res;
 }
 
-string *cnet_readln(void *ptr, int max)
+string *cnet_readln(void *ptr)
 {
     // if (max <= 0) {
     //     return cnet_read_until(ptr, "\n");

@@ -298,23 +298,23 @@ float cnet_str_atof(string *s)
 }
 
 
-string **cnet_str_split(string *s,  string *delimiter)
+void cnet_str_split(string *s,  string *delim, string **dest, int max)
 {
 	if (!s || !s->data)
 		die("Error: Null Pointer\n");
 
-	char *token = strtok(s, delimiter);
-	string **tokens;
+	s->data[s->length] = '\0';
+	delim->data[delim->length] = '\0';
+	char *token = strtok(s->data, delim->data);
 
 	int i = 0;
-	while (token != NULL ){
-		printf("in str_split %s\n", token);
-		tokens[i] = cnet_new_str_nolen(token);
-		token = strtok(NULL, delimiter);
+	while (token != NULL && i <= max){
+		string *new_str = cnet_new_str_nolen(token);
+		dest[i] = new_str;
+		token = strtok(NULL, delim->data);
 		i += 1;
 	}
 
-	return tokens;
 }
 
 
