@@ -82,7 +82,7 @@ string *cnet_new_str_nolen(char* data)
  * string s2 = "Hell0";
  * s1 = s2;
  */
-void cnet_strcpy(string *dst, string *src)
+string *cnet_strcpy(string *dst, string *src)
 {
 	if (!dst || !src)
 		die("Error: Null Pointer\n");
@@ -94,6 +94,8 @@ void cnet_strcpy(string *dst, string *src)
 	dst->data = (char *) mem_alloc(src->length + 1);
 
 	memcpy(dst->data, src->data, src->length);
+
+	return dst;
 }
 
 /* operator eg.
@@ -126,7 +128,7 @@ string *cnet_strcat(string *s1, string *s2)
 }
 
 /* Operator += */
-void cnet_strmerge(string *s1, string *s2)
+string *cnet_strmerge(string *s1, string *s2)
 {
 	if (!s1 || !s2)
 		die("Error: Null Pointer\n");
@@ -140,6 +142,8 @@ void cnet_strmerge(string *s1, string *s2)
 
 	s1->length += s2->length;
 	s1->data    = temp_data;
+
+	return s1;
 }
 
 /* Operator * */

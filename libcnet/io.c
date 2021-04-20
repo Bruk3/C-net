@@ -61,7 +61,7 @@ static void cnet_strmerge_custom(string *s, char *buf, int len)
 {
     string temp = {NULL, buf, len};
 
-    return cnet_strmerge(s, &temp);
+    cnet_strmerge(s, &temp);
 
 }
 

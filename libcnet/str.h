@@ -13,13 +13,13 @@ string *cnet_new_str(char *data, int length);
 
 string *cnet_new_str_nolen(char* data);
 
-void cnet_strcpy(string *dst, string *src);
+string *cnet_strcpy(string *dst, string *src);
 
 string *cnet_strassign(string *s);
 
 string *cnet_strcat(string *s1, string *s2);
 
-void cnet_strmerge(string *s1, string *s2);
+string *cnet_strmerge(string *s1, string *s2);
 
 string *cnet_strmult(string *s, int mult);
 
