@@ -149,8 +149,8 @@ let translate (sdecl_list : sprogram) =
       L.declare_function "cnet_init_array" (arr_t t) the_module in
   let arr_idx_t t: L.lltype =
     L.function_type (ltype_of_typ t) [| L.pointer_type (ltype_of_typ t) ; i32_t|] in
-  let get_arr_index_func t: L.llvalue =
-    L.declare_function "get_arr_index" (arr_idx_t t) the_module in
+  let cnet_index_arr_func t: L.llvalue =
+    L.declare_function "cnet_index_arr" (arr_idx_t t) the_module in
 
   let cnet_new_str_nolen_t: L.lltype =
     L.function_type (ltype_of_typ A.String) [| ptr_t i8_t |] in
@@ -183,7 +183,6 @@ let translate (sdecl_list : sprogram) =
       codegen_err ("[COMPILER BUG] couldn't find function" ^ fname)
   in
   let find_func fname = fst (find_func_full fname) in
-
 
   (*******************************************************************************
    *                              Function bodies
@@ -318,6 +317,9 @@ let translate (sdecl_list : sprogram) =
       | SStrlit s   ->
         L.build_call cnet_new_str_func [| L.build_global_stringptr s "tmp"
                                             builder |] "strlit" builder
+      | SNew s      ->
+        let _, ll_strct = StringMap.find s cstructs in
+        L.build_malloc ll_strct "tmp" builder
       | SArrayLit (t, s, arr_lit) ->
         let size_t = expr builder (A.Int,SIntlit((size_of t))) scope in
         let arr_len = expr builder s scope in
@@ -328,10 +330,10 @@ let translate (sdecl_list : sprogram) =
       (*   let s' = expr builder s scope in *)
       (*   let vd, ll = lookup r t scope builder in *)
       (*   let vd_ll = L.build_load ll (U.final_id_of_rid r) builder in *)
-      (*   L.build_call (get_arr_index_func vd.vtyp) [|vd_ll; s'|] "cnet_arr_index" builder *)
+      (*   L.build_call (cnet_index_arr_func vd.vtyp) [|vd_ll; s'|] "cnet_arr_index" builder *)
       | SCall (n, args) ->
-        let (fdef, fdecl) = find_checked n function_decls in
-        let llargs = List.map (fun a -> expr builder a scope) args in
+        let (fdef, fdecl) = StringMap.find n function_decls in
+        let llargs = List.rev (List.map (fun a -> expr builder a scope) (List.rev args)) in
         let result = (match fdecl.styp with
                             A.Void -> ""
                           | _ -> n ^ "_result") in
@@ -414,10 +416,9 @@ let translate (sdecl_list : sprogram) =
           (* Special "return nothing" instr *)
             A.Void -> L.build_ret_void builder
           (* Build return statement *)
-          | _ -> L.build_ret (expr builder e scope) builder)
-                   ; scope, builder
+          | _ -> L.build_ret (expr builder e scope) builder); scope, builder
 
-        (* do not attempt *)
+      (* do not attempt *)
       (* | SIf (psl, else_stmt) -> *)
       (*   let predicate_list = List.map (fun (p,_) -> expr builder p scope) psl in *)
       (*   let merge_bb = L.append_block context "merge" the_function in *)
