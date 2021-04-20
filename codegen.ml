@@ -43,7 +43,7 @@ let translate (sdecl_list : sprogram) =
       A.Char            -> i8_t
     | A.Int             -> i32_t
     | A.Float           -> float_t
-    | A.Void            -> ptr_t void_t
+    | A.Void            -> void_t
     | A.String          -> ptr_t (snd (StringMap.find "string" cstrcts))
     | A.Struct(n)       -> ptr_t (snd (StringMap.find n cstrcts))
     | A.Array(typ)      -> ptr_t (snd (StringMap.find "array" cstrcts))
@@ -51,6 +51,11 @@ let translate (sdecl_list : sprogram) =
     | A.File            -> ptr_t (snd (StringMap.find "cnet_file" cstrcts))
   in
 
+  let  size_of t = match t with
+    A.Char            -> 1
+  | A.Int             -> 4
+  | _                 -> 8 (* Will Implement later*)
+  in
 
 (*******************************************************************************
    *                            Declare all the structs
@@ -112,6 +117,16 @@ let translate (sdecl_list : sprogram) =
     L.function_type i32_t [| i32_t; L.pointer_type i8_t; i32_t |] in
   let println_func : L.llvalue =
     L.declare_function "println" println_t the_module in
+  let var_arr_t t : L.lltype =
+      L.var_arg_function_type (ltype_of_typ t) [| (ltype_of_typ t) |] in
+  let arr_t t : L.lltype =
+    L.function_type (ltype_of_typ t) [| i32_t;i32_t; (var_arr_t t)|] in
+  let init_array_func t: L.llvalue =
+      L.declare_function "cnet_init_array" (arr_t t) the_module in
+  let arr_idx_t t: L.lltype =
+    L.function_type (ltype_of_typ t) [| L.pointer_type (ltype_of_typ t) ; i32_t|] in
+  let get_arr_index_func t: L.llvalue =
+    L.declare_function "get_arr_index" (arr_idx_t t) the_module in
   (* TODO: read_line, read, print, send, atoi, ... *)
 
   (*******************************************************************************
@@ -202,6 +217,8 @@ let translate (sdecl_list : sprogram) =
 
 
 
+
+
       in
       (* Todo: Recursive lookup for complex data types*)
       (* let lookup n scopes = lookup_helper n (lookup_scope n scopes) *)
@@ -209,7 +226,7 @@ let translate (sdecl_list : sprogram) =
 
     (* Construct code for an expression; return its value *)
 
-    let rec expr builder ((t, e) : sexpr) scope   = match e with
+    let rec expr builder ((t, e) : sexpr) scope  = match e with
         SNoexpr     -> L.const_int i32_t 0
       | SIntlit i   -> L.const_int i32_t i
       | SCharlit c  -> L.const_int i8_t c
@@ -233,7 +250,7 @@ let translate (sdecl_list : sprogram) =
           | A.Gt      -> L.build_fcmp L.Fcmp.Ogt
           | A.Geq     -> L.build_fcmp L.Fcmp.Oge
           | A.And | A.Or ->
-              raise (Failure "internal error: semant should have rejected and/or on float")
+              codegen_err "internal error: semant should have rejected and/or on float"
           ) e1' e2' "tmp" builder
       | SBinop (e1, op, e2) ->
                 let e1' = expr builder e1 scope
@@ -259,6 +276,29 @@ let translate (sdecl_list : sprogram) =
                                               | A.Minus                  -> L.build_neg
                                               | A.Not                  -> L.build_not) e' "tmp" builder
       | SStrlit s   -> L.build_global_stringptr s "tmp" builder
+      | SArrayLit (t, s, arr_lit) ->
+        let size_t = expr builder (A.Int,SIntlit((size_of t))) scope in
+        let arr_len = expr builder s scope in
+        let ll_arr_lit = List.map (fun a -> expr builder a scope) arr_lit in
+        let ll_va_args = arr_len :: size_t :: ll_arr_lit in
+        L.build_call (init_array_func t) (Array.of_list ll_va_args) "cnet_init_array" builder
+      | SIndex (r, s) ->
+        let s' = expr builder s scope in
+        let vd, ll = lookup r t scope builder in
+        let vd_ll = L.build_load ll (U.final_id_of_rid r) builder in
+        L.build_call (get_arr_index_func vd.vtyp) [|vd_ll; s'|] "cnet_arr_index" builder
+      | SCall (n, args) ->
+        let (fdef, fdecl) = StringMap.find n function_decls in
+        let llargs = List.rev (List.map (fun a -> expr builder a scope) (List.rev args)) in
+        let result = (match fdecl.styp with
+                            A.Void -> ""
+                          | _ -> n ^ "_result") in
+              L.build_call fdef (Array.of_list llargs) result builder in
+        let add_terminal builder instr =
+          match L.block_terminator (L.insertion_block builder) with
+            Some _ -> ()
+          | None -> ignore (instr builder)
+
 
 
 
