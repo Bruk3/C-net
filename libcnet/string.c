@@ -170,6 +170,14 @@ int cnet_strcmp(string *s1, string *s2)
 	if (!s1 && !s2)
 		return 0;
 
+	// Need to check s1 || s2 is not an empty string
+	//  before null-terminating
+	if (!s1->data && !s2->data)
+		return 0;
+	
+	if (!s1->data || !s2->data)
+		return -1;
+
 	// null-terminator is stored at the last extra byte alloated
 	s1->data[s1->length] = '\0';
 	s2->data[s2->length] = '\0';
@@ -299,6 +307,9 @@ int cnet_find_char(string *s, char c)
 
 void print_cnet_str(string *s)
 {
+	if (!s || !s->data)
+		return;
+
 	s->data[s->length] = '\0';
 	printf("%s", s->data);
 
