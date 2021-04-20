@@ -7,6 +7,7 @@
 #include <netdb.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <fcntl.h>
 #include "utils.h"
 #include "str.h"
 #include "io.h"
@@ -67,13 +68,14 @@ static void cnet_strmerge_custom(string *s, char *buf, int len)
 
 cnet_file *cnet_open_file(string *filename, string *mode)
 {
-    char fname[filename->length+1], md[mode->length+1];
+    char fname[filename->length+1];
+    char md[mode->length+1];
 
     cpy_str(filename, fname);
     cpy_str(mode, md);
 
 
-	FILE *f = open(fname, md);
+    FILE *f = fopen(fname, md);
 
     if (!f) {
 		perror("can't open file");
@@ -213,7 +215,7 @@ int cnet_write(void *ptr, string *s)
 	return cnet_nwrite(ptr, s, s->length);
 }
 
-int cnet_writeln(void *ptr, string *s)
+int writeln(void *ptr, string *s)
 {
     int n;
     string nl = {NULL, "\n", 1};
@@ -386,14 +388,18 @@ int cnet_check_error(void *ptr)
     return (cnet_io *)ptr == NULL;
 }
 
-const cnet_file cnet_stdin = {
+cnet_file cnet_stdin_ac = {
     .cnet_free = NULL,
     .f         = NULL,
     .io_type    = CNET_FILE_STDIN
 };
 
-const cnet_file cnet_stdout = {
+cnet_file *cnet_stdin = &cnet_stdin_ac;
+
+cnet_file cnet_stdout_ac = {
     .cnet_free = NULL,
     .f         = NULL,
     .io_type    = CNET_FILE_STDOUT
 };
+
+cnet_file *cnet_stdout = &cnet_stdout_ac;

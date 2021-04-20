@@ -24,6 +24,13 @@ let translate (sdecl_list : sprogram) =
 
   let the_module = L.create_module context "CNet" in
 
+  let find_checked n m =
+    if StringMap.mem n m then
+      StringMap.find n m
+    else
+      codegen_err ("[COMPILER BUG] couldn't find id " ^ n)
+  in
+
 (*******************************************************************************
  *                                   Types
  *******************************************************************************)
@@ -44,11 +51,11 @@ let translate (sdecl_list : sprogram) =
     | A.Int             -> i32_t
     | A.Float           -> float_t
     | A.Void            -> void_t
-    | A.String          -> ptr_t (snd (StringMap.find "string" cstrcts))
-    | A.Struct(n)       -> ptr_t (snd (StringMap.find n cstrcts))
-    | A.Array(typ)      -> ptr_t (snd (StringMap.find "array" cstrcts))
-    | A.Socket          -> ptr_t (snd (StringMap.find "cnet_socket" cstrcts))
-    | A.File            -> ptr_t (snd (StringMap.find "cnet_file" cstrcts))
+    | A.String          -> ptr_t (snd (find_checked "string" cstrcts))
+    | A.Struct(n)       -> ptr_t (snd (find_checked n cstrcts))
+    | A.Array(typ)      -> ptr_t (snd (find_checked "array" cstrcts))
+    | A.Socket          -> ptr_t (snd (find_checked "cnet_socket" cstrcts))
+    | A.File            -> ptr_t (snd (find_checked "cnet_file" cstrcts))
   in
 
   let  size_of t = match t with
@@ -85,10 +92,12 @@ let translate (sdecl_list : sprogram) =
 
   let cbuiltin_vars =
     let declare_struct_var {vtyp=vt; vname=vn} =
-      let the_v  = (L.declare_global (ltype_of_typ vt) vn the_module) in
+      let the_v  = (L.declare_global (ltype_of_typ vt) ("cnet_" ^ vn) the_module) in
       L.set_externally_initialized true the_v; ({vtyp=vt; vname=vn}, the_v)
     in
-    StringMap.map declare_struct_var U.builtin_vars
+    StringMap.fold
+      (fun k i m -> StringMap.add ("cnet_" ^ k) (declare_struct_var i) m)
+      U.builtin_vars StringMap.empty
   in
 
 
@@ -113,10 +122,25 @@ let translate (sdecl_list : sprogram) =
   (* The function that writes to and reads from sockets/files, including stdin
    * and stdout
   *)
-  let println_t : L.lltype =
-    L.function_type i32_t [| i32_t; L.pointer_type i8_t; i32_t |] in
-  let println_func : L.llvalue =
-    L.declare_function "println" println_t the_module in
+  let builtin_func_decls : (L.llvalue * sfunc) StringMap.t =
+    let function_type (fd : sfunc) =
+      L.function_type
+        (ltype_of_typ fd.styp)
+        (Array.of_list (List.map (fun (t,_) -> ltype_of_typ t) fd.sparameters))
+    in
+    let declare_func m (fd : sfunc) =
+      let the_func = L.declare_function fd.sfname (function_type fd) the_module in
+      StringMap.add fd.sfname (the_func, fd) m
+    in
+
+    List.fold_left declare_func StringMap.empty U.sbuiltin_funcs_l
+  in
+
+
+  (* let println_t : L.lltype = *)
+  (*   L.function_type i32_t [| i32_t; L.pointer_type i8_t; i32_t |] in *)
+  (* let println_func : L.llvalue = *)
+  (*   L.declare_function "println" println_t the_module in *)
   let var_arr_t t : L.lltype =
       L.var_arg_function_type (ltype_of_typ t) [| (ltype_of_typ t) |] in
   let arr_t t : L.lltype =
@@ -127,6 +151,11 @@ let translate (sdecl_list : sprogram) =
     L.function_type (ltype_of_typ t) [| L.pointer_type (ltype_of_typ t) ; i32_t|] in
   let get_arr_index_func t: L.llvalue =
     L.declare_function "get_arr_index" (arr_idx_t t) the_module in
+
+  let cnet_new_str_nolen_t: L.lltype =
+    L.function_type (ltype_of_typ A.String) [| ptr_t i8_t |] in
+  let cnet_new_str_func  =
+    L.declare_function "cnet_new_str_nolen" cnet_new_str_nolen_t the_module in
   (* TODO: read_line, read, print, send, atoi, ... *)
 
   (*******************************************************************************
@@ -145,9 +174,14 @@ let translate (sdecl_list : sprogram) =
                          fdecl.sparameters) in
       let ftype = L.function_type (ltype_of_typ ftyp) formal_types in
       StringMap.add name (L.define_function name ftype the_module, fdecl) m in
-    List.fold_left function_decl StringMap.empty fdecls in
+    List.fold_left function_decl builtin_func_decls fdecls in
 
-  let find_func_full fname = StringMap.find fname function_decls in
+  let find_func_full fname =
+    if StringMap.mem fname function_decls then
+      StringMap.find fname function_decls
+    else
+      codegen_err ("[COMPILER BUG] couldn't find function" ^ fname)
+  in
   let find_func fname = fst (find_func_full fname) in
 
 
@@ -157,7 +191,13 @@ let translate (sdecl_list : sprogram) =
 
   (* Fill in the body of the given function *)
   let build_function_body (fdecl : sfunc) =
-    let (the_function, _) = StringMap.find fdecl.sfname function_decls in
+    let (the_function, _) =
+      if StringMap.mem fdecl.sfname function_decls then
+        StringMap.find fdecl.sfname function_decls
+      else
+        codegen_err ("[COMPILER BUG] couldn't find function" ^ fdecl.sfname)
+
+    in
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
     (* Construct the function's "locals": formal arguments and locally
@@ -180,12 +220,12 @@ let translate (sdecl_list : sprogram) =
         (* in *)
       (* List.fold_left add_local formals fdecl.sparameters *)
       in
-      let func_scope = local_vars :: [global_decls]
+      let func_scope = [global_decls]
       in
       (* Return the value for a variable or formal argument.
         Check local names first, then global names *)
       let rec lookup_helper (n : string) scope : (A.vdecl * L.llvalue) = match scope with
-          [] -> codegen_err ("[COMPILER BUG] cannot find variable" ^ n)
+          [] -> codegen_err ("[COMPILER BUG] cannot find variable " ^ n)
         | hd :: tl ->
           if StringMap.mem n hd then
             StringMap.find n hd
@@ -198,7 +238,7 @@ let translate (sdecl_list : sprogram) =
         | RID(r, member) ->
           let vd, ll = lookup r t scope builder in
           let sname = match vd.vtyp with Struct(n) -> n in
-          let sd,s = StringMap.find sname cstructs in
+          let sd,s = find_checked sname cstructs in
           let the_struct = L.build_load ll "tmp" builder in
           (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "tmp" builder)
 
@@ -231,7 +271,7 @@ let translate (sdecl_list : sprogram) =
       | SIntlit i   -> L.const_int i32_t i
       | SCharlit c  -> L.const_int i8_t c
       | SFloatlit f -> L.const_float float_t f
-      | SId s       -> L.build_load (snd (lookup s t scope builder)) (U.final_id_of_rid s ) builder
+      | SId s       -> L.build_load (snd (lookup s t scope builder)) (U.final_id_of_rid s) builder
       | SBinassop (s, op, e) -> let e' =  expr builder e scope
                                   in ignore(L.build_store e' (snd (lookup s t scope builder)) builder); e'
       | SBinop ((A.Float,_ ) as e1, op, e2) ->
@@ -275,21 +315,23 @@ let translate (sdecl_list : sprogram) =
                                                 A.Minus when t = A.Float -> L.build_fneg
                                               | A.Minus                  -> L.build_neg
                                               | A.Not                  -> L.build_not) e' "tmp" builder
-      | SStrlit s   -> L.build_global_stringptr s "tmp" builder
+      | SStrlit s   ->
+        L.build_call cnet_new_str_func [| L.build_global_stringptr s "tmp"
+                                            builder |] "strlit" builder
       | SArrayLit (t, s, arr_lit) ->
         let size_t = expr builder (A.Int,SIntlit((size_of t))) scope in
         let arr_len = expr builder s scope in
         let ll_arr_lit = List.map (fun a -> expr builder a scope) arr_lit in
         let ll_va_args = arr_len :: size_t :: ll_arr_lit in
         L.build_call (init_array_func t) (Array.of_list ll_va_args) "cnet_init_array" builder
-      | SIndex (r, s) ->
-        let s' = expr builder s scope in
-        let vd, ll = lookup r t scope builder in
-        let vd_ll = L.build_load ll (U.final_id_of_rid r) builder in
-        L.build_call (get_arr_index_func vd.vtyp) [|vd_ll; s'|] "cnet_arr_index" builder
+      (* | SIndex (r, s) -> *)
+      (*   let s' = expr builder s scope in *)
+      (*   let vd, ll = lookup r t scope builder in *)
+      (*   let vd_ll = L.build_load ll (U.final_id_of_rid r) builder in *)
+      (*   L.build_call (get_arr_index_func vd.vtyp) [|vd_ll; s'|] "cnet_arr_index" builder *)
       | SCall (n, args) ->
-        let (fdef, fdecl) = StringMap.find n function_decls in
-        let llargs = List.rev (List.map (fun a -> expr builder a scope) (List.rev args)) in
+        let (fdef, fdecl) = find_checked n function_decls in
+        let llargs = List.map (fun a -> expr builder a scope) args in
         let result = (match fdecl.styp with
                             A.Void -> ""
                           | _ -> n ^ "_result") in
@@ -324,16 +366,27 @@ let translate (sdecl_list : sprogram) =
        the statement's successor (i.e., the next instruction will be built
        after the one generated by this call) *)
 
-    (*
-     * stmt : ((vdecl * L.llvalue StringMap.t), L.builder) ->
-     *
-     *)
+    (* LLVM insists each basic block end with exactly one "terminator"
+         instruction that transfers control.  This function runs "instr builder"
+         if the current block does not already have a terminator.  Used,
+         e.g., to handle the "fall off the end of the function" case. *)
+      let add_terminal builder instr =
+        match L.block_terminator (L.insertion_block builder) with
+          Some _ -> ()
+        | None -> ignore (instr builder) in
+
     let add_var (vd, ll) scope = match scope with
         [] -> codegen_err "[COMPILER BUG] empty scope too far into pipeline"
       | hd :: tl -> (StringMap.add vd.vname (vd, ll) hd) :: tl
     in
 
-    let stmt (scope,builder) = function
+    (* stmt : ((vdecl * L.llvalue StringMap.t), L.builder) -> sstmt ->
+     *          vdecl * L.llvalue StringMap.t
+     *)
+    let rec stmt (scope,builder) the_stmt =
+      let new_scope = StringMap.empty :: scope in
+
+      match the_stmt with
         SExpr e -> ignore(expr builder e scope); (scope, builder)
 
       | SVdecl vd ->
@@ -341,6 +394,14 @@ let translate (sdecl_list : sprogram) =
           L.build_alloca (ltype_of_typ vd.vtyp) vd.vname builder
         in
         (add_var (vd,new_var) scope), builder
+
+      | SVdecl_ass (vd, (t, e)) ->
+        let new_var = L.build_alloca (ltype_of_typ vd.vtyp) vd.vname builder
+        in
+        let new_scope = add_var (vd,new_var) scope in
+        let the_assignment = vd.vtyp, SBinassop(A.FinalID(vd.vname), Assign, (t,e)) in
+        ignore (expr builder the_assignment new_scope); (* do the assignment *)
+        (new_scope, builder)
 
       | SDelete e -> let to_be_deleted = expr builder e scope in (match e with
             Struct(_), _ -> L.build_free to_be_deleted builder
@@ -356,7 +417,49 @@ let translate (sdecl_list : sprogram) =
           | _ -> L.build_ret (expr builder e scope) builder)
                    ; scope, builder
 
+        (* do not attempt *)
+      (* | SIf (psl, else_stmt) -> *)
+      (*   let predicate_list = List.map (fun (p,_) -> expr builder p scope) psl in *)
+      (*   let merge_bb = L.append_block context "merge" the_function in *)
+      (*   let build_br_merge = L.build_br merge_bb in (1* partial function *1) *)
+
+      (*   let add_ifthen (predicate, then_stmt) = *)
+      (*     let pred = expr builder predicate scope in *)
+      (*     let then_bb = L.append_block context "then" the_function in *)
+      (*     (add_terminal (snd (stmt (scope, (L.builder_at_end context then_bb)) then_stmt)) build_br_merge)  :: l *)
+      (*   in *)
+
+
+      (*   let _ = List.fold_left add_ifthen [] psl in *)
+
+      (*   let else_bb = L.append_block context "else" the_function in *)
+      (*   add_terminal (stmt (L.builder_at_end context else_bb) else_stmt) *)
+      (*     build_br_merge *)
+
+
+      | SWhile (pred, body) ->
+        let pred_bb = L.append_block context "while" the_function in
+        ignore (L.build_br pred_bb builder);
+
+        let body_bb = L.append_block context "while_body" the_function in
+        let builder' = snd (stmt (scope, (L.builder_at_end context body_bb)) body) in
+        add_terminal builder' (L.build_br pred_bb);
+
+        let pred_builder = L.builder_at_end context pred_bb in
+        let pred_val = expr pred_builder pred scope  in
+        (* cast the value to a char (1 byte) *)
+        let pred_val = L.build_icmp L.Icmp.Ne pred_val (L.const_int i32_t 0) "tmp" builder in
+
+
+        let merge_bb = L.append_block context "merge" the_function in
+        ignore (L.build_cond_br pred_val body_bb merge_bb pred_builder);
+        (new_scope, L.builder_at_end context merge_bb)
+
+      | SBlock(sl) ->
+        List.fold_left stmt (new_scope, builder) sl
+
+
       | _ -> codegen_err "unimplemented statement type"
     in
-    List.iter (fun s -> ignore (stmt (func_scope, builder) s); ()) fdecl.sbody in
+    List.fold_left stmt (func_scope, builder) fdecl.sbody; () in
   List.iter build_function_body fdecls; the_module;

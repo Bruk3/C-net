@@ -269,7 +269,13 @@ let check  = function
           | Floatlit l -> (Float, SFloatlit l)
           | Strlit l -> (String, SStrlit l)
           | Noexpr     -> (Void, SNoexpr)
-          | Rid rid      -> (type_of_identifier scope rid), SId (rid)
+          | Rid rid      -> (type_of_identifier scope rid),
+                            SId (
+                              match rid with
+                                FinalID(n) when n = "stdin" -> FinalID("cnet_stdin")
+                              | FinalID(n) when n = "stdout" -> FinalID("cnet_stdout")
+                              | _ -> rid
+                            )
           | Binassop (var, op, e) as ex -> (match op with
                 PlusEq -> expr scope (Binassop(var, Assign, Binop(Rid(var), Add, e)))
               | MinusEq -> expr scope (Binassop(var, Assign, Binop(Rid(var), Sub, e)))

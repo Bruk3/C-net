@@ -46,7 +46,7 @@ def handle_full(options, sourcef):
 		if (ret.returncode != 0): die(ret)
 
 		# compile LLVM to assembly
-		args = [LLC]
+		args = [LLC, "-relocation-model=pic"]
 		ret = subprocess.run(args, capture_output=True, input=ret.stdout)
 		if (ret.returncode != 0): die(ret)
 
@@ -55,7 +55,7 @@ def handle_full(options, sourcef):
 		with open(tmpfile, "w") as tmp:
 				tmp.write(ret.stdout.decode())
 
-		args = [CC, tmpfile, LIBCNET, "-o", "/dev/stdout"]
+		args = [CC, "-g", "-Wall", tmpfile, LIBCNET, "-o", "/dev/stdout"]
 		ret = subprocess.run(args, capture_output=True)
 
 		if (ret.returncode != 0): die(ret)

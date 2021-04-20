@@ -4,7 +4,7 @@
 
 #define DEFAULT_LENGTH 20
 
-/*string * can be casted to char * if needed */ 
+/*string * can be casted to char * if needed */
 
 
 string *cnet_empty_str();
@@ -13,7 +13,7 @@ string *cnet_new_str(char *data, int length);
 
 string *cnet_new_str_nolen(char* data);
 
-void cnet_strcpy(string *dst, string *src);
+string *cnet_strcpy(string *dst, string *src);
 
 string *cnet_strassign(string *s);
 

@@ -14,7 +14,7 @@ static void cnet_free_str(void *str)
 	string *s = (string *)str;
 	if (s->length)
 		free(s->data);
-	
+
 	free(s);
 }
 
@@ -49,7 +49,7 @@ static void __concat_str(char **s, string *s1, string *s2)
 		memcpy((*s)+s1->length, s2->data, s2->length);
 }
 
-/* Constructors */ 
+/* Constructors */
 string *cnet_empty_str()
 {
 	return create_str();
@@ -61,7 +61,7 @@ string *cnet_new_str(char *data, int length)
 		return cnet_empty_str();
 
 	string *new_str 	=  create_str();
-	
+
 	new_str->length 	= length;
 	new_str->data		= (char *)mem_alloc(length);
 	memcpy(new_str->data, data, length);
@@ -69,7 +69,7 @@ string *cnet_new_str(char *data, int length)
 	return new_str;
 }
 
-/* char *data must be null terminated */ 
+/* char *data must be null terminated */
 string *cnet_new_str_nolen(char* data)
 {
 	return cnet_new_str(data, strlen(data));
@@ -78,9 +78,9 @@ string *cnet_new_str_nolen(char* data)
 /*(deep copy) eg.
  * string s1 = "Hi";
  * string s2 = "Hell0";
- * s1 = s2; 
+ * s3 = (s1 = s2);
  */
-void cnet_strcpy(string *dst, string *src)
+string *cnet_strcpy(string *dst, string *src)
 {
 	if (!dst || !src)
 		die("Error: Null Pointer\n");
@@ -92,11 +92,13 @@ void cnet_strcpy(string *dst, string *src)
 	dst->data = (char *) mem_alloc(src->length);
 
 	memcpy(dst->data, src->data, src->length);
+
+	return dst;
 }
 
 /* operator eg.
- * string *s = "Hell0"; 
- * string *s1 = s; */ 
+ * string *s = "Hell0";
+ * string *s1 = s; */
 string *cnet_strassign(string *s)
 {
 	string *str = cnet_empty_str();
@@ -114,7 +116,7 @@ string *cnet_strcat(string *s1, string *s2)
 
 	char *temp_data;
 	__concat_str(&temp_data, s1, s2);
-	
+
 	string *new_str = create_str();
 
 	new_str->length = s1->length+s2->length;
@@ -123,7 +125,7 @@ string *cnet_strcat(string *s1, string *s2)
 	return new_str;
 }
 
-/* Operator += */ 
+/* Operator += */
 void cnet_strmerge(string *s1, string *s2)
 {
 	if (!s1 || !s2)
@@ -135,7 +137,7 @@ void cnet_strmerge(string *s1, string *s2)
 
 	if (s1->data)
 		free(s1->data);
-	
+
 	s1->length += s2->length;
 	s1->data    = temp_data;
 }
@@ -161,7 +163,7 @@ string *cnet_strmult(string *s, int mult)
 	return new_str;
 }
 
-/* Operator == */ 
+/* Operator == */
 int cnet_strcmp(string *s1, string *s2)
 {
 	if (!s1 && !s2)
@@ -172,7 +174,7 @@ int cnet_strcmp(string *s1, string *s2)
 
 	if (s1->length != s2->length)
 		return -1;
-	
+
 	for(int i = 0; i<s1->length;i++)
 		if (s1->data[i] != s2->data[i])
 			return -1;
@@ -180,12 +182,12 @@ int cnet_strcmp(string *s1, string *s2)
 	return 0;
 }
 
-/* Operator [] */ 
+/* Operator [] */
 char cnet_char_at(string *str, int index)
 {
 	if (index >= str->length)
 		die("Error: Index out of bounds\n");
-	
+
 	if (index < 0){
 		index +=str->length;
 		if (index >= 0)
@@ -193,11 +195,11 @@ char cnet_char_at(string *str, int index)
 
 		die("Error: Index out of bounds\n");
 	}
- 
+
 	return str->data[index];
 }
 
-/* Other string function */ 
+/* Other string function */
 int cnet_strlen(string *s1)
 {
 	if (!s1)
@@ -214,7 +216,7 @@ string *cnet_str_lower(string *s)
 	string *s1 = clone_str(s);
 	for(int i = 0; i<s->length;i++)
 		s1->data[i] = tolower(s->data[i]);
-	
+
 	return s1;
 }
 
@@ -232,7 +234,7 @@ string *cnet_str_upper(string *s)
 	return s1;
 }
 
-/* [start, end) */ 
+/* [start, end) */
 string *cnet_substring(string *s, int start, int end)
 {
 	if (start >= end)
@@ -247,7 +249,7 @@ string *cnet_substring(string *s, int start, int end)
 }
 
 string *cnet_reverse_str(string *s)
-{	
+{
 	if (!s || !s->data)
 		return s;
 
