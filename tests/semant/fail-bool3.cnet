@@ -1,0 +1,8 @@
+int main() {
+    float a;
+
+    for (;a;) {;}
+
+    return 0;
+}
+

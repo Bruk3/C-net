@@ -1,4 +1,4 @@
-int main(int argc) {
+int main() {
     int a = 4;
     int b;
     b = 5;

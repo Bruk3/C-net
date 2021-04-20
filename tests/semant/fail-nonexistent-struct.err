@@ -1,0 +1,1 @@
+Semantic error: z[0][0] is of type [struct non_existent] which doesn't exist

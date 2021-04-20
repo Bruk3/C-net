@@ -1,0 +1,18 @@
+struct person {
+    string name;
+};
+
+int main(){
+    struct person john;
+    struct person jane;
+    int[] myInts;
+    myInts = new int[4]{1,2,3,4};
+    string[] myStrings = new string[2]{"hello", "world"};
+    struct person[] myPeople = new struct person[2]{john, jane};
+    delete myPeople[0];
+    delete myPeople;
+    delete john;
+    delete myInts;
+
+    return 0;
+}

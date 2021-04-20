@@ -1,0 +1,18 @@
+
+struct pid {
+	int pid;
+	string wing;
+};
+
+struct person {
+	struct pid id;
+	string name;
+	struct person partner;
+};
+
+
+
+int main()
+{
+	return 0;
+}

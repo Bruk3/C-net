@@ -1,0 +1,27 @@
+
+int sum(int x, int y, int z)
+{
+	y; /* this is the formal */
+	{
+		float y;
+		char [][]z;
+
+		y; /* this is the float y */
+
+		for(x = 3 ; x > 2; x -= 5)
+		{
+			int []y;
+
+			y; /* the int[] y */
+			x; /* the x from the formals */
+			z; /* the z from the block above */
+		}
+	}
+
+	return 0;
+}
+
+int main()
+{
+	return 0;
+}

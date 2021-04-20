@@ -1,0 +1,17 @@
+int main()
+{
+int z = (int : mul((int : 2), (int : x)));
+return (int : 0);
+}
+
+int add(int a,int b)
+{
+return (int : (int : a) + (int : b));
+}
+
+int x = (int : 1);
+int mul(int x,int y)
+{
+return (int : (int : x) * (int : y));
+}
+

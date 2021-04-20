@@ -2,15 +2,23 @@ module L = Llvm
 module A = Ast
 module U = Utils
 open Sast
+open Ast
 
 
 module StringMap = Map.Make(String)
 
+(* this should see much fewere uses than SemanticError since codegen should work
+ * relatively perfectly if the semantic checking has passed
+ *)
+exception CodegenError of string * int;;
+(* The function for raising a codegen error *)
+let codegen_err (msg : string) =
+  raise (CodegenError(msg, -1));;
 
 (* translate : Sast.program -> Llvm.module *)
 let translate (sdecl_list : sprogram) =
   (* replace with (vdecls, strct_decls, fdecls) *)
-  let (_, _, fdecls) = U.decompose_program sdecl_list in
+  let (_, sdecls, fdecls) = U.decompose_program sdecl_list in
 (* let translate ((vdecls : (A.vdecl * sexpr) list), (strct_decls : strct list), (fdecls : sfunc list)) = *)
   let context    = L.global_context () in
 
@@ -26,16 +34,56 @@ let translate (sdecl_list : sprogram) =
   and float_t    = L.double_type context (* Float *)
   and void_t     = L.void_type   context in
   let str_t      = L.pointer_type i8_t in
+  let ptr_t t    = L.pointer_type t in
+
 
   (* Return the LLVM type for a cnet type *)
-  let ltype_of_typ (t : A.typ) : (L.lltype) = match t with
-      A.Char    -> i8_t
-    | A.Int     -> i32_t
-    | A.Float   -> float_t
-    | A.Void    -> void_t
-    | A.String  -> str_t
-    | _         -> raise (Failure("Type not yet implemented"))
+  let rec ltype_of_typ (t : A.typ) (cstrcts : L.lltype StringMap.t)
+    : (L.lltype) = match t with
+      A.Char            -> i8_t
+    | A.Int             -> i32_t
+    | A.Float           -> float_t
+    | A.Void            -> void_t
+    | A.String          -> str_t
+    | A.Struct(n)    -> L.pointer_type (StringMap.find n cstrcts)
+    | A.Array(typ)      -> ptr_t (ltype_of_typ typ cstrcts)
+    | A.Socket          -> ptr_t (StringMap.find "cnet_socket" cstrcts)
+    | A.File            -> ptr_t (StringMap.find "cnet_file" cstrcts)
   in
+
+(*******************************************************************************
+   *                            Declare all the structs
+ *******************************************************************************)
+  let cstructs : L.lltype StringMap.t =
+    let declare_struct m (s : strct) =
+      let cur_strct = L.named_struct_type context s.sname in
+      let m = StringMap.add s.sname cur_strct m in
+      let cmembers =
+        Array.of_list (List.map (fun {vname=_; vtyp=t} -> ltype_of_typ t m)
+                         s.members)
+      in
+      let _ = L.struct_set_body cur_strct cmembers false in
+      m
+    in
+    (* TODO: instead of an empty stringmap, the list should be folded on the
+     * default struct declarations (io/string/array)
+     *)
+    let cbuiltinstrcts =
+      StringMap.fold (fun _ s m -> declare_struct m s) U.builtin_structs StringMap.empty
+    in
+    List.fold_left declare_struct cbuiltinstrcts sdecls
+  in
+
+  let ltype_of_typ t = ltype_of_typ t cstructs in
+
+  let cbuiltin_vars =
+    let declare_struct_var {vtyp=vt; vname=vn} =
+      let the_v  = (L.declare_global (ltype_of_typ vt) vn the_module) in
+      L.set_externally_initialized true the_v; the_v
+    in
+    StringMap.map declare_struct_var U.builtin_vars
+  in
+
 
   (* Kidus: we don't need this part yet (for the hello world) *)
   (* (1* Create a map of global variables after creating each *1) *)
@@ -70,7 +118,7 @@ let translate (sdecl_list : sprogram) =
   let function_decls : (L.llvalue * sfunc) StringMap.t =
     let function_decl m (fdecl : sfunc) =
       let ftyp = fdecl.styp
-      and name = fdecl.sname
+      and name = fdecl.sfname
       and formal_types =
         Array.of_list (List.map
                          (function (t,_) -> ltype_of_typ t)
@@ -86,7 +134,7 @@ let translate (sdecl_list : sprogram) =
 
   (* Fill in the body of the given function *)
   let build_function_body (fdecl : sfunc) =
-    let (the_function, _) = StringMap.find fdecl.sname function_decls in
+    let (the_function, _) = StringMap.find fdecl.sfname function_decls in
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
     (* Construct the function's "locals": formal arguments and locally
@@ -100,7 +148,7 @@ let translate (sdecl_list : sprogram) =
     let rec expr builder ((_, e) : sexpr) = match e with
         SIntlit i   -> L.const_int i32_t i
       | SStrlit s   -> L.build_global_stringptr (s ^ "\n") "tmp" builder
-      | SCall(A.RID(A.FinalID("stdout"), "println"), (A.String, SStrlit(s)) :: []) ->
+      | SCall("println", (A.String, SId(A.FinalID("stdout"))) :: (A.String, SStrlit(s)) :: []) ->
         L.build_call println_func
           [| L.const_int i32_t 1;
              (expr builder (A.String, SStrlit(s)));

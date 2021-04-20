@@ -4,6 +4,18 @@
 
 open Ast
 
+(* A semantic error in cnet. It contains a message and a line number *)
+
+(* Kidus: The line number is not really implemented and is only there for
+ * forward compatibility. Right now the function semant_err takes only a string,
+ * but later it can take a line number as well
+ * *)
+exception SemanticError of string * int;;
+
+(* The function for raising a semantic error *)
+let semant_err (msg : string) =
+  raise (SemanticError(msg, -1));;
+
 type sexpr = typ * sx
 and sx =
     SNoexpr
@@ -14,12 +26,12 @@ and sx =
   | SId of rid
   (* Operators *)
   | SBinop of sexpr * binop * sexpr
-  | SBinassop of string * bin_assign_op * sexpr
+  | SBinassop of rid * bin_assign_op * sexpr
   | SUnop of unop * sexpr
   | SNew of newable
   | SArrayLit of typ * sexpr * sexpr list
   | SIndex of rid * sexpr
-  | SCall of rid * sexpr list
+  | SCall of string * sexpr list
 
 type sstmt =
     SExpr of sexpr
@@ -36,7 +48,7 @@ type sstmt =
 
 type sfunc = {
   styp: typ;
-  sname: string;
+  sfname: string;
   sparameters: id list;
   sbody: sstmt list
 }
@@ -45,7 +57,6 @@ type sfunc = {
 (* type sstrct = {sname: string; smembers: sid list} *)
 
 type sdecl =
-    SGVdecl of vdecl
   | SGVdecl_ass of (vdecl * sexpr)
   | SSdecl of strct
   | SFdecl of sfunc
@@ -60,51 +71,63 @@ type sprogram = sdecl list
    *)
   (* Pretty-printing functions *)
 
+let contains s1 s2 =
+  let re = Str.regexp_string s2
+  in
+      try ignore (Str.search_forward re s1 0); true
+      with Not_found -> false
+
+let remove_prefix (str: string) (prefix: string) =
+  let strlen = String.length str in
+  let prelen = String.length prefix in
+  let prefix_found = contains str prefix in
+   if prefix_found then String.sub str prelen (strlen - prelen) else str
 
   let rec string_of_sexpr (t, e) =
     "(" ^ string_of_typ t ^ " : " ^ (match e with
       SNoexpr -> ""
     | SIntlit(l) -> string_of_int l
-    | SCharlit(l) -> "" ^ (Char.escaped(Char.chr(l)))
+    | SCharlit(l) -> "" ^ "\'" ^ (Char.escaped(Char.chr(l))) ^ "\'"
     | SFloatlit(l) -> string_of_float l
     | SStrlit(l) -> "\"" ^ l ^ "\""
     | SId(s) -> string_of_rid s
     | SBinop(e1, o, e2) ->
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
-    | SBinassop(v, o, e) -> v ^ string_of_binassop o ^ string_of_sexpr e
+    | SBinassop(v, o, e) -> string_of_rid v ^ string_of_binassop o ^ string_of_sexpr e
     | SUnop(o, e) -> string_of_uop o ^ string_of_sexpr e
-    | SNew (n) -> string_of_newable n
+    | SNew (n) -> "new " ^ string_of_newable n
     | SArrayLit (t, e, el) ->
     "new " ^ string_of_typ t ^ "[" ^ string_of_sexpr e ^ "] = {" ^
     String.concat ", " (List.map string_of_sexpr el) ^ "}"
     | SIndex (s, e) -> string_of_rid s ^ "[" ^ string_of_sexpr e ^ "]"
     | SCall(f, el) ->
-        string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
+        remove_prefix f "user_" ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
             ) ^ ")"
 
 let string_of_svdecl_assign (t, id, e) =
   string_of_typ t ^ " " ^ id ^ " = " ^ string_of_sexpr e ^ ";\n"
 
-  let rec string_of_sstmt = function
-    SExpr(expr) -> string_of_sexpr expr ^ ";\n";
-    | SReturn(expr) -> "return " ^ string_of_sexpr expr ^ ";\n";
-    | SIf(e_s_l, SExpr(Void, SNoexpr)) -> let string_of_sif ((e, _)) =
-    "if (" ^ string_of_sexpr e ^ ")\n" in String.concat "else " (List.map string_of_sif e_s_l)
-    | SIf(e_s_l, s) -> let string_of_sif ((e, _)) =
-        "if (" ^ string_of_sexpr e ^ ")\n" in String.concat "else " (List.map string_of_sif e_s_l)  ^
-        "else{\n" ^ string_of_sstmt s ^ "}\n";
-    | SFor(e1, e2, e3, s) ->
-        "for (" ^ string_of_sexpr e1  ^ " ; " ^ string_of_sexpr e2 ^ " ; " ^
-        string_of_sexpr e3  ^ ") " ^ string_of_sstmt s
-    | SWhile(e, s) -> "while (" ^ string_of_sexpr e ^ ") " ^ string_of_sstmt s
-    | SVdecl(v)           -> string_of_vdecl v
-    | SVdecl_ass({vtyp; vname}, e)
-      -> string_of_svdecl_assign(vtyp, vname, e)
+let rec string_of_sstmt = function
+  SExpr(expr) -> string_of_sexpr expr ^ ";\n";
+  | SReturn(expr) -> "return " ^ string_of_sexpr expr ^ ";\n";
+  | SDelete(expr) -> "delete " ^ string_of_sexpr expr ^ ";\n";
+  | SIf(e_s_l, SExpr(Void, SNoexpr)) -> let string_of_sif ((e, _)) =
+  "if (" ^ string_of_sexpr e ^ ")\n" in String.concat "else " (List.map string_of_sif e_s_l)
+  | SIf(e_s_l, s) -> let string_of_sif ((e, _)) =
+      "if (" ^ string_of_sexpr e ^ ")\n" in String.concat "else " (List.map string_of_sif e_s_l)  ^
+      "else{\n" ^ string_of_sstmt s ^ "}\n";
+  | SFor(e1, e2, e3, s) ->
+      "for (" ^ string_of_sexpr e1  ^ " ; " ^ string_of_sexpr e2 ^ " ; " ^
+      string_of_sexpr e3  ^ ")\n\t " ^ string_of_sstmt s
+  | SWhile(e, s) -> "while (" ^ string_of_sexpr e ^ ") " ^ string_of_sstmt s
+  | SVdecl(v)           -> string_of_vdecl v
+  | SVdecl_ass({vtyp; vname}, e)
+    -> string_of_svdecl_assign(vtyp, vname, e)
+  | SBreak -> "break;"
+  | SContinue -> "continue;"
 
-    | SBlock(stmts) ->
-        "{\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"
-
-    | _ -> raise (Failure("Unimplemented statement type in sast prettyprint"))
+  | SBlock(stmts) ->
+      "{\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"
 
   (* let string_of_sfdecl fdecl =
     string_of_typ fdecl.styp ^ " " ^
@@ -125,10 +148,9 @@ let string_of_sfunc (t, n, p, b) =
 
 
 let string_of_sdecl = function
-    SGVdecl(vdecl) -> string_of_vdecl vdecl
   | SGVdecl_ass({vtyp; vname}, e) -> string_of_svdecl_assign(vtyp, vname, e)
-  | SSdecl({name; members}) -> string_of_strct(name, members)
-  | SFdecl({styp; sname; sparameters; sbody; _}) -> string_of_sfunc(styp, sname, sparameters, sbody)
+  | SSdecl({sname; members}) -> string_of_strct(sname, members)
+  | SFdecl({styp; sfname; sparameters; sbody; _}) -> string_of_sfunc(styp, sfname, sparameters, sbody)
   (* let string_of_sprogram ((vdecls : (vdecl * sexpr) list), (strct_decls : strct list), (fd : sfunc list))  =
     String.concat "" (List.map string_of_sfunc(fd)) ^ "\n" *)
 

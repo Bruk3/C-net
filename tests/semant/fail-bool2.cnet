@@ -1,0 +1,8 @@
+int main() {
+    float a;
+
+    while (a) {;}
+
+    return 0;
+}
+

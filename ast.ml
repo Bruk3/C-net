@@ -86,7 +86,7 @@ type stmt =
 type func = {t: typ ; name : string ; parameters : id list ; body : stmt list; locals : id list}
 
                                  (* Structs *)
-type strct = { name : string ; members : vdecl list }
+type strct = { sname : string ; members : vdecl list }
 
                                  (* Program *)
 type decl =
@@ -152,7 +152,7 @@ and string_of_newable = function
 and string_of_expr = function
   | Noexpr -> ""
   | Intlit(id) -> string_of_int id
-  | Charlit(id) -> "" ^ (Char.escaped(Char.chr(id)))
+  | Charlit(id) -> "" ^ "\'" ^ (Char.escaped(Char.chr(id))) ^ "\'"
   | Floatlit(id) -> string_of_float id
   | Strlit(id) -> "\"" ^ id ^ "\""
   | Rid(id) -> string_of_rid id (* TODO *)
@@ -237,7 +237,7 @@ let string_of_func (t, n, p, b) =
 let string_of_decl = function
     GVdecl(vdecl) -> string_of_vdecl vdecl
   | GVdecl_ass({vtyp; vname}, e) -> string_of_vdecl_assign(vtyp, vname, e)
-  | Sdecl({name; members}) -> string_of_strct(name, members)
+  | Sdecl({sname; members}) -> string_of_strct(sname, members)
   | Fdecl({t; name; parameters; body; _}) -> string_of_func(t, name, parameters, body)
 
 let string_of_program  = function

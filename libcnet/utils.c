@@ -1,12 +1,29 @@
 #include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "utils.h"
 
-int println(int fd, char *s, int len)
+
+void die(const char *message)
 {
-	int n;
-	n = write(fd, s, len);
-	if (n != len)
-		return n;
-	n += write(fd, "\n", 1);
+	perror(message);
+	exit(1);
+}
 
-	return n;
+void *mem_alloc(int size)
+{
+	void *mem = malloc(size);
+
+	if (!mem)
+		die("Could not allocate memory");
+
+	return mem;
+}
+
+/* free yourself */ 
+void cnet_free(void *s)
+{
+	cnet_io *fs = (cnet_io *)s;
+	if(s)
+		fs->cnet_free(s);
 }

@@ -1,0 +1,8 @@
+//test missing semicolon in function definition
+
+int main()
+{
+    int b;
+    b=10*b
+    printf(b);
+}

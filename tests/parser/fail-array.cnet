@@ -1,0 +1,5 @@
+int main() {
+    // Syntax error because no arguments passed for initalization
+    // Correct syntax should be new int[5];
+    int[] c = new int[5]{};
+}

@@ -1,0 +1,21 @@
+struct pid {
+	int id;
+};
+
+struct person {
+	struct pid x;
+	struct person partner;
+};
+
+int main()
+{
+struct person s;
+(struct person : s);
+(struct pid : s.x);
+(int : s.x.id);
+(struct person : s.partner);
+(struct person : s.partner.partner);
+(int : s.partner.partner.x.id);
+return (int : 0);
+}
+

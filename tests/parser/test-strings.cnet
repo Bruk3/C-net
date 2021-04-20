@@ -1,0 +1,4 @@
+int main() {
+    string a = "abc\n" + "";
+    string b = "^$&Q*!)LL ";
+}

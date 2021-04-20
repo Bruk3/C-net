@@ -13,6 +13,7 @@ let octal_dig = ['0'-'7']
 let octal_triplet = (octal_dig)(octal_dig)(octal_dig)
 let integer = digit+
 let exp = 'e'['-''+']?['0'-'9']+
+let sliterals = ([^ '\\' '"' '\n'] | ('\\'[^ '\n' ]))*
 let cfloat = (
     ((digit)+'.'(digit)* (exp)?) |
     ((digit)* '.'(digit)+(exp)?) |
@@ -72,8 +73,6 @@ rule tokenize = parse
 | "struct" { STRUCT }
 | "socket" { SOCKET }
 | "file"   { FILE }
-(*| "TCP" {TCP}
-| "UDP" {UDP}*)
 (*Functions*)
 | "return" { RETURN }
 (*Memory*)
@@ -85,9 +84,21 @@ rule tokenize = parse
 | "/*" { mcomment lexbuf }
 | normal_id as lxm {ID(lxm)}
 | integer as lxm { INTLIT(int_of_string lxm) }
-| '"' ((print_char)* as str) '"' { STRLIT(str) }
+(* | '"' ((print_char)* as str) '"' { STRLIT(str) } *)
+| '"' (sliterals as str) '"' { STRLIT(str) }
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
-| squote (bslash ('n' | 't' | '\\' | '0'| squote))? squote { CHARLIT(0) } (* TODO replace special char with number *)
+| squote squote { raise (ScannerError(Printf.sprintf "empty char literal on line %d" (line_num lexbuf)))}
+| squote bslash (['f' 'n' 'r' 't' '\\' '0' '\''] as spec_char) squote {
+    match spec_char with
+      'f' -> CHARLIT(12)
+    | 'n' -> CHARLIT(10)
+    | 'r' -> CHARLIT(13)
+    | 't' -> CHARLIT(9)
+    | '\\' -> CHARLIT(92)
+    | '0' -> CHARLIT(0)
+    | '\'' -> CHARLIT(47)
+}
+
 | squote print_char squote as lxm               {CHARLIT(Char.code(lxm.[1]))} (*For chars like 'a'*)
 | cfloat as flt { FLOATLIT(float_of_string flt) } (* TODO Optional negative sign *)
 

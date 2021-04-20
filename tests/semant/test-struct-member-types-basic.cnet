@@ -1,0 +1,27 @@
+
+
+struct pid {
+	int id;
+};
+
+struct person {
+	struct pid x;
+	struct person partner;
+};
+
+int main() {
+	struct person s;
+
+
+	s; /* type struct person */
+	s.x; /* type struct pid */
+	s.x.id; /* type int */
+	s.partner; /* type struct person */
+	s.partner.partner; /* type struct person */
+	s.partner.partner.x.id; /* type int */
+
+
+	/* s.partner.partner.x.partner; ERROR */
+
+	return 0;
+}

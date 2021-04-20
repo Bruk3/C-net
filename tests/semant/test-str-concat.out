@@ -1,0 +1,7 @@
+int main()
+{
+string c = (string : (string : "a") + (string : "A"));
+delete (string : c);
+return (int : 0);
+}
+

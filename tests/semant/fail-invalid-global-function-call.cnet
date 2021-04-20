@@ -1,0 +1,12 @@
+
+
+int myfunc()
+{
+	return 1;
+}
+
+int x = 3 - myfunc();
+
+int main() {
+
+}

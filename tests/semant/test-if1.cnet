@@ -1,9 +1,13 @@
-int main(int a, int b) {
+int main(string[] argv) {
+    int a = 9;
+    int b = 4;
     if (a > b) {
-        stdout.println("a is greater than b");
+        ;/* stdout.println("a is greater than b"); */
     }
     else
-        stdout.println("a is less or equal to b");
+        ;/* stdout.println("a is less or equal to b"); */
     int c = 9;
+
+    return c;
 
 }
