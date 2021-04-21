@@ -1,0 +1,10 @@
+int main (){
+    int a = 4; 
+    int b = 6;
+
+    if (a + b != 10){
+        return false_sum();
+    } else{
+        return a+b;
+    }
+}

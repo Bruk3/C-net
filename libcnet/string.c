@@ -36,13 +36,14 @@ static string *clone_str(string *s)
 	new_str->cnet_free  = cnet_free_str;
 	new_str->length 	= s->length;
 	new_str->data		= s->length == 0 ? NULL :
-							(char *) mem_alloc(s->length);
+							(char *) mem_alloc(s->length + 1);
 
 	return new_str;
 }
 static void __concat_str(char **s, string *s1, string *s2)
 {
-	*s = (char *) mem_alloc(s1->length+s2->length);
+	*s = (char *) mem_alloc(s1->length + s2->length + 1);
+
 	if(s1->data)
 		memcpy(*s, s1->data, s1->length);
 	if(s2->data)
@@ -63,7 +64,8 @@ string *cnet_new_str(char *data, int length)
 	string *new_str 	=  create_str();
 
 	new_str->length 	= length;
-	new_str->data		= (char *)mem_alloc(length);
+	new_str->data		= (char *)mem_alloc(length + 1);
+
 	memcpy(new_str->data, data, length);
 
 	return new_str;
@@ -78,7 +80,7 @@ string *cnet_new_str_nolen(char* data)
 /*(deep copy) eg.
  * string s1 = "Hi";
  * string s2 = "Hell0";
- * s3 = (s1 = s2);
+ * s1 = s2;
  */
 string *cnet_strcpy(string *dst, string *src)
 {
@@ -89,7 +91,7 @@ string *cnet_strcpy(string *dst, string *src)
 		free(dst->data);
 
 	dst->length = src->length;
-	dst->data = (char *) mem_alloc(src->length);
+	dst->data = (char *) mem_alloc(src->length + 1);
 
 	memcpy(dst->data, src->data, src->length);
 
@@ -126,7 +128,7 @@ string *cnet_strcat(string *s1, string *s2)
 }
 
 /* Operator += */
-void cnet_strmerge(string *s1, string *s2)
+string *cnet_strmerge(string *s1, string *s2)
 {
 	if (!s1 || !s2)
 		die("Error: Null Pointer\n");
@@ -140,6 +142,8 @@ void cnet_strmerge(string *s1, string *s2)
 
 	s1->length += s2->length;
 	s1->data    = temp_data;
+
+	return s1;
 }
 
 /* Operator * */
@@ -155,7 +159,7 @@ string *cnet_strmult(string *s, int mult)
 		return new_str;
 
 	new_str->length = s->length * mult;
-	new_str->data	= (char *) mem_alloc(new_str->length);
+	new_str->data	= (char *) mem_alloc(new_str->length + 1);
 
 	for (int i = 0; i < mult; i++)
 		memcpy(&new_str->data[i*s->length], s->data, s->length);
@@ -166,20 +170,22 @@ string *cnet_strmult(string *s, int mult)
 /* Operator == */
 int cnet_strcmp(string *s1, string *s2)
 {
+
 	if (!s1 && !s2)
 		return 0;
 
-	if (!s1 || !s2)
+	// Need to check s1 || s2 is not an empty string
+	//  before null-terminating
+	if (!s1->data && !s2->data)
+		return 0;
+	
+	if (!s1->data || !s2->data)
 		return -1;
 
-	if (s1->length != s2->length)
-		return -1;
-
-	for(int i = 0; i<s1->length;i++)
-		if (s1->data[i] != s2->data[i])
-			return -1;
-
-	return 0;
+	// null-terminator is stored at the last extra byte alloated
+	s1->data[s1->length] = '\0';
+	s2->data[s2->length] = '\0';
+	return strcmp(s1->data, s2->data);
 }
 
 /* Operator [] */
@@ -241,7 +247,7 @@ string *cnet_substring(string *s, int start, int end)
 		die("Error: Invalid range\n");
 	string *s1 = create_str();
 	s1->length = end - start;
-	s1->data   = (char *)mem_alloc(s1->length);
+	s1->data   = (char *)mem_alloc(s1->length + 1);
 	memcpy(s1->data, s->data+start, s1->length);
 
 	return s1;
@@ -262,34 +268,33 @@ string *cnet_reverse_str(string *s)
 	return s1;
 }
 
+// Bruk: This is deprecated because of the new one more extra byte allocation
+// That extra byte is used to store a null terminator on demand.
+/*
 void cpy_str(string *src, char *dst)
 {
 	// convert string * to char*
 	memcpy(dst, src->data, src->length);
 	dst[src->length] = '\0';
 }
+*/
 
 int cnet_str_atoi(string *s)
 {
-	char data[s->length+1];
-
 	if (!s || !s->data)
 		die("Error: Null Pointer\n");
 
-	cpy_str(s, data);
-	return atoi(data);
+	s->data[s->length] = '\0';
+	return atoi(s->data);
 }
 
 float cnet_str_atof(string *s)
 {
-	char data[s->length+1];
-
 	if (!s || !s->data)
 		die("Error: Null Pointer\n");
 
-	cpy_str(s, data);
-
-	return atof(data);
+	s->data[s->length] = '\0';
+	return atof(s->data);
 }
 
 int cnet_find_char(string *s, char c)
@@ -306,8 +311,14 @@ int cnet_find_char(string *s, char c)
 
 void print_cnet_str(string *s)
 {
-	for(int i=0; i<s->length;i++){
-		printf("%c",cnet_char_at(s,i));
-	}
+	if (!s || !s->data)
+		return;
+
+	s->data[s->length] = '\0';
+	printf("%s", s->data);
+
+	// for(int i=0; i<s->length;i++){
+	// 	printf("%c",cnet_char_at(s,i));
+	// }
 
 }
