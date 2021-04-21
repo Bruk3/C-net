@@ -1,0 +1,14 @@
+int sum(int a, int b) {
+    return a + b;
+}
+
+int sum(int a, int b, int c) {
+    return a + b + c;
+}
+
+int main(int argc) {
+    int a = 1;
+    int b = 2; 
+
+    sum(a, b, c);
+}
