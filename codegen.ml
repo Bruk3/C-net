@@ -40,7 +40,6 @@ let translate (sdecl_list : sprogram) =
   and i32_t      = L.i32_type    context (* Int *)
   and float_t    = L.double_type context (* Float *)
   and void_t     = L.void_type   context in
-  let str_t      = L.pointer_type i8_t in (*Need to fix*)
   let ptr_t t    = L.pointer_type t in
 
 
@@ -318,6 +317,9 @@ let translate (sdecl_list : sprogram) =
       | SStrlit s   ->
         L.build_call cnet_new_str_func [| L.build_global_stringptr s "tmp"
                                             builder |] "strlit" builder
+      | SNew s      -> 
+        let _, ll_strct = StringMap.find s cstructs in 
+        L.build_malloc ll_strct "tmp" builder
       | SArrayLit (t, s, arr_lit) ->
         let size_t = expr builder (A.Int,SIntlit((size_of t))) scope in
         let arr_len = expr builder s scope in
@@ -341,7 +343,7 @@ let translate (sdecl_list : sprogram) =
             Some _ -> ()
           | None -> ignore (instr builder)
 
-
+      
 
 
        (* LLVM insists each basic block end with exactly one "terminator"
