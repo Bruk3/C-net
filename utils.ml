@@ -146,7 +146,7 @@ let handle_strings sexp =
              let cs2, e2', n'' = handle_helper cs1 (t1,e2) n'
              in
              let cur_tmp = "tmp" ^ (string_of_int n'') in
-             assign cur_tmp (String, SCall("cnet_stradd", [e1'; e2'])) :: cs2,
+             assign cur_tmp (String, SCall("cnet_strcat", [e1'; e2'])) :: cs2,
                 (String, SId(FinalID(cur_tmp))), n'' + 1
            | _ -> semant_err ("[COMPILER BUG] only + should be allowed on two strings (handle_strings)"))
 
@@ -156,7 +156,7 @@ let handle_strings sexp =
              Mul ->
              let cs1, the_str', n' = handle_helper stmts (String, the_str) n in
              let cur_tmp = "tmp" ^ (string_of_int n') in
-             assign cur_tmp (String, SCall("cnet_strmul", [the_str'; Int, the_int ])) :: cs1 ,
+             assign cur_tmp (String, SCall("cnet_strmult", [the_str'; Int, the_int ])) :: cs1 ,
              (String, SId(FinalID(cur_tmp))), n' + 1
            | _ -> semant_err "[COMPILER BUG] only * should be allowed on string-int (hanlde_strings)")
 
@@ -217,10 +217,20 @@ let builtin_funcs, builtin_funcs_l =
       (String, "user_soi", [(Int, "i")]); (* string of int *)
 
       (* Arrays *)
-      (Int, "alength", [((Array(Void)), "s")])
+      (Int, "alength", [((Array(Void)), "s")]);
+
+        (* Cnet *)
+        (Int, "cnet_free", [(String, "s")])
     ]
 ;;
 
+
+(* sast version of built-in functions *)
+let sbuiltin_funcs_l =
+  List.map
+    (fun {t=ty; name=n ; parameters=params; body=_; locals: _} ->
+       {styp=ty; sfname=n; sparameters=params; sbody=[]}) builtin_funcs_l
+;;
 
 (* Codegen utils *)
 (* Changes the format of an sast program, which is a list of sdecls, to one the

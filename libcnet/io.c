@@ -7,6 +7,7 @@
 #include <netdb.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <fcntl.h>
 #include "utils.h"
 #include "str.h"
 #include "io.h"
@@ -93,6 +94,9 @@ string *cnet_nread(void *ptr, int size)
     if (check_socket_type(io))
         return res;
 
+    if (io->io_type == CNET_FILE_STDIN)
+	    io->f = stdin;
+
     int buf_size = (DEFAULT_BUF_SIZE > size) ? size : DEFAULT_BUF_SIZE;
     char buf[buf_size];
 
@@ -118,6 +122,9 @@ string *cnet_read(void *ptr)
     string *res = cnet_empty_str();
     if (check_socket_type(io))
         return res;
+
+    if (io->io_type == CNET_FILE_STDIN)
+	    io->f = stdin;
 
     int buf_size = DEFAULT_BUF_SIZE;
     char buf[buf_size];
@@ -245,10 +252,13 @@ int cnet_nwrite(void *ptr, string *s, int length)
     if (check_socket_type(io))
         return 0;
 
+    if (io->io_type == CNET_FILE_STDOUT)
+	    io->f = stdout;
+
     length = (length > s->length) ? s->length : length;
     n = fwrite(s->data, 1, length, io->f);
 
-    if (ferror(io->f)){
+    if (ferror(io->f)) {
         perror("fwrite failed");
     }
 
@@ -260,7 +270,7 @@ int cnet_write(void *ptr, string *s)
 	return cnet_nwrite(ptr, s, s->length);
 }
 
-int cnet_writeln(void *ptr, string *s)
+int writeln(void *ptr, string *s)
 {
     int n;
     string nl = {NULL, "\n", 1};
@@ -432,14 +442,19 @@ int cnet_check_error(void *ptr)
     return (cnet_io *)ptr == NULL;
 }
 
-const cnet_file cnet_stdin = {
+
+cnet_file cnet_stdin_ac = {
     .cnet_free = NULL,
     .f         = NULL,
     .io_type    = CNET_FILE_STDIN
 };
 
-const cnet_file cnet_stdout = {
+cnet_file *cnet_stdin = &cnet_stdin_ac;
+
+cnet_file cnet_stdout_ac = {
     .cnet_free = NULL,
     .f         = NULL,
     .io_type    = CNET_FILE_STDOUT
 };
+
+cnet_file *cnet_stdout = &cnet_stdout_ac;
