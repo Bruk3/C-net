@@ -442,6 +442,7 @@ int cnet_check_error(void *ptr)
     return (cnet_io *)ptr == NULL;
 }
 
+
 cnet_file cnet_stdin_ac = {
     .cnet_free = NULL,
     .f         = NULL,
