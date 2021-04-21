@@ -117,7 +117,7 @@ let handle_strings sexp =
 
     (* All binary assignments should have been converted to = in semant *)
     | (A.String, SBinassop(s1, _, s2)) -> let new_stmts, s2', n' = handle_helper stmts s2 n
-      in new_stmts, (String, SCall("cnet_strcpy", [String, SId(s1); (s2')])), n'
+      in new_stmts, (String, SBinassop(s1, Assign, (String, SCall("cnet_strcpy", [String, SId(s1); (s2')])))), n'
 
     | (A.String, SBinop((t1, e1), op, (t2, e2))) -> (match (t1, t2) with
 

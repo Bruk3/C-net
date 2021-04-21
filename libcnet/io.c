@@ -219,6 +219,8 @@ int writeln(void *ptr, string *s)
 {
     int n;
     string nl = {NULL, "\n", 1};
+    if (s == NULL)
+	    die("ptr is NULL in writeln");
     n  = cnet_nwrite(ptr, s, s->length);
     n += cnet_nwrite(ptr, &nl, nl.length);
 

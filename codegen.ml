@@ -38,6 +38,7 @@ let translate (sdecl_list : sprogram) =
   (* Get types from the context *)
   let i8_t       = L.i8_type     context (* Char *)
   and i32_t      = L.i32_type    context (* Int *)
+  and i64_t      = L.i64_type   context  (* Codegen internal use *)
   and float_t    = L.double_type context (* Float *)
   and void_t     = L.void_type   context in
   let str_t      = L.pointer_type i8_t in (*Need to fix*)
@@ -57,6 +58,17 @@ let translate (sdecl_list : sprogram) =
     | A.Socket          -> ptr_t (snd (find_checked "cnet_socket" cstrcts))
     | A.File            -> ptr_t (snd (find_checked "cnet_file" cstrcts))
   in
+
+
+  let non_ptr_typ t cstrcts = match t with
+    | A.String          ->  (snd (find_checked "string" cstrcts))
+    | A.Struct(n)       ->  (snd (find_checked n cstrcts))
+    | A.Array(typ)      ->  (snd (find_checked "array" cstrcts))
+    | A.Socket          ->  (snd (find_checked "cnet_socket" cstrcts))
+    | A.File            ->  (snd (find_checked "cnet_file" cstrcts))
+    | _                 ->  ltype_of_typ t cstrcts
+  in
+
 
   let  size_of t = match t with
     A.Char            -> 1
@@ -89,6 +101,7 @@ let translate (sdecl_list : sprogram) =
   in
 
   let ltype_of_typ t = ltype_of_typ t cstructs in
+  let non_ptr_typ t = non_ptr_typ t cstructs in
 
   let cbuiltin_vars =
     let declare_struct_var {vtyp=vt; vname=vn} =
@@ -156,6 +169,12 @@ let translate (sdecl_list : sprogram) =
     L.function_type (ltype_of_typ A.String) [| ptr_t i8_t |] in
   let cnet_new_str_func  =
     L.declare_function "cnet_new_str_nolen" cnet_new_str_nolen_t the_module in
+
+  let memset_t =
+    L.function_type str_t [|str_t; i32_t; i64_t |]
+  in
+  let memset_func =
+    L.declare_function "memset" memset_t the_module in
   (* TODO: read_line, read, print, send, atoi, ... *)
 
   (*******************************************************************************
@@ -239,7 +258,7 @@ let translate (sdecl_list : sprogram) =
           let sname = match vd.vtyp with Struct(n) -> n in
           let sd,s = find_checked sname cstructs in
           let the_struct = L.build_load ll "tmp" builder in
-          (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "tmp" builder)
+          (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "" builder)
 
           (*   lookup_helper r curr_scope  (*This is wrong, need to fix*)*)
           (* | Index(r,e)     -> lookup_helper r curr_scope   (*This is wrong, need to fix*)*)
@@ -262,6 +281,10 @@ let translate (sdecl_list : sprogram) =
       (* Todo: Recursive lookup for complex data types*)
       (* let lookup n scopes = lookup_helper n (lookup_scope n scopes) *)
       (* in *)
+
+      let type_of_pointer ll =
+        L.build_gep
+      in
 
     (* Construct code for an expression; return its value *)
 
@@ -319,7 +342,15 @@ let translate (sdecl_list : sprogram) =
                                             builder |] "strlit" builder
       | SNew s      ->
         let _, ll_strct = StringMap.find s cstructs in
-        L.build_malloc ll_strct "tmp" builder
+        let the_strct = L.build_malloc ll_strct "tmp" builder in
+        let the_strct = L.build_bitcast the_strct str_t "cast_res" builder
+        in
+        (* zero out the memory *)
+        let zeroed = L.build_call memset_func
+            [| the_strct; L.const_int i32_t 0; L.size_of ll_strct |]
+            "zeroed" builder
+        in
+        L.build_bitcast zeroed (ltype_of_typ (Struct(s))) "cast_back" builder
       | SArrayLit (t, s, arr_lit) ->
         let size_t = expr builder (A.Int,SIntlit((size_of t))) scope in
         let arr_len = expr builder s scope in

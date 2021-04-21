@@ -83,15 +83,12 @@ string *cnet_new_str_nolen(char* data)
  */
 string *cnet_strcpy(string *dst, string *src)
 {
-	printf("beginning\n");
 	if (!src)
-		die("Error: Null Pointer\n");
+		die("[COMPILER ERROR] cnet_strcpy called from NULL source string\n");
 	else if (!dst) {
-		printf("dst is null");
 		/* string a; a = "hello" */
 		return cnet_strassign(src);
 	}
-	printf("ending\n");
 
 	if (dst->data)
 		free(dst->data);
@@ -100,7 +97,6 @@ string *cnet_strcpy(string *dst, string *src)
 	dst->data = (char *) mem_alloc(src->length);
 
 	memcpy(dst->data, src->data, src->length);
-	printf("true ending\n");
 
 	return dst;
 }
