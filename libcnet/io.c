@@ -7,7 +7,6 @@
 #include <netdb.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include <fcntl.h>
 #include "utils.h"
 #include "str.h"
 #include "io.h"
@@ -22,7 +21,7 @@ static prot_type ptype[] = {
 
 static void cnet_close_file(FILE *f)
 {
-	if (!f && (fclose(f) < 0))
+	if (fclose(f) < 0)
 		fprintf(stderr, "error: %s\n", strerror(errno));
 
 }
@@ -62,20 +61,16 @@ static void cnet_strmerge_custom(string *s, char *buf, int len)
 {
     string temp = {NULL, buf, len};
 
-    return cnet_strmerge(s, &temp);
+    cnet_strmerge(s, &temp);
 
 }
 
-cnet_file *cnet_open_file(string *filename, string *mode)
+cnet_file *cnet_open_file(string *fname, string *mode)
 {
-    char fname[filename->length+1];
-    char md[mode->length+1];
+    fname->data[fname->length] = '\0';
+    mode->data[mode->length] = '\0';
 
-    cpy_str(filename, fname);
-    cpy_str(mode, md);
-
-
-    FILE *f = fopen(fname, md);
+	FILE *f = fopen(fname->data, mode->data);
 
     if (!f) {
 		perror("can't open file");
@@ -98,15 +93,13 @@ string *cnet_nread(void *ptr, int size)
     if (check_socket_type(io))
         return res;
 
-    if (io->io_type == CNET_FILE_STDIN)
-	    io->f = stdin;
-
-    int buf_size = DEFAULT_BUF_SIZE;
+    int buf_size = (DEFAULT_BUF_SIZE > size) ? size : DEFAULT_BUF_SIZE;
     char buf[buf_size];
 
     while(size >= 0 && (n = fread(buf, 1, buf_size, io->f)) > 0){
         cnet_strmerge_custom(res, buf, n);
         size -= n;
+        buf_size = (DEFAULT_BUF_SIZE > size) ? size : DEFAULT_BUF_SIZE;
     }
 
     if (ferror(io->f)){
@@ -126,9 +119,6 @@ string *cnet_read(void *ptr)
     if (check_socket_type(io))
         return res;
 
-    if (io->io_type == CNET_FILE_STDIN)
-	    io->f = stdin;
-
     int buf_size = DEFAULT_BUF_SIZE;
     char buf[buf_size];
 
@@ -145,49 +135,107 @@ string *cnet_read(void *ptr)
 
 }
 
-static int find_nl_index(char *buf, int n)
-{
-    for (int i =0; i < n-1; i++){
-        if(buf[i] == '\n' || (buf[i] == '\r' && buf[i+1] == '\n'))
-            return i+1;
-    }
+/* Deprecated */
+// static int find_nl_index(char *buf, int n)
+// {
+//     for (int i =0; i < n-1; i++){
+//         if(buf[i] == '\n' || (buf[i] == '\r' && buf[i+1] == '\n'))
+//             return i+1;
+//     }
 
-    if(buf[n-1] == '\n')
-        return n;
+//     if(buf[n-1] == '\n')
+//         return n;
 
-    return n+1;
+//     return n+1;
 
-}
-string *cnet_readln(void *ptr)
-{
-    int n, idx;
-    cnet_io *io = (cnet_io *)ptr;
+// }
 
-    if (check_socket_type(io))
-        return 0;
-
-    if (io->io_type == CNET_FILE_STDIN)
-	    io->f = stdin;
-
+string *cnet_read_until(void *ptr, char *delim, int len){
+    cnet_io *io = (cnet_io *) ptr;
     string *res = cnet_empty_str();
     int buf_size = DEFAULT_BUF_SIZE;
+    int found = 0, curr = 0, n = 0;
     char buf[buf_size];
+    char temp[len];
+    int total = 0; // temp var for testing
 
-    while((n = fread(buf, 1, buf_size, io->f)) > 0){
-        idx = find_nl_index(buf, n);
-        cnet_strmerge_custom(res, buf, ((idx < n)?idx:n));
-        if (idx <= n)
+    strncpy(temp, delim, len);
+
+    if (check_socket_type(io))
+        die("cannot read on a listening socket");
+
+    while (!found) {
+        if (curr + len >= buf_size) {
+            cnet_strmerge_custom(res, buf, curr);
+            curr = 0;
+            continue;
+        }
+
+        n = fread(buf + curr, 1, len, io->f);
+        total += n; // never reset to 0 unlike curr
+        if (n < len) {
+            cnet_strmerge_custom(res, buf, curr + n);
             break;
+        }
+
+        if (strncmp(buf + curr, temp, len) == 0){
+            cnet_strmerge_custom(res, buf, curr + n);
+            break;
+        }
+
+        curr += len;
     }
 
-    if (ferror(io->f)){
+
+    if (ferror(io->f)) {
         cnet_free(res);
-        perror("fread failed");
+        die("read_until failed");
     }
 
     return res;
+}
+
+string *cnet_readln(void *ptr)
+{
+    return cnet_read_until(ptr, "\n", 1);
+    // int n, idx;
+    // cnet_io *io = (cnet_io *)ptr;
+    // printf("reading line\n");
+    // if (check_socket_type(io))
+    //     return 0;
+
+    // string *res = cnet_empty_str();
+    // int buf_size = DEFAULT_BUF_SIZE;
+    // char buf[buf_size];
+
+    // while(fgets(buf, buf_size, io->f) != NULL){
+    //     if (ferror(io->f)) {
+    //         die("Error in readln");
+    //     }
+
+    //     if (feof(io->f)) {
+    //         cnet_strmerge_custom(res, buf, n);
+    //         break;
+    //     }
+
+
+    // while((n = fread(buf, 1, 1, io->f)) > 0){
+    //     printf("in the loop trying to read\n");
+    //     idx = find_nl_index(buf, n);
+    //     cnet_strmerge_custom(res, buf, ((idx < n)?idx:n));
+    //     if (idx <= n)
+    //         break;
+    // }
+
+    // if (ferror(io->f)){
+    //     cnet_free(res);
+    //     perror("fread failed");
+    // }
+
+    // return res;
 
 }
+
 
 
 int cnet_nwrite(void *ptr, string *s, int length)
@@ -197,13 +245,10 @@ int cnet_nwrite(void *ptr, string *s, int length)
     if (check_socket_type(io))
         return 0;
 
-    if (io->io_type == CNET_FILE_STDOUT)
-	    io->f = stdout;
-
     length = (length > s->length) ? s->length : length;
     n = fwrite(s->data, 1, length, io->f);
 
-    if (ferror(io->f)) {
+    if (ferror(io->f)){
         perror("fwrite failed");
     }
 
@@ -215,12 +260,10 @@ int cnet_write(void *ptr, string *s)
 	return cnet_nwrite(ptr, s, s->length);
 }
 
-int writeln(void *ptr, string *s)
+int cnet_writeln(void *ptr, string *s)
 {
     int n;
     string nl = {NULL, "\n", 1};
-    if (s == NULL)
-	    die("ptr is NULL in writeln");
     n  = cnet_nwrite(ptr, s, s->length);
     n += cnet_nwrite(ptr, &nl, nl.length);
 
@@ -327,18 +370,17 @@ out:
 }
 
 /* client socket */
-cnet_socket *cnet_connect_to_host(string *host_str, int port, int domain, int type)
+cnet_socket *cnet_connect_to_host(string *host, int port, int domain, int type)
 {
     struct sockaddr_in server_addr;
     struct hostent *he;
     int fd;
     cnet_socket *conn_sock;
-    char host[host_str->length+1];
 
-   cpy_str(host_str, host);
+   host->data[host->length] = '\0';
 
     // get server ip from server name
-    if ((he = gethostbyname(host)) == NULL){
+    if ((he = gethostbyname(host->data)) == NULL){
         perror("gethostbyname failed");
         return NULL;
     }
@@ -389,19 +431,3 @@ int cnet_check_error(void *ptr)
 {
     return (cnet_io *)ptr == NULL;
 }
-
-cnet_file cnet_stdin_ac = {
-    .cnet_free = NULL,
-    .f         = NULL,
-    .io_type    = CNET_FILE_STDIN
-};
-
-cnet_file *cnet_stdin = &cnet_stdin_ac;
-
-cnet_file cnet_stdout_ac = {
-    .cnet_free = NULL,
-    .f         = NULL,
-    .io_type    = CNET_FILE_STDOUT
-};
-
-cnet_file *cnet_stdout = &cnet_stdout_ac;
