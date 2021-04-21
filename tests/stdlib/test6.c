@@ -16,7 +16,7 @@ int main()
 
 	printf("%s\n","Connection accepted");
 
-	cnet_writeln(conn_sock, s);
+	writeln(conn_sock, s);
 
 	cnet_free(listener);
 	cnet_free(conn_sock);

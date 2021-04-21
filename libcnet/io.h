@@ -7,10 +7,12 @@
 #define MAXPENDING 5
 
 /* IO types */
-#define CNET_FILE 0
-#define CNET_SOCKET 1  
+#define CNET_FILE_STDIN 0
+#define CNET_FILE_STDOUT 1
+#define CNET_FILE 2
+#define CNET_SOCKET 3
 
-/* Socket types */ 
+/* Socket types */
 #define LISTEN 0
 #define CONNECT 1
 
@@ -24,7 +26,7 @@ int cnet_write(void *ptr, string *s);
 
 int cnet_nwrite(void *ptr, string *s, int length);
 
-int cnet_writeln(void *ptr, string *s);
+int writeln(void *ptr, string *s);
 
 string *cnet_read(void *ptr);
 

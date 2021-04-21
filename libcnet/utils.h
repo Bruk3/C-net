@@ -48,6 +48,15 @@ struct cnet_io {
 
 typedef struct cnet_io cnet_io;
 
+struct cnet_array {
+	void (*cnet_free) (void *ptr);
+	void *data;
+	int length;
+	int i_t;
+};
+
+typedef struct cnet_array cnet_array;
+
 void die(const char *message);
 
 void *mem_alloc(int size);
