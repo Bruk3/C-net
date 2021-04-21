@@ -351,7 +351,7 @@ let check  = function
           | New(NStruct(sn)) ->
               let ty =  try (ignore (StringMap.find sn structs)) ; Struct(sn) with
                 Not_found -> semant_err("invalid new expression: type [struct " ^ sn ^ "] doesn't exist")
-              in (ty, SNew(NStruct(sn)))
+              in (ty, SNew(sn))
 
           | ArrayLit(t, e, e_l) ->
               let check_int =
