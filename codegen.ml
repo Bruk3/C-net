@@ -155,6 +155,11 @@ let translate (sdecl_list : sprogram) =
     L.function_type (ltype_of_typ A.String) [| ptr_t i8_t |] in
   let cnet_new_str_func  =
     L.declare_function "cnet_new_str_nolen" cnet_new_str_nolen_t the_module in
+  let cnet_empty_str_t: L.lltype =
+    L.function_type (ltype_of_typ A.String) [| |] in
+  let cnet_empty_str_func  =
+    L.declare_function "cnet_empty_str" cnet_empty_str_t the_module in
+    
   (* TODO: read_line, read, print, send, atoi, ... *)
 
   (*******************************************************************************
@@ -219,7 +224,7 @@ let translate (sdecl_list : sprogram) =
         (* in *)
       (* List.fold_left add_local formals fdecl.sparameters *)
       in
-      let func_scope = [global_decls]
+      let func_scope = [local_vars; global_decls]
       in
       (* Return the value for a variable or formal argument.
         Check local names first, then global names *)
@@ -231,46 +236,28 @@ let translate (sdecl_list : sprogram) =
           else
             lookup_helper n tl
       in
-
       let rec lookup n (t : A.typ) scope builder = match n with
-          FinalID s -> lookup_helper s scope
-        | RID(r, member) ->
-          let vd, ll = lookup r t scope builder in
-          let sname = match vd.vtyp with Struct(n) -> n in
-          let sd,s = find_checked sname cstructs in
-          let the_struct = L.build_load ll "tmp" builder in
-          (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "tmp" builder)
-
-          (*   lookup_helper r curr_scope  (*This is wrong, need to fix*)*)
-          (* | Index(r,e)     -> lookup_helper r curr_scope   (*This is wrong, need to fix*)*)
-          (* | RID(r, member) ->
-            let the_struct = lookup_helper r scope
-            in (match the_struct with
-              Struct(sname) ->
-                 let the_struct = StringMap.find sname cstructs in (*This is wrong, need to fix*)
-                 match List.filter (fun t -> t.vname = member) the_struct.members with
-                   m :: [] -> m)
-
-          | Index(r, e) ->
-            let (t, _) = expr builder e scope in *)
-
-
-
-
-
-      in
-      (* Todo: Recursive lookup for complex data types*)
-      (* let lookup n scopes = lookup_helper n (lookup_scope n scopes) *)
-      (* in *)
-
-    (* Construct code for an expression; return its value *)
-
+      FinalID s -> lookup_helper s scope
+    | RID(r, member) -> 
+      let vd, ll = lookup r t scope builder in
+      let sname = match vd.vtyp with Struct(n) -> n in
+      let sd,s = find_checked sname cstructs in
+      let the_struct = L.build_load ll "tmp" builder in
+      (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "tmp" builder)
+    in 
+      (* Construct code for an expression; return its value *)
     let rec expr builder ((t, e) : sexpr) scope  = match e with
         SNoexpr     -> L.const_int i32_t 0
       | SIntlit i   -> L.const_int i32_t i
       | SCharlit c  -> L.const_int i8_t c
       | SFloatlit f -> L.const_float float_t f
-      | SId s       -> L.build_load (snd (lookup s t scope builder)) (U.final_id_of_rid s) builder
+      | SId s       -> L.build_load (snd (lookup s t scope builder)) (U.final_id_of_rid s) builder  
+      | SIndex(r,e)     -> 
+        let e' = expr builder e scope in
+        let vd, ll = lookup r t scope builder in
+        let vd_ll = L.build_load ll (U.final_id_of_rid r) builder in
+        L.build_call (get_arr_index_func vd.vtyp) [|vd_ll; e'|] "cnet_arr_index" builder
+  
       | SBinassop (s, op, e) -> let e' =  expr builder e scope
                                   in ignore(L.build_store e' (snd (lookup s t scope builder)) builder); e'
       | SBinop ((A.Float,_ ) as e1, op, e2) ->
@@ -318,19 +305,20 @@ let translate (sdecl_list : sprogram) =
         L.build_call cnet_new_str_func [| L.build_global_stringptr s "tmp"
                                             builder |] "strlit" builder
       | SNew s      -> 
-        let _, ll_strct = StringMap.find s cstructs in 
-        L.build_malloc ll_strct "tmp" builder
+        let strct, ll_strct = StringMap.find s cstructs in
+        let new_struct = L.build_malloc ll_strct "tmp" builder in
+        let str_members = List.filter (fun mem -> mem.vtyp = A.String ) strct.members in
+        let empty_str = fun s -> L.build_call cnet_empty_str_func [| |] "empty_str" builder in
+        let smem_ptr mem = L.build_struct_gep new_struct (U.mem_to_idx strct mem.vname) "tmp" builder in
+        let build_empty_str = fun smem -> ignore(L.build_store (empty_str smem) (smem_ptr smem) builder) in
+        List.iter build_empty_str str_members; new_struct
+        
       | SArrayLit (t, s, arr_lit) ->
         let size_t = expr builder (A.Int,SIntlit((size_of t))) scope in
         let arr_len = expr builder s scope in
         let ll_arr_lit = List.map (fun a -> expr builder a scope) arr_lit in
         let ll_va_args = arr_len :: size_t :: ll_arr_lit in
         L.build_call (init_array_func t) (Array.of_list ll_va_args) "cnet_init_array" builder
-      (* | SIndex (r, s) -> *)
-      (*   let s' = expr builder s scope in *)
-      (*   let vd, ll = lookup r t scope builder in *)
-      (*   let vd_ll = L.build_load ll (U.final_id_of_rid r) builder in *)
-      (*   L.build_call (get_arr_index_func vd.vtyp) [|vd_ll; s'|] "cnet_arr_index" builder *)
       | SCall (n, args) ->
         let (fdef, fdecl) = find_checked n function_decls in
         let llargs = List.map (fun a -> expr builder a scope) args in
@@ -357,13 +345,7 @@ let translate (sdecl_list : sprogram) =
          instruction that transfers control.  This function runs "instr builder"
          if the current block does not already have a terminator.  Used,
          e.g., to handle the "fall off the end of the function" case. *)
-    (* Don't need this for hello world either *)
-    (* let add_terminal builder instr = *)
-    (*   match L.block_terminator (L.insertion_block builder) with *)
-    (*     Some _ -> () *)
-    (*   | None -> ignore (instr builder) *)
-    (* in *)
-
+  
     (* Build the code for the given statement; return the builder for
        the statement's successor (i.e., the next instruction will be built
        after the one generated by this call) *)
@@ -405,12 +387,24 @@ let translate (sdecl_list : sprogram) =
         ignore (expr builder the_assignment new_scope); (* do the assignment *)
         (new_scope, builder)
 
-      | SDelete e -> let to_be_deleted = expr builder e scope in (match e with
-            Struct(_), _ -> L.build_free to_be_deleted builder
+      | SDelete e ->let t, e' = e in (match t with 
+          Struct(n) ->(match e' with
+                        SId s -> 
+                          (* Printf.fprintf stderr "To be del:%s\n" (U.final_id_of_rid s); *)
+                          let sd, ll =  lookup s t scope builder in   
+                          let to_be_deleted = L.build_load ll (U.final_id_of_rid s) builder in
+                          let sname = match sd.vtyp with Struct(n) -> n in
+                          let sd, _ = find_checked sname cstructs in
+                          let delete_str = fun s -> L.build_call (find_func "cnet_free") [| s |] "tmp" builder in
+                          let smem_ptr mem = L.build_struct_gep to_be_deleted (U.mem_to_idx sd mem.vname) "tmp" builder in
+                          let del_func = fun smem -> ignore(delete_str (L.build_load (smem_ptr smem) "tmp" builder)) in
+                          let str_members = List.filter (fun mem -> mem.vtyp = A.String ) sd.members in
+                          List.iter del_func str_members; 
+                          L.build_free to_be_deleted builder)
 
-          | _ -> L.build_call (find_func "cnet_free") [| to_be_deleted |] "tmp"
-                   builder;
-        ); scope, builder
+          | _ -> let to_be_deleted = expr builder e scope in 
+                 L.build_call (find_func "cnet_free") [| to_be_deleted |] "tmp" builder
+      );(scope, builder)
 
       | SReturn e -> ignore (match fdecl.styp with
           (* Special "return nothing" instr *)
