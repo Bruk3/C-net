@@ -16,21 +16,25 @@ exception SemanticError of string * int;;
 let semant_err (msg : string) =
   raise (SemanticError(msg, -1));;
 
-type sexpr = typ * sx
+type sid =
+    SFinalID of string
+  | SRID of sid * string
+  | SIndex of sid * sexpr
+
+and sexpr = typ * sx
 and sx =
     SNoexpr
   | SIntlit of int
   | SCharlit of int
   | SFloatlit of float
   | SStrlit of string
-  | SId of rid
+  | SId of sid
   (* Operators *)
   | SBinop of sexpr * binop * sexpr
-  | SBinassop of rid * bin_assign_op * sexpr
+  | SBinassop of sid * bin_assign_op * sexpr
   | SUnop of unop * sexpr
   | SNew of string
   | SArrayLit of typ * sexpr * sexpr list
-  | SIndex of rid * sexpr
   | SCall of string * sexpr list
 
 type sstmt =
@@ -71,24 +75,29 @@ type sprogram = sdecl list
    *)
   (* Pretty-printing functions *)
 
+let rec string_of_sid = function
+  | SFinalID(id) -> id
+  | SRID(r, final) -> string_of_sid r ^ "." ^ final
+  | SIndex(r, sexpr) -> string_of_sid r ^ "[" ^ (string_of_sexpr sexpr) ^ "]"
 
-  let rec string_of_sexpr (t, e) =
+and string_of_sexpr (t, e) =
+
+
     "(" ^ string_of_typ t ^ " : " ^ (match e with
-      SNoexpr -> ""
-    | SIntlit(l) -> string_of_int l
-    | SCharlit(l) -> "" ^ "\'" ^ (Char.escaped(Char.chr(l))) ^ "\'"
-    | SFloatlit(l) -> string_of_float l
-    | SStrlit(l) -> "\"" ^ l ^ "\""
-    | SId(s) -> string_of_rid s
-    | SBinop(e1, o, e2) ->
+          SNoexpr -> ""
+      | SIntlit(l) -> string_of_int l
+      | SCharlit(l) -> "" ^ "\'" ^ (Char.escaped(Char.chr(l))) ^ "\'"
+      | SFloatlit(l) -> string_of_float l
+      | SStrlit(l) -> "\"" ^ l ^ "\""
+      | SId(s) -> string_of_sid s
+      | SBinop(e1, o, e2) ->
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
-    | SBinassop(v, o, e) -> string_of_rid v ^ string_of_binassop o ^ string_of_sexpr e
-    | SUnop(o, e) -> string_of_uop o ^ string_of_sexpr e
-    | SNew (n) -> "new " ^ n
+      | SBinassop(v, o, e) -> string_of_sid v ^ string_of_binassop o ^ string_of_sexpr e
+      | SUnop(o, e) -> string_of_uop o ^ string_of_sexpr e
+      | SNew (n) -> "new " ^ n
     | SArrayLit (t, e, el) ->
     "new " ^ string_of_typ t ^ "[" ^ string_of_sexpr e ^ "] = {" ^
     String.concat ", " (List.map string_of_sexpr el) ^ "}"
-    | SIndex (s, e) -> string_of_rid s ^ "[" ^ string_of_sexpr e ^ "]"
     | SCall(f, el) ->
         f ^ "(" ^ String.concat ", " (List.map string_of_sexpr el) ^ ")"
             ) ^ ")"

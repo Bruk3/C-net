@@ -14,29 +14,6 @@ let line_num lexbuf = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum
 
 
                                 (* SAST utils *)
-let my_sast = (
-  [],
-  [],
-  [
-    {
-      styp = A.Int;
-      sfname = "main";
-      sparameters = [];
-      sbody =
-        [
-          SExpr( A.Int,
-                 SCall
-                   (
-                     "println",
-                     [(File, SId(FinalID("stdout"))); (A.String, SStrlit("Hello World!\n")) ]
-                   )
-               );
-          SReturn(A.Int, SIntlit(0))
-        ]
-    }
-  ]
-)
-
 (* Gets the FinalID part of a recursive id. For example, it extracts println
  * from my_struct.my_other_struct.my_file.println
  *)
@@ -44,6 +21,12 @@ let rec final_id_of_rid = function
   A.FinalID(fid) -> fid
   | A.RID(_, mem) -> mem
   | A.Index(rid, _) -> final_id_of_rid rid
+;;
+
+let rec final_id_of_sid = function
+  SFinalID(fid) -> fid
+  | SRID(_, mem) -> mem
+  | SIndex(sid, _) -> final_id_of_sid sid
 ;;
 
 (* Get a default value for a global variable based on its type *)
@@ -130,7 +113,7 @@ let handle_strings sexp =
   let rec handle_helper stmts cur_exp n = match cur_exp with
       (A.String as st, SCall(fn, args)) ->
       let cur_tmp = "tmp" ^ (string_of_int n) in
-      assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(A.FinalID(cur_tmp))), n + 1
+      assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(SFinalID(cur_tmp))), n + 1
 
     (* All binary assignments should have been converted to = in semant *)
     | (A.String, SBinassop(s1, _, s2)) -> let new_stmts, s2', n' = handle_helper stmts s2 n
@@ -147,7 +130,7 @@ let handle_strings sexp =
              in
              let cur_tmp = "tmp" ^ (string_of_int n'') in
              assign cur_tmp (String, SCall("cnet_stradd", [e1'; e2'])) :: cs2,
-                (String, SId(FinalID(cur_tmp))), n'' + 1
+                (String, SId(SFinalID(cur_tmp))), n'' + 1
            | _ -> semant_err ("[COMPILER BUG] only + should be allowed on two strings (handle_strings)"))
 
         | (String, Int) | (Int, String) ->
@@ -157,7 +140,7 @@ let handle_strings sexp =
              let cs1, the_str', n' = handle_helper stmts (String, the_str) n in
              let cur_tmp = "tmp" ^ (string_of_int n') in
              assign cur_tmp (String, SCall("cnet_strmul", [the_str'; Int, the_int ])) :: cs1 ,
-             (String, SId(FinalID(cur_tmp))), n' + 1
+             (String, SId(SFinalID(cur_tmp))), n' + 1
            | _ -> semant_err "[COMPILER BUG] only * should be allowed on string-int (hanlde_strings)")
 
         | _ -> semant_err ("[COMPILER BUG] handle_string given illegal combination of expressions in binary operator")
@@ -170,7 +153,7 @@ let handle_strings sexp =
   match pre_stmts with
     [] -> SExpr(new_exp)
   | l -> let convert_to_free = function
-        SVdecl_ass({vtyp=_; vname=vn}, _) -> SDelete(String, SId(FinalID(vn)))
+        SVdecl_ass({vtyp=_; vname=vn}, _) -> SDelete(String, SId(SFinalID(vn)))
       | _ -> semant_err ("[COMPILER BUG] convert_to_free not setup properly")
     in
     let l = List.rev l in

@@ -233,8 +233,8 @@ let translate (sdecl_list : sprogram) =
       in
 
       let rec lookup n (t : A.typ) scope builder = match n with
-          FinalID s -> lookup_helper s scope
-        | RID(r, member) ->
+          SFinalID s -> lookup_helper s scope
+        | SRID(r, member) ->
           let vd, ll = lookup r t scope builder in
           let sname = match vd.vtyp with Struct(n) -> n in
           let sd,s = find_checked sname cstructs in
@@ -270,7 +270,7 @@ let translate (sdecl_list : sprogram) =
       | SIntlit i   -> L.const_int i32_t i
       | SCharlit c  -> L.const_int i8_t c
       | SFloatlit f -> L.const_float float_t f
-      | SId s       -> L.build_load (snd (lookup s t scope builder)) (U.final_id_of_rid s) builder
+      | SId s       -> L.build_load (snd (lookup s t scope builder)) (U.final_id_of_sid s) builder
       | SBinassop (s, op, e) -> let e' =  expr builder e scope
                                   in ignore(L.build_store e' (snd (lookup s t scope builder)) builder); e'
       | SBinop ((A.Float,_ ) as e1, op, e2) ->
@@ -401,7 +401,7 @@ let translate (sdecl_list : sprogram) =
         let new_var = L.build_alloca (ltype_of_typ vd.vtyp) vd.vname builder
         in
         let new_scope = add_var (vd,new_var) scope in
-        let the_assignment = vd.vtyp, SBinassop(A.FinalID(vd.vname), Assign, (t,e)) in
+        let the_assignment = vd.vtyp, SBinassop(SFinalID(vd.vname), Assign, (t,e)) in
         ignore (expr builder the_assignment new_scope); (* do the assignment *)
         (new_scope, builder)
 
