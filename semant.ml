@@ -442,7 +442,7 @@ let check  = function
           | While(p, s) -> SWhile(check_bool_expr scope p, fst (check_stmt new_loop_scope (mkblock s))), sp
 
           (* add variable to highest scope *)
-          | Vdecl (vd) -> SVdecl(vd), add_free vd
+          | Vdecl (vd) -> SVdecl_ass(vd, U.default_global vd.vtyp), add_free vd
 
           | Vdecl_ass ({vtyp; vname}, e) ->
             let (d, newscp) = SVdecl_ass({vtyp; vname}, expr scope e) , check_binds_scoped scope {vtyp; vname} in
