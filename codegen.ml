@@ -39,6 +39,7 @@ let translate (sdecl_list : sprogram) =
   let i8_t       = L.i8_type     context (* Char *)
   and i32_t      = L.i32_type    context (* Int *)
   and i64_t      = L.i64_type   context  (* Codegen internal use *)
+  and i1_t      = L.i1_type   context  (* Codegen internal use *)
   and float_t    = L.double_type context (* Float *)
   and void_t     = L.void_type   context in
   let str_t      = L.pointer_type i8_t in
@@ -469,8 +470,9 @@ let translate (sdecl_list : sprogram) =
 
         let pred_builder = L.builder_at_end context pred_bb in
         let pred_val = expr pred_builder pred scope  in
-        (* cast the value to a char (1 byte) *)
-        let pred_val = L.build_icmp L.Icmp.Ne pred_val (L.const_int i32_t 0) "tmp" builder in
+        (* cast the value to a bool (1 bit) *)
+        let pred_val = L.build_icmp L.Icmp.Ne pred_val (L.const_int i1_t 0)
+            "tmp" pred_builder in
 
 
         let merge_bb = L.append_block context "merge" the_function in
