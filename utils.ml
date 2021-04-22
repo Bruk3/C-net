@@ -130,7 +130,7 @@ let handle_strings sexp =
              in
              let cur_tmp = "tmp" ^ (string_of_int n'') in
              assign cur_tmp (String, SCall("cnet_strcat", [e1'; e2'])) :: cs2,
-                (String, SId(FinalID(cur_tmp))), n'' + 1
+                (String, SId(SFinalID(cur_tmp))), n'' + 1
            | _ -> semant_err ("[COMPILER BUG] only + should be allowed on two strings (handle_strings)"))
 
         | (String, Int) | (Int, String) ->
@@ -140,7 +140,7 @@ let handle_strings sexp =
              let cs1, the_str', n' = handle_helper stmts (String, the_str) n in
              let cur_tmp = "tmp" ^ (string_of_int n') in
              assign cur_tmp (String, SCall("cnet_strmult", [the_str'; Int, the_int ])) :: cs1 ,
-             (String, SId(FinalID(cur_tmp))), n' + 1
+             (String, SId(SFinalID(cur_tmp))), n' + 1
            | _ -> semant_err "[COMPILER BUG] only * should be allowed on string-int (hanlde_strings)")
 
         | _ -> semant_err ("[COMPILER BUG] handle_string given illegal combination of expressions in binary operator")

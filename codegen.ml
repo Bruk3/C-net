@@ -41,6 +41,7 @@ let translate (sdecl_list : sprogram) =
   and i64_t      = L.i64_type   context  (* Codegen internal use *)
   and float_t    = L.double_type context (* Float *)
   and void_t     = L.void_type   context in
+  let str_t      = L.pointer_type i8_t in
   let ptr_t t    = L.pointer_type t in
 
 
@@ -134,10 +135,6 @@ let translate (sdecl_list : sprogram) =
   (* The function that writes to and reads from sockets/files, including stdin
    * and stdout
   *)
-<<<<<<< HEAD
-
-=======
->>>>>>> cada45f8e009126b999191b2522b601284988ac6
   let builtin_func_decls : (L.llvalue * sfunc) StringMap.t =
     let function_type (fd : sfunc) =
       L.function_type
@@ -255,14 +252,24 @@ let translate (sdecl_list : sprogram) =
           else
             lookup_helper n tl
       in
+
+      let type_of_pointer ll =
+        L.build_gep
+      in
+
       let rec lookup n (t : A.typ) scope builder = match n with
-      FinalID s -> lookup_helper s scope
-    | RID(r, member) -> 
-      let vd, ll = lookup r t scope builder in
-      let sname = match vd.vtyp with Struct(n) -> n in
-      let sd,s = find_checked sname cstructs in
-      let the_struct = L.build_load ll "tmp" builder in
-      (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "tmp" builder)
+        SFinalID s -> lookup_helper s scope
+      | SRID(r, member) -> 
+        let vd, ll = lookup r t scope builder in
+        let sname = match vd.vtyp with Struct(n) -> n in
+        let sd,s = find_checked sname cstructs in
+        let the_struct = L.build_load ll "tmp" builder in
+        (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "tmp" builder)
+      (* | SIndex(r,e)     -> 
+        let e' = expr builder e scope in
+        let vd, ll = lookup r t scope builder in
+        let vd_ll = L.build_load ll (U.final_id_of_sid r) builder in
+        L.build_call (get_arr_index_func vd.vtyp) [|vd_ll; e'|] "cnet_arr_index" builder *)
     in 
       (* Construct code for an expression; return its value *)
     let rec expr builder ((t, e) : sexpr) scope  = match e with
@@ -270,13 +277,7 @@ let translate (sdecl_list : sprogram) =
       | SIntlit i   -> L.const_int i32_t i
       | SCharlit c  -> L.const_int i8_t c
       | SFloatlit f -> L.const_float float_t f
-      | SId s       -> L.build_load (snd (lookup s t scope builder)) (U.final_id_of_rid s) builder  
-      | SIndex(r,e)     -> 
-        let e' = expr builder e scope in
-        let vd, ll = lookup r t scope builder in
-        let vd_ll = L.build_load ll (U.final_id_of_rid r) builder in
-        L.build_call (get_arr_index_func vd.vtyp) [|vd_ll; e'|] "cnet_arr_index" builder
-  
+      | SId s       -> L.build_load (snd (lookup s t scope builder)) (U.final_id_of_sid s) builder    
       | SBinassop (s, op, e) -> let e' =  expr builder e scope
                                   in ignore(L.build_store e' (snd (lookup s t scope builder)) builder); e'
       | SBinop ((A.Float,_ ) as e1, op, e2) ->
@@ -362,10 +363,6 @@ let translate (sdecl_list : sprogram) =
 
     in
 
-    let type_of_pointer ll =
-      L.build_gep
-    in
-
   
     (* Build the code for the given statement; return the builder for
        the statement's successor (i.e., the next instruction will be built
@@ -404,16 +401,16 @@ let translate (sdecl_list : sprogram) =
         let new_var = L.build_alloca (ltype_of_typ vd.vtyp) vd.vname builder
         in
         let new_scope = add_var (vd,new_var) scope in
-        let the_assignment = vd.vtyp, SBinassop(A.FinalID(vd.vname), Assign, (t,e)) in
+        let the_assignment = vd.vtyp, SBinassop(SFinalID(vd.vname), Assign, (t,e)) in
         ignore (expr builder the_assignment new_scope); (* do the assignment *)
         (new_scope, builder)
 
       | SDelete e ->let t, e' = e in (match t with 
           Struct(n) ->(match e' with
                         SId s -> 
-                          (* Printf.fprintf stderr "To be del:%s\n" (U.final_id_of_rid s); *)
+                          (* Printf.fprintf stderr "To be del:%s\n" (U.final_id_of_sid s); *)
                           let sd, ll =  lookup s t scope builder in   
-                          let to_be_deleted = L.build_load ll (U.final_id_of_rid s) builder in
+                          let to_be_deleted = L.build_load ll (U.final_id_of_sid s) builder in
                           let sname = match sd.vtyp with Struct(n) -> n in
                           let sd, _ = find_checked sname cstructs in
                           let delete_str = fun s -> L.build_call (find_func "cnet_free") [| s |] "tmp" builder in
