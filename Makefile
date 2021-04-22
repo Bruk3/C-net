@@ -10,7 +10,7 @@ test: ccnet
 
 ## cnet top level compiler that compiles and links a cnet source file into an executable
 .PHONY: ccnet
-ccnet: cnet.native stdlib_tests
+ccnet: nobin cnet.native stdlib
 
 
 # cnet compiler that translates .cnet -> .ll
@@ -39,10 +39,10 @@ ast: ast.ml
 .PHONY: stdlib stdlib_tests
 
 stdlib_tests:
-	cd $(CTEST_DIR) && make all
+	cd $(CTEST_DIR) && make all > /dev/null && make clean
 
 stdlib:
-	cd $(LIB_DIR) && make all
+	cd $(LIB_DIR) && make all > /dev/null && make clean
 
 #############################  Other targets  #################################
 .PHONY: clean
@@ -57,6 +57,11 @@ clean:
 
 .PHONY: all
 all: clean cnet.native
+
+# to make ocamlbuild happy
+.PHONY: nobin
+nobin:
+	rm -f *.o *.a libcnet/*.o libcnet/*.a
 
 
 ##################################################################

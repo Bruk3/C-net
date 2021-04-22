@@ -6,7 +6,7 @@ INCLUDES = -I$(LIB_DIR)
 CFLAGS := -Wall -g
 VGFLAGS := --leak-check=full --show-leak-kinds=all --track-origins=yes
 
-OBJS := string.o utils.o  io.o
+OBJS := libcnet.a
 OBJS := $(addprefix $(LIB_DIR)/, $(OBJS));
 DEPENDS := string.h utils.h io.h
 DEPENDS := $(addprefix $(LIB_DIR)/, $(DEPENDS));

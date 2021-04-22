@@ -11,12 +11,16 @@ rm -f $globallog
 error=0
 globalerror=0
 
+intergrationtester="./ccnet -b"
 integrationtests="tests/integration/test-*.cnet tests/integration/fail-*.cnet"
 
+parsertester="./ccnet -a"
 parsertests="tests/parser/test-*.cnet tests/parser/fail-*.cnet"
 
+scannertester="./ccnet -t"
 scannertests="tests/scanner/test-*.cnet tests/scanner/fail-*.cnet"
 
+semantictester="./ccnet -s"
 semantictests="tests/semant/test-*.cnet tests/semant/fail-*.cnet"
 
 keep=0
@@ -84,7 +88,7 @@ Check() {
     generatedfiles="$generatedfiles ${basename}.out" &&
 
 
-    Run $2 < "$1" ">" "${basename}.out" &&
+    Run $2 $1 ">" "${basename}.out" &&
     Compare ${basename}.out ${reffile}.out ${basename}.diff
 
     # Report the status and clean up the generated files
@@ -116,7 +120,7 @@ CheckFail() {
     generatedfiles=""
 
     generatedfiles="$generatedfiles ${basename}.err ${basename}.diff" &&
-    RunFail $2 "<" $1 "2>" "${basename}.err" ">>" $globallog &&
+    RunFail $2 $1 "2>" "${basename}.err" ">>" $globallog &&
     Compare ${basename}.err ${reffile}.err ${basename}.diff
 
     # Report the status and clean up the generated files
@@ -152,10 +156,10 @@ do
     case $file in
 	*test-*)
 
-	    Check $file './cnet.native -t' 2>> $globallog
+	    Check $file "$scannertester" 2>> $globallog
 	    ;;
 	*fail-*)
-	    CheckFail $file './cnet.native -t' 2>> $globallog
+	    CheckFail $file "$scannertester" 2>> $globallog
 	    ;;
 	*)
 	    echo "unknown file type $file"
@@ -168,10 +172,10 @@ for file in $parsertests
 do
     case $file in
 	*test-*)
-	    Check $file './cnet.native -a' 2>> $globallog
+	    Check $file "$parsertester" 2>> $globallog
 	    ;;
 	*fail-*)
-	    CheckFail $file './cnet.native -a' 2>> $globallog
+	    CheckFail $file $parsertester 2>> $globallog
 	    ;;
 	*)
 	    echo "unknown file type $file"
@@ -184,10 +188,10 @@ for file in $semantictests
 do
     case $file in
     *test-*)
-        Check $file './cnet.native -s' 2>> $globallog
+        Check $file "$semantictester" 2>> $globallog
         ;;
     *fail-*)
-        CheckFail $file './cnet.native -s' 2>> $globallog
+        CheckFail $file "$semantictester" 2>> $globallog
         ;;
     *)
         echo "unknown file type $file"
@@ -196,23 +200,23 @@ do
     esac
 done
 
-for file in $integrationtests
-do
-    case $file in
-	*test-*)
-	    './ccnet' $file
-	    Check $file ${file%.cnet}.exe 2>> $globallog
-	    rm ${file%.cnet}.exe
-	    ;;
-	*fail-*)
-	    # './ccnet' $file
-	    # CheckFail $file ${file%.cnet}.exe 2>> $globallog
-	    ;;
-	*)
-	    echo "unknown file type $file"
-	    globalerror=1
-	    ;;
-    esac
-done
+# for file in $integrationtests
+# do
+#     case $file in
+# 	*test-*)
+# 	    './ccnet' $file
+# 	    Check $file ${file%.cnet}.exe 2>> $globallog
+# 	    rm ${file%.cnet}.exe
+# 	    ;;
+# 	*fail-*)
+# 	    # './ccnet' $file
+# 	    # CheckFail $file ${file%.cnet}.exe 2>> $globallog
+# 	    ;;
+# 	*)
+# 	    echo "unknown file type $file"
+# 	    globalerror=1
+# 	    ;;
+#     esac
+# done
 
 exit $globalerror
