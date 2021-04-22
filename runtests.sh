@@ -87,11 +87,6 @@ Check() {
     Run $2 < "$1" ">" "${basename}.out" &&
     Compare ${basename}.out ${reffile}.out ${basename}.diff
 
-    # Run "$MICROC" "$1" ">" "${basename}.ll" &&
-    # Run "$CC" "-o" "${basename}.exe" "${basename}.s" "printbig.o" &&
-    # Run "./${basename}.exe" > "${basename}.out" &&
-    # Compare ${basename}.out ${reffile}.out ${basename}.diff
-
     # Report the status and clean up the generated files
 
     if [ $error -eq 0 ] ; then
@@ -121,7 +116,6 @@ CheckFail() {
     generatedfiles=""
 
     generatedfiles="$generatedfiles ${basename}.err ${basename}.diff" &&
-    # RunFail "$MICROC" "<" $1 "2>" "${basename}.err" ">>" $globallog &&
     RunFail $2 "<" $1 "2>" "${basename}.err" ">>" $globallog &&
     Compare ${basename}.err ${reffile}.err ${basename}.diff
 
