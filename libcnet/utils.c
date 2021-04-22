@@ -42,7 +42,7 @@ static void free_cnet_array(void *ptr)
 	free(arr);
 }
 
-cnet_array *cnet_init_array(int len, int sizei_t, ...)
+cnet_array *cnet_init_array(int sizei_t, int floating, int len, ...)
 {
 	cnet_array *new_arr = (cnet_array *)mem_alloc(sizeof(cnet_array));
 
@@ -56,21 +56,32 @@ cnet_array *cnet_init_array(int len, int sizei_t, ...)
 	va_start(arr_list, len);
 	int c;
 	int n;
-	char *ptr;
+	unsigned long ptr;
+	double d;
+	
 
 	for (int i = 0; i<(len*sizei_t); i+=sizei_t){
-		switch(sizei_t) {
-			case 1:
-				c = va_arg(arr_list, char);
-				memcpy(new_arr->data+i, &c, sizei_t);
-			case 4:
-				n = va_arg(arr_list, int);
-				memcpy(new_arr->data+i, &n, sizei_t);
-			case 8:
-				ptr = va_arg(arr_list, char *);
-				memcpy(new_arr->data+i, &ptr, sizei_t);
-
+		if (sizei_t == 1){
+			c = va_arg(arr_list, int);
+			memcpy(new_arr->data+i, &c, sizei_t);
+			// printf("arr[%c] = %c\n", i/sizei_t, *((char *)new_arr->data+i) );
 		}
+		else if(sizei_t == 4){
+			n = va_arg(arr_list, int);
+			memcpy(new_arr->data+i, &n, sizei_t);
+			// printf("arr[%d] = %d\n", i/sizei_t, *((int *)new_arr->data+(i/sizei_t)) );
+		}
+		else if (sizei_t == 8 && floating){
+			d = va_arg(arr_list, double);
+			memcpy(new_arr->data+i, &d, sizei_t);
+			// printf("arr[%d] = %f\n", i/sizei_t, *((double *)new_arr->data+(i/sizei_t)) );
+		}
+		else {
+			ptr = va_arg(arr_list, long);
+			memcpy(new_arr->data+i, &ptr, sizei_t);
+			// printf("arr[%d] = %lu\n", i/sizei_t, *((unsigned long *)new_arr->data+(i/sizei_t)) );
+		}
+
 	}
 
 	va_end(arr_list);
@@ -91,6 +102,7 @@ void *cnet_index_arr(void *ptr, int index)
 		die(s);
 
 	return (void *)((char *)arr->data)+arr_offset(index, arr->i_t);
+
 }
 
 int cnet_arr_length(void *ptr)

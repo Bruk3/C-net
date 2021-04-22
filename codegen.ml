@@ -41,7 +41,7 @@ let translate (sdecl_list : sprogram) =
   and i64_t      = L.i64_type   context  (* Codegen internal use *)
   and float_t    = L.double_type context (* Float *)
   and void_t     = L.void_type   context in
-  let str_t      = L.pointer_type i8_t in (*Need to fix*)
+  let str_t      = L.pointer_type i8_t in
   let ptr_t t    = L.pointer_type t in
 
 
@@ -155,24 +155,26 @@ let translate (sdecl_list : sprogram) =
   (* let println_func : L.llvalue = *)
   (*   L.declare_function "println" println_t the_module in *)
   let var_arr_t t : L.lltype =
-      L.var_arg_function_type (ltype_of_typ t) [| (ltype_of_typ t) |] in
-  let arr_t t : L.lltype =
-    L.function_type (ltype_of_typ t) [| i32_t;i32_t; (var_arr_t t)|] in
+      L.var_arg_function_type (ltype_of_typ (A.Array(t))) [| i32_t; i32_t; i32_t; (ltype_of_typ t) |] in
   let init_array_func t: L.llvalue =
-      L.declare_function "cnet_init_array" (arr_t t) the_module in
+      L.declare_function "cnet_init_array" (var_arr_t t) the_module in
   let arr_idx_t t: L.lltype =
-    L.function_type (ltype_of_typ t) [| L.pointer_type (ltype_of_typ t) ; i32_t|] in
-  let cnet_index_arr_func t: L.llvalue =
-    L.declare_function "cnet_index_arr" (arr_idx_t t) the_module in
+    L.function_type  (ltype_of_typ t) [| L.pointer_type (ltype_of_typ t) ; i32_t|] in
+  let get_arr_index_func t: L.llvalue =
+    L.declare_function "get_arr_index" (arr_idx_t t) the_module in
 
   let cnet_new_str_nolen_t: L.lltype =
     L.function_type (ltype_of_typ A.String) [| ptr_t i8_t |] in
   let cnet_new_str_func  =
     L.declare_function "cnet_new_str_nolen" cnet_new_str_nolen_t the_module in
+  let cnet_empty_str_t: L.lltype =
+    L.function_type (ltype_of_typ A.String) [| |] in
+  let cnet_empty_str_func  =
+    L.declare_function "cnet_empty_str" cnet_empty_str_t the_module in
+
 
   let memset_t =
-    L.function_type str_t [|str_t; i32_t; i64_t |]
-  in
+    L.function_type str_t [|str_t; i32_t; i64_t |] in
   let memset_func =
     L.declare_function "memset" memset_t the_module in
 
@@ -243,7 +245,7 @@ let translate (sdecl_list : sprogram) =
         (* in *)
       (* List.fold_left add_local formals fdecl.sparameters *)
       in
-      let func_scope = [global_decls]
+      let func_scope = [local_vars; global_decls]
       in
       (* Return the value for a variable or formal argument.
         Check local names first, then global names *)
@@ -282,6 +284,7 @@ let translate (sdecl_list : sprogram) =
         | SCharlit c  -> L.const_int i8_t c
         | SFloatlit f -> L.const_float float_t f
         | SId s       -> L.build_load (snd (lookup s )) (U.final_id_of_sid s) builder
+
       | SBinassop (s, op, e) -> let e' =  expr builder e scope
                                   in ignore(L.build_store e' (snd (lookup s)) builder); e'
       | SBinop ((A.Float,_ ) as e1, op, e2) ->
@@ -328,31 +331,26 @@ let translate (sdecl_list : sprogram) =
       | SStrlit s   ->
         L.build_call cnet_new_str_func [| L.build_global_stringptr s "tmp"
                                             builder |] "strlit" builder
-      | SNew s      ->
-        let _, ll_strct = StringMap.find s cstructs in
-        let the_strct = L.build_malloc ll_strct "tmp" builder in
-        let the_strct = L.build_bitcast the_strct str_t "cast_res" builder
-        in
-        (* zero out the memory *)
-        let zeroed = L.build_call memset_func
-            [| the_strct; L.const_int i32_t 0; L.size_of ll_strct |]
-            "zeroed" builder
-        in
-        L.build_bitcast zeroed (ltype_of_typ (Struct(s))) "cast_back" builder
+      | SNew s      -> 
+        let strct, ll_strct = StringMap.find s cstructs in
+        let new_struct = L.build_malloc ll_strct "tmp" builder in
+        let str_members = List.filter (fun mem -> mem.vtyp = A.String ) strct.members in
+        let empty_str = fun s -> L.build_call cnet_empty_str_func [| |] "empty_str" builder in
+        let smem_ptr mem = L.build_struct_gep new_struct (U.mem_to_idx strct mem.vname) "tmp" builder in
+        let build_empty_str = fun smem -> ignore(L.build_store (empty_str smem) (smem_ptr smem) builder) in
+        List.iter build_empty_str str_members; new_struct
+        
       | SArrayLit (t, s, arr_lit) ->
         let size_t = expr builder (A.Int,SIntlit((size_of t))) scope in
         let arr_len = expr builder s scope in
+        let f = if t = A.Float then 1 else 0 in 
+        let floating = expr builder (A.Int,SIntlit(f)) scope in
         let ll_arr_lit = List.map (fun a -> expr builder a scope) arr_lit in
-        let ll_va_args = arr_len :: size_t :: ll_arr_lit in
+        let ll_va_args =  size_t :: floating:: arr_len :: ll_arr_lit in
         L.build_call (init_array_func t) (Array.of_list ll_va_args) "cnet_init_array" builder
-      (* | SIndex (r, s) -> *)
-      (*   let s' = expr builder s scope in *)
-      (*   let vd, ll = lookup r t scope builder in *)
-      (*   let vd_ll = L.build_load ll (U.final_id_of_rid r) builder in *)
-      (*   L.build_call (cnet_index_arr_func vd.vtyp) [|vd_ll; s'|] "cnet_arr_index" builder *)
       | SCall (n, args) ->
-        let (fdef, fdecl) = StringMap.find n function_decls in
-        let llargs = List.rev (List.map (fun a -> expr builder a scope) (List.rev args)) in
+        let (fdef, fdecl) = find_checked n function_decls in
+        let llargs = List.map (fun a -> expr builder a scope) args in
         let result = (match fdecl.styp with
                             A.Void -> ""
                           | _ -> n ^ "_result") in
@@ -362,7 +360,7 @@ let translate (sdecl_list : sprogram) =
             Some _ -> ()
           | None -> ignore (instr builder)
 
-
+      
 
 
        (* LLVM insists each basic block end with exactly one "terminator"
@@ -372,17 +370,7 @@ let translate (sdecl_list : sprogram) =
 
     in
 
-    (* LLVM insists each basic block end with exactly one "terminator"
-         instruction that transfers control.  This function runs "instr builder"
-         if the current block does not already have a terminator.  Used,
-         e.g., to handle the "fall off the end of the function" case. *)
-    (* Don't need this for hello world either *)
-    (* let add_terminal builder instr = *)
-    (*   match L.block_terminator (L.insertion_block builder) with *)
-    (*     Some _ -> () *)
-    (*   | None -> ignore (instr builder) *)
-    (* in *)
-
+  
     (* Build the code for the given statement; return the builder for
        the statement's successor (i.e., the next instruction will be built
        after the one generated by this call) *)
@@ -424,20 +412,33 @@ let translate (sdecl_list : sprogram) =
         ignore (expr builder the_assignment new_scope); (* do the assignment *)
         (new_scope, builder)
 
-      | SDelete e -> let to_be_deleted = expr builder e scope in (match e with
-            Struct(_), _ -> L.build_free to_be_deleted builder
+      | SDelete e ->let t, e' = e in (match t with 
+          Struct(n) ->(match e' with
+                        SId s -> 
+                          (* Printf.fprintf stderr "To be del:%s\n" (U.final_id_of_sid s); *)
+                          let sd, ll =  lookup s t scope builder in   
+                          let to_be_deleted = L.build_load ll (U.final_id_of_sid s) builder in
+                          let sname = match sd.vtyp with Struct(n) -> n in
+                          let sd, _ = find_checked sname cstructs in
+                          let delete_str = fun s -> L.build_call (find_func "cnet_free") [| s |] "tmp" builder in
+                          let smem_ptr mem = L.build_struct_gep to_be_deleted (U.mem_to_idx sd mem.vname) "tmp" builder in
+                          let del_func = fun smem -> ignore(delete_str (L.build_load (smem_ptr smem) "tmp" builder)) in
+                          let str_members = List.filter (fun mem -> mem.vtyp = A.String ) sd.members in
+                          List.iter del_func str_members; 
+                          L.build_free to_be_deleted builder)
 
-          | _ -> L.build_call (find_func "cnet_free") [| to_be_deleted |] "tmp"
-                   builder;
-        ); scope, builder
+          | _ -> let to_be_deleted = expr builder e scope in 
+                 L.build_call (find_func "cnet_free") [| to_be_deleted |] "tmp" builder
+      );(scope, builder)
 
       | SReturn e -> ignore (match fdecl.styp with
           (* Special "return nothing" instr *)
             A.Void -> L.build_ret_void builder
           (* Build return statement *)
-          | _ -> L.build_ret (expr builder e scope) builder); scope, builder
+          | _ -> L.build_ret (expr builder e scope) builder)
+                   ; scope, builder
 
-      (* do not attempt *)
+        (* do not attempt *)
       (* | SIf (psl, else_stmt) -> *)
       (*   let predicate_list = List.map (fun (p,_) -> expr builder p scope) psl in *)
       (*   let merge_bb = L.append_block context "merge" the_function in *)

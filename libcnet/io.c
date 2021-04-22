@@ -98,6 +98,7 @@ string *cnet_nread(void *ptr, int size)
 	    io->f = stdin;
 
     int buf_size = DEFAULT_BUF_SIZE;
+
     char buf[buf_size];
 
     while(size >= 0 && (n = fread(buf, 1, buf_size, io->f)) > 0){

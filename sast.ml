@@ -67,13 +67,7 @@ type sdecl =
 
 type sprogram = sdecl list;;
 
-  (* type sprogram = {
-    vdecls : (vdecl * expr) list ;
-    strct_decls: strct list;
-    fdecls : sfunc list;
-  }
-   *)
-  (* Pretty-printing functions *)
+ (* Pretty-printing functions *)
 
 let contains s1 s2 =
   let re = Str.regexp_string s2
@@ -104,9 +98,9 @@ and string_of_sexpr (t, e) =
       | SId(s) -> string_of_sid s
       | SBinop(e1, o, e2) ->
         string_of_sexpr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_sexpr e2
-      | SBinassop(v, o, e) -> string_of_sid v ^ string_of_binassop o ^ string_of_sexpr e
-      | SUnop(o, e) -> string_of_uop o ^ string_of_sexpr e
-      | SNew (n) -> "new " ^ n
+    | SBinassop(v, o, e) -> string_of_sid v ^ string_of_binassop o ^ string_of_sexpr e
+    | SUnop(o, e) -> string_of_uop o ^ string_of_sexpr e
+    | SNew (n) -> "new " ^ n
     | SArrayLit (t, e, el) ->
     "new " ^ string_of_typ t ^ "[" ^ string_of_sexpr e ^ "] = {" ^
     String.concat ", " (List.map string_of_sexpr el) ^ "}"
@@ -141,29 +135,18 @@ let rec string_of_sstmt = function
   | SBlock(stmts) ->
     "{\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n";;
 
-  (* let string_of_sfdecl fdecl =
-    string_of_typ fdecl.styp ^ " " ^
-    fdecl.sname ^ "(" ^ String.concat ", " (List.map snd fdecl.sparameters) ^
-    ")\n{\n" ^
-    String.concat "" (List.map string_of_vdecl fdecl.slocals) ^
-    String.concat "" (List.map string_of_sstmt fdecl.sbody) ^
-    "}\n" *)
-
 let string_of_sfunc (t, n, p, b) =
   string_of_typ t ^ " " ^ n ^ "(" ^ String.concat "," (List.map string_of_id p) ^
   ")\n{\n" ^ String.concat ""
     (List.map
        string_of_sstmt
        b
-       (* (List.map (fun stmt -> (stmt, 1)) b) *)
     ) ^ "}\n\n";;
 
 let string_of_sdecl = function
   | SGVdecl_ass({vtyp; vname}, e) -> string_of_svdecl_assign(vtyp, vname, e)
   | SSdecl({sname; members}) -> string_of_strct(sname, members)
   | SFdecl({styp; sfname; sparameters; sbody; _}) -> string_of_sfunc(styp, sfname, sparameters, sbody)
-  (* let string_of_sprogram ((vdecls : (vdecl * sexpr) list), (strct_decls : strct list), (fd : sfunc list))  =
-    String.concat "" (List.map string_of_sfunc(fd)) ^ "\n" *)
 
     (* TODO *)
 let string_of_sprogram (decls : sprogram) =

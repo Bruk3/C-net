@@ -164,7 +164,6 @@ and string_of_expr = function
   | ArrayLit(t, e, el) ->
     "new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^ "] = {" ^
     String.concat ", " (List.map string_of_expr el) ^ "}"
-  (* | Index(id, e) -> string_of_rid id ^ "[" ^ string_of_expr e ^ "]" *)
   | Call(f, el) ->
     string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
 

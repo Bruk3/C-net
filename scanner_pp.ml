@@ -51,12 +51,3 @@ let pretty_print = function
   | STRLIT(x)             -> Printf.sprintf  "STRLIT(%s)" (x)
   | CHARLIT(x)            -> Printf.sprintf  "CHARLIT(%d)" (x)
   | FLOATLIT(x)           -> Printf.sprintf  "FLOATLIT(%f)" (x)
-
-(* let lexbuf = Lexing.from_channel stdin in
-   let token_string_list =
-   let rec next accu =
-    match Scanner.tokenize lexbuf with
-    | EOF -> List.rev (pretty_print EOF :: accu)
-    | x   -> next (pretty_print x :: accu)
-   in next []
-   in List.iter (fun x -> print_endline x) token_string_list  *)

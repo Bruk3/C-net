@@ -13,7 +13,6 @@
 %token AND OR NOT
 %token IF ELSE ELIF FOR WHILE RETURN BREAK CONTINUE
 %token INT FLOAT CHAR STRING VOID STRUCT SOCKET FILE
-/* %token TCP UDP */
 %token NEW DELETE
 %token <int> INTLIT CHARLIT
 %token <float> FLOATLIT
@@ -114,8 +113,6 @@ stmts:
 
 vdecl_assign:
     typ ID ASSIGN expr SEMI { ({vtyp = $1; vname = $2}, $4) }
-    /* | typ ID ASSIGN NEW typ LBRACKET INTLIT RBRACKET LBRACE INTLIT RBRACE SEMI { () } */
-    /* became redundant because expr handles array literals */
 
 stmt:
     opt_expr SEMI { Expr($1) }
