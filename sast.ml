@@ -63,13 +63,7 @@ type sdecl =
 
 type sprogram = sdecl list
 
-  (* type sprogram = {
-    vdecls : (vdecl * expr) list ;
-    strct_decls: strct list;
-    fdecls : sfunc list;
-  }
-   *)
-  (* Pretty-printing functions *)
+ (* Pretty-printing functions *)
 
 
   let rec string_of_sexpr (t, e) =
@@ -118,21 +112,12 @@ let string_of_svdecl_assign (t, id, e) =
     | SBlock(stmts) ->
         "{\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n"
 
-  (* let string_of_sfdecl fdecl =
-    string_of_typ fdecl.styp ^ " " ^
-    fdecl.sname ^ "(" ^ String.concat ", " (List.map snd fdecl.sparameters) ^
-    ")\n{\n" ^
-    String.concat "" (List.map string_of_vdecl fdecl.slocals) ^
-    String.concat "" (List.map string_of_sstmt fdecl.sbody) ^
-    "}\n" *)
-
 let string_of_sfunc (t, n, p, b) =
   string_of_typ t ^ " " ^ n ^ "(" ^ String.concat "," (List.map string_of_id p) ^
   ")\n{\n" ^ String.concat ""
     (List.map
        string_of_sstmt
        b
-       (* (List.map (fun stmt -> (stmt, 1)) b) *)
     ) ^ "}\n\n"
 
 
@@ -140,8 +125,6 @@ let string_of_sdecl = function
   | SGVdecl_ass({vtyp; vname}, e) -> string_of_svdecl_assign(vtyp, vname, e)
   | SSdecl({sname; members}) -> string_of_strct(sname, members)
   | SFdecl({styp; sfname; sparameters; sbody; _}) -> string_of_sfunc(styp, sfname, sparameters, sbody)
-  (* let string_of_sprogram ((vdecls : (vdecl * sexpr) list), (strct_decls : strct list), (fd : sfunc list))  =
-    String.concat "" (List.map string_of_sfunc(fd)) ^ "\n" *)
 
     (* TODO *)
 let string_of_sprogram (decls : sprogram) =
