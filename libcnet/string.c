@@ -82,14 +82,20 @@ string *cnet_new_str_nolen(char* data)
 /*(deep copy) eg.
  * string s1 = "Hi";
  * string s2 = "Hell0";
+<<<<<<< HEAD
  * s1 = s2;
+=======
+ * s3 = (s1 = s2);
+>>>>>>> 455c9dd
  */
 string *cnet_strcpy(string *dst, string *src)
 {
 	if (!src)
-		die("[COMPILER BUG] NULL src string passed to cnet_strcpy");
-	if (!dst)
+		die("[COMPILER ERROR] cnet_strcpy called from NULL source string\n");
+	else if (!dst) {
+		/* string a; a = "hello" */
 		return cnet_strassign(src);
+	}
 
 	if (dst->data)
 		free(dst->data);
@@ -174,6 +180,7 @@ string *cnet_strmult(string *s, int mult)
 /* Operator == */
 int cnet_strcmp(string *s1, string *s2)
 {
+	int min_length;
 
 	if (!s1 && !s2)
 		return 0;
@@ -186,10 +193,13 @@ int cnet_strcmp(string *s1, string *s2)
 	if (!s1->data || !s2->data)
 		return -1;
 
+	min_length = s1->length > s2->length ? s2->length : s1->length;
+
+
 	// null-terminator is stored at the last extra byte alloated
 	s1->data[s1->length] = '\0';
 	s2->data[s2->length] = '\0';
-	return strcmp(s1->data, s2->data);
+	return memcmp(s1->data, s2->data, min_length);
 }
 
 /* Operator [] */

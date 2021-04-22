@@ -49,7 +49,7 @@ stdlib_tests:
 	cd $(CTEST_DIR) && make all > /dev/null && make clean
 
 stdlib:
-	cd $(LIB_DIR) && make all > /dev/null && make clean
+	cd $(LIB_DIR) && make all > /dev/null
 
 #############################  Other targets  #################################
 .PHONY: clean
