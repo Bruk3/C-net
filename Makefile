@@ -56,7 +56,7 @@ clean:
 	cd $(CTEST_DIR) && make clean
 
 .PHONY: all
-all: clean cnet.native
+all: clean ccnet
 
 # to make ocamlbuild happy
 .PHONY: nobin
