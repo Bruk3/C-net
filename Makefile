@@ -62,7 +62,3 @@ all: clean cnet.native
 .PHONY: nobin
 nobin:
 	rm -f *.o *.a libcnet/*.o libcnet/*.a
-
-
-##################################################################
-###### Targets below are for the github action workflows #########

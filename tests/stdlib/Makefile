@@ -15,9 +15,9 @@ CTESTS := cnet_test1 cnet_test2 cnet_test3 cnet_test4 cnet_test5 cnet_test6 cnet
 stdlib_tests: clean stdlib $(CTESTS)
 
 cnet_%: %.o stdlib
-	@$(CC) $(CFLAGS) -o $@ $< $(OBJS)
-	@# echo -e "Running" $@
-	@# valgrind $(VGFLAGS) ./$@
+	$(CC) $(CFLAGS) -o $@ $< $(OBJS)
+	# echo -e "Running" $@
+	# valgrind $(VGFLAGS) ./$@
 
 %.o: .c $(DEPENDS)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
