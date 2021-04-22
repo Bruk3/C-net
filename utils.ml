@@ -14,29 +14,6 @@ let line_num lexbuf = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum
 
 
                                 (* SAST utils *)
-let my_sast = (
-  [],
-  [],
-  [
-    {
-      styp = A.Int;
-      sfname = "main";
-      sparameters = [];
-      sbody =
-        [
-          SExpr( A.Int,
-                 SCall
-                   (
-                     "println",
-                     [(File, SId(FinalID("stdout"))); (A.String, SStrlit("Hello World!\n")) ]
-                   )
-               );
-          SReturn(A.Int, SIntlit(0))
-        ]
-    }
-  ]
-)
-
 (* Gets the FinalID part of a recursive id. For example, it extracts println
  * from my_struct.my_other_struct.my_file.println
  *)
@@ -44,6 +21,12 @@ let rec final_id_of_rid = function
   A.FinalID(fid) -> fid
   | A.RID(_, mem) -> mem
   | A.Index(rid, _) -> final_id_of_rid rid
+;;
+
+let rec final_id_of_sid = function
+  SFinalID(fid) -> fid
+  | SRID(_, mem) -> mem
+  | SIndex(sid, _) -> final_id_of_sid sid
 ;;
 
 (* Get a default value for a global variable based on its type *)
@@ -130,11 +113,11 @@ let handle_strings sexp =
   let rec handle_helper stmts cur_exp n = match cur_exp with
       (A.String as st, SCall(fn, args)) ->
       let cur_tmp = "tmp" ^ (string_of_int n) in
-      assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(A.FinalID(cur_tmp))), n + 1
+      assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(SFinalID(cur_tmp))), n + 1
 
     (* All binary assignments should have been converted to = in semant *)
     | (A.String, SBinassop(s1, _, s2)) -> let new_stmts, s2', n' = handle_helper stmts s2 n
-      in new_stmts, (String, SCall("cnet_strcpy", [String, SId(s1); (s2')])), n'
+      in new_stmts, (String, SBinassop(s1, Assign, (String, SCall("cnet_strcpy", [String, SId(s1); (s2')])))), n'
 
     | (A.String, SBinop((t1, e1), op, (t2, e2))) -> (match (t1, t2) with
 
@@ -170,7 +153,7 @@ let handle_strings sexp =
   match pre_stmts with
     [] -> SExpr(new_exp)
   | l -> let convert_to_free = function
-        SVdecl_ass({vtyp=_; vname=vn}, _) -> SDelete(String, SId(FinalID(vn)))
+        SVdecl_ass({vtyp=_; vname=vn}, _) -> SDelete(String, SId(SFinalID(vn)))
       | _ -> semant_err ("[COMPILER BUG] convert_to_free not setup properly")
     in
     let l = List.rev l in
@@ -200,21 +183,25 @@ let builtin_funcs, builtin_funcs_l =
       (* I/O *)
       (* Sockets *)
       (Socket, "user_nopen", [(String, "name"); (String, "protocol"); (Int, "port"); (String, "type")]);
-      (Int, "println", [(Socket, "sock"); (String, "s")]);
+      (* (Int, "println", [(Socket, "sock"); (String, "s")]); *)
+
       (Int, "write", [(Socket, "sock"); (String, "s")]);
       (String, "readln", [(Socket, "sock")]);
       (String, "read", [(Socket, "sock"); (Int, "len")]);
 
       (* Files *)
       (File, "user_fopen", [(String, "name"); (String, "mode");]);
-      (Int, "println", [(File, "f"); (String, "s")]);
+      (Int, "writeln", [(File, "f"); (String, "s")]);
+
       (Int, "write", [(File, "f"); (String, "s")]);
       (String, "readln", [(File, "f")]);
       (String, "read", [(File, "f"); (Int, "len")]);
 
       (* Strings *)
       (Int, "slength", [(String, "s")]);
+      (String, "soi", [(Int, "i")]); (* string of int *)
       (String, "user_soi", [(Int, "i")]); (* string of int *)
+      (String, "cnet_strcpy", [(String, "t"); (String, "s")]);
 
       (* Arrays *)
       (Int, "alength", [((Array(Void)), "s")]);
