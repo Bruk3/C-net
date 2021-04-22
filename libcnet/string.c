@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
 #include "utils.h"
+#include "str.h"
 
 
 /* Destructor */
@@ -84,8 +86,10 @@ string *cnet_new_str_nolen(char* data)
  */
 string *cnet_strcpy(string *dst, string *src)
 {
-	if (!dst || !src)
-		die("Error: Null Pointer\n");
+	if (!src)
+		die("[COMPILER BUG] NULL src string passed to cnet_strcpy");
+	if (!dst)
+		return cnet_strassign(src);
 
 	if (dst->data)
 		free(dst->data);
@@ -178,7 +182,7 @@ int cnet_strcmp(string *s1, string *s2)
 	//  before null-terminating
 	if (!s1->data && !s2->data)
 		return 0;
-	
+
 	if (!s1->data || !s2->data)
 		return -1;
 

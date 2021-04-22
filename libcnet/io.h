@@ -12,7 +12,6 @@
 #define CNET_FILE 2
 #define CNET_SOCKET 3
 
-
 /* Socket types */
 #define LISTEN 0
 #define CONNECT 1

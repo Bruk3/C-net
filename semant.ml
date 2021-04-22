@@ -226,16 +226,16 @@ let check  = function
         in
         (* recursively verify an rid to be valid *)
         let rec type_of_identifier (scope : vdecl StringMap.t list) = function
-            FinalID s -> let the_var = find_var s scope in the_var.vtyp
+            FinalID s -> let the_var = find_var s scope in (the_var.vtyp, SFinalID(s))
 
           | RID(r, member) ->
-            let the_struct = type_of_identifier scope r
+            let the_struct, sid = type_of_identifier scope r
             in (match the_struct with
               Struct(sname) ->
               (try
                  let the_struct = StringMap.find sname structs in
                  match List.filter (fun t -> t.vname = member) the_struct.members with
-                   m :: [] -> m.vtyp
+                   m :: [] -> m.vtyp, SRID(sid, member)
                  | [] -> semant_err ("struct " ^ sname ^ " has no member " ^ member)
                  | _ -> semant_err ("[COMPILER BUG] struct " ^ sname ^ " contains multiple members called " ^ member)
                with Not_found -> semant_err ("[COMPILER BUG] variable of type struct " ^ sname ^
@@ -244,13 +244,13 @@ let check  = function
                                string_of_rid r ^ " of type " ^ string_of_typ t))
 
           | Index(r, e) -> (* TODO: index into a string should be char *)
-            let (t, _) = expr scope e in
+            let (t, e') = expr scope e in
             match t with
               Int ->
-              (let vt = type_of_identifier scope r in
+              (let vt, iid = type_of_identifier scope r in
                match vt with
-                 Array(at) -> at
-               | String -> Char
+                 Array(at) -> at, SIndex(iid, (t, e'))
+               | String -> Char, SIndex(iid, (t, e'))
                | _ -> semant_err ("cannot index non-array variable " ^
                                   (string_of_rid r)))
             | ot -> semant_err ("index into an array has to be of type int, " ^
@@ -269,21 +269,19 @@ let check  = function
           | Floatlit l -> (Float, SFloatlit l)
           | Strlit l -> (String, SStrlit l)
           | Noexpr     -> (Void, SNoexpr)
-          | Rid rid      -> (type_of_identifier scope rid),
-                            SId (
-                              match rid with
-                                FinalID(n) when n = "stdin" -> FinalID("cnet_stdin")
-                              | FinalID(n) when n = "stdout" -> FinalID("cnet_stdout")
-                              | _ -> rid
-                            )
+          | Rid rid      ->
+            (match rid with
+              FinalID(n) when n = "stdin" -> File, SId(SFinalID("cnet_stdin"))
+            | FinalID(n) when n = "stdout" -> File, SId(SFinalID("cnet_stdout"))
+            | _ -> let t, id = type_of_identifier scope rid in t, SId(id))
           | Binassop (var, op, e) as ex -> (match op with
                 PlusEq -> expr scope (Binassop(var, Assign, Binop(Rid(var), Add, e)))
               | MinusEq -> expr scope (Binassop(var, Assign, Binop(Rid(var), Sub, e)))
-              | Assign -> let lt = type_of_identifier scope var
+              | Assign -> let lt, lid = type_of_identifier scope var
                 and (rt, e') = expr scope e in
                 let err = "illegal assignment " ^ string_of_typ lt ^ " = " ^
                           string_of_typ rt ^ " in " ^ string_of_expr ex
-                in check_assign lt rt err, SBinassop(var, Assign, (rt, e')))
+                in check_assign lt rt err, SBinassop(lid, Assign, (rt, e')))
           | Unop(op, e) as ex ->
             let (t, e') = expr scope e in
             let ty = match op with
@@ -411,7 +409,7 @@ let check  = function
               | _ -> {scp = check_binds_scoped scope vd; fl = tofree; il = inloop}
           in
           let insert_frees {scp=tscp; fl=freelist; il=til} =
-            let insert_free vname = SDelete (String, SId(FinalID(vname))) in
+            let insert_free vname = SDelete (String, SId(SFinalID(vname))) in
             match freelist with
               [] -> [], {scp=tscp; fl=[]; il=til}
                     (* semant_err "[COMPILER BUG] empty list passed to insert_frees"*)
@@ -422,7 +420,7 @@ let check  = function
             Expr e -> U.handle_strings (expr scope e), sp
           | Delete n ->
 
-            let t = type_of_identifier scope n in
+            let t, id' = type_of_identifier scope n in
             let err = "illegal identifier for delete: [" ^ string_of_typ t ^ " " ^ string_of_rid n ^
                       "]. Identifier should be of type Struct or Array" in
             let e = Rid(n) in
@@ -449,7 +447,7 @@ let check  = function
           | While(p, s) -> SWhile(check_bool_expr scope p, fst (check_stmt new_loop_scope (mkblock s))), sp
 
           (* add variable to highest scope *)
-          | Vdecl (vd) -> SVdecl(vd), add_free vd
+          | Vdecl (vd) -> SVdecl_ass(vd, U.default_global vd.vtyp), add_free vd
 
           | Vdecl_ass ({vtyp; vname}, e) ->
             let (d, newscp) = SVdecl_ass({vtyp; vname}, expr scope e) , check_binds_scoped scope {vtyp; vname} in
@@ -461,8 +459,8 @@ let check  = function
               let free_stmts, _ = insert_frees sp in
               SBlock ([ SBlock(free_stmts);
                         SVdecl({vtyp=String; vname="ret_tmp"});
-                        U.handle_strings (String, SBinassop(FinalID("ret_tmp"), Assign, (t, e')));
-                        SReturn(String, SId(FinalID("ret_tmp")))
+                        U.handle_strings (String, SBinassop(SFinalID("ret_tmp"), Assign, (t, e')));
+                        SReturn(String, SId(SFinalID("ret_tmp")))
                       ])
             , {scp=scope; fl=[]; il=inloop}
             else semant_err ("return statement in function "^ func.name ^" has type " ^ string_of_typ t ^
