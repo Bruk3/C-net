@@ -177,7 +177,12 @@ let translate (sdecl_list : sprogram) =
     L.function_type str_t [|str_t; i32_t; i64_t |] in
   let memset_func =
     L.declare_function "memset" memset_t the_module in
-  (* TODO: read_line, read, print, send, atoi, ... *)
+
+  let cnet_index_arr_t =
+    L.function_type str_t [|str_t; i32_t |]
+  in
+  let cnet_index_arr_func =
+    L.declare_function "cnet_index_arr" cnet_index_arr_t the_module in
 
   (*******************************************************************************
    *                            Function signatures
@@ -253,48 +258,51 @@ let translate (sdecl_list : sprogram) =
             lookup_helper n tl
       in
 
-      let type_of_pointer ll =
-        L.build_gep
-      in
+      (* Todo: Recursive lookup for complex data types*)
+      (* let lookup n scopes = lookup_helper n (lookup_scope n scopes) *)
+      (* in *)
 
-      let rec lookup n (t : A.typ) scope builder = match n with
-        SFinalID s -> lookup_helper s scope
-      | SRID(r, member) -> 
-        let vd, ll = lookup r t scope builder in
-        let sname = match vd.vtyp with Struct(n) -> n in
-        let sd,s = find_checked sname cstructs in
-        let the_struct = L.build_load ll "tmp" builder in
-        (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "tmp" builder)
-      (* | SIndex(r,e)     -> 
-        let e' = expr builder e scope in
-        let vd, ll = lookup r t scope builder in
-        let vd_ll = L.build_load ll (U.final_id_of_sid r) builder in
-        L.build_call (get_arr_index_func vd.vtyp) [|vd_ll; e'|] "cnet_arr_index" builder *)
-    in 
       (* Construct code for an expression; return its value *)
-    let rec expr builder ((t, e) : sexpr) scope  = match e with
-        SNoexpr     -> L.const_int i32_t 0
-      | SIntlit i   -> L.const_int i32_t i
-      | SCharlit c  -> L.const_int i8_t c
-      | SFloatlit f -> L.const_float float_t f
-      | SId s       -> L.build_load (snd (lookup s t scope builder)) (U.final_id_of_sid s) builder    
-      | SBinassop (s, op, e) -> let e' =  expr builder e scope
-                                  in ignore(L.build_store e' (snd (lookup s t scope builder)) builder); e'
-      | SBinop ((A.Float,_ ) as e1, op, e2) ->
-        let e1' = expr builder e1 scope
-        and e2' = expr builder e2 scope in
-        (match op with
-            A.Add     -> L.build_fadd
-          | A.Sub     -> L.build_fsub
-          | A.Mul     -> L.build_fmul
-          | A.Div     -> L.build_fdiv
-          | A.Mod     -> L.build_frem
-          | A.Eq      -> L.build_fcmp L.Fcmp.Oeq
-          | A.Neq     -> L.build_fcmp L.Fcmp.One
-          | A.Lt      -> L.build_fcmp L.Fcmp.Olt
-          | A.Leq     -> L.build_fcmp L.Fcmp.Ole
-          | A.Gt      -> L.build_fcmp L.Fcmp.Ogt
-          | A.Geq     -> L.build_fcmp L.Fcmp.Oge
+
+      let rec lookup n scope builder = match n with
+          SFinalID s -> lookup_helper s scope
+        | SRID(r, member) ->
+          let vd, ll = lookup r scope builder in
+          let sname = match vd.vtyp with Struct(n) -> n in
+          let sd,s = find_checked sname cstructs in
+          let the_struct = L.build_load ll "tmp" builder in
+          (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "" builder)
+        | SIndex(r, ex) ->
+          let vd, arr = lookup r scope builder in
+          vd, L.build_call cnet_index_arr_func [| arr; expr builder ex scope |] "" builder
+
+      and expr builder ((t, e) : sexpr) scope  =
+        let lookup n = lookup n scope builder in
+
+        match e with
+          SNoexpr     -> L.const_int i32_t 0
+        | SIntlit i   -> L.const_int i32_t i
+        | SCharlit c  -> L.const_int i8_t c
+        | SFloatlit f -> L.const_float float_t f
+        | SId s       -> L.build_load (snd (lookup s )) (U.final_id_of_sid s) builder
+
+        | SBinassop (s, op, e) -> let e' =  expr builder e scope
+          in ignore(L.build_store e' (snd (lookup s)) builder); e'
+        | SBinop ((A.Float,_ ) as e1, op, e2) ->
+          let e1' = expr builder e1 scope
+          and e2' = expr builder e2 scope in
+          (match op with
+             A.Add     -> L.build_fadd
+           | A.Sub     -> L.build_fsub
+           | A.Mul     -> L.build_fmul
+           | A.Div     -> L.build_fdiv
+           | A.Mod     -> L.build_frem
+           | A.Eq      -> L.build_fcmp L.Fcmp.Oeq
+           | A.Neq     -> L.build_fcmp L.Fcmp.One
+           | A.Lt      -> L.build_fcmp L.Fcmp.Olt
+           | A.Leq     -> L.build_fcmp L.Fcmp.Ole
+           | A.Gt      -> L.build_fcmp L.Fcmp.Ogt
+           | A.Geq     -> L.build_fcmp L.Fcmp.Oge
           | A.And | A.Or ->
               codegen_err "internal error: semant should have rejected and/or on float"
           ) e1' e2' "tmp" builder
@@ -324,7 +332,7 @@ let translate (sdecl_list : sprogram) =
       | SStrlit s   ->
         L.build_call cnet_new_str_func [| L.build_global_stringptr s "tmp"
                                             builder |] "strlit" builder
-      | SNew s      -> 
+      | SNew s      ->
         let strct, ll_strct = StringMap.find s cstructs in
         let new_struct = L.build_malloc ll_strct "tmp" builder in
         let str_members = List.filter (fun mem -> mem.vtyp = A.String ) strct.members in
@@ -332,11 +340,11 @@ let translate (sdecl_list : sprogram) =
         let smem_ptr mem = L.build_struct_gep new_struct (U.mem_to_idx strct mem.vname) "tmp" builder in
         let build_empty_str = fun smem -> ignore(L.build_store (empty_str smem) (smem_ptr smem) builder) in
         List.iter build_empty_str str_members; new_struct
-        
+
       | SArrayLit (t, s, arr_lit) ->
         let size_t = expr builder (A.Int,SIntlit((size_of t))) scope in
         let arr_len = expr builder s scope in
-        let f = if t = A.Float then 1 else 0 in 
+        let f = if t = A.Float then 1 else 0 in
         let floating = expr builder (A.Int,SIntlit(f)) scope in
         let ll_arr_lit = List.map (fun a -> expr builder a scope) arr_lit in
         let ll_va_args =  size_t :: floating:: arr_len :: ll_arr_lit in
@@ -353,7 +361,7 @@ let translate (sdecl_list : sprogram) =
             Some _ -> ()
           | None -> ignore (instr builder)
 
-      
+
 
 
        (* LLVM insists each basic block end with exactly one "terminator"
@@ -363,7 +371,7 @@ let translate (sdecl_list : sprogram) =
 
     in
 
-  
+
     (* Build the code for the given statement; return the builder for
        the statement's successor (i.e., the next instruction will be built
        after the one generated by this call) *)
@@ -405,11 +413,11 @@ let translate (sdecl_list : sprogram) =
         ignore (expr builder the_assignment new_scope); (* do the assignment *)
         (new_scope, builder)
 
-      | SDelete e ->let t, e' = e in (match t with 
+      | SDelete e ->let t, e' = e in (match t with
           Struct(n) ->(match e' with
-                        SId s -> 
+                        SId s ->
                           (* Printf.fprintf stderr "To be del:%s\n" (U.final_id_of_sid s); *)
-                          let sd, ll =  lookup s t scope builder in   
+                          let sd, ll =  lookup s scope builder in
                           let to_be_deleted = L.build_load ll (U.final_id_of_sid s) builder in
                           let sname = match sd.vtyp with Struct(n) -> n in
                           let sd, _ = find_checked sname cstructs in
@@ -417,10 +425,10 @@ let translate (sdecl_list : sprogram) =
                           let smem_ptr mem = L.build_struct_gep to_be_deleted (U.mem_to_idx sd mem.vname) "tmp" builder in
                           let del_func = fun smem -> ignore(delete_str (L.build_load (smem_ptr smem) "tmp" builder)) in
                           let str_members = List.filter (fun mem -> mem.vtyp = A.String ) sd.members in
-                          List.iter del_func str_members; 
+                          List.iter del_func str_members;
                           L.build_free to_be_deleted builder)
 
-          | _ -> let to_be_deleted = expr builder e scope in 
+          | _ -> let to_be_deleted = expr builder e scope in
                  L.build_call (find_func "cnet_free") [| to_be_deleted |] "tmp" builder
       );(scope, builder)
 

@@ -24,7 +24,7 @@ cnet_socket *cnet_accept_connection(cnet_socket *listener);
 
 int cnet_write(void *ptr, string *s);
 
-int cnet_nwrite(void *ptr, string *s, int length);
+int nwrite(void *ptr, string *s, int length);
 
 int writeln(void *ptr, string *s);
 

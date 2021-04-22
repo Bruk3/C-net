@@ -11,6 +11,7 @@ test: ccnet
 ## cnet top level compiler that compiles and links a cnet source file into an executable
 .PHONY: ccnet
 ccnet: nobin cnet.native stdlib
+	cd $(LIB_DIR) && make
 
 
 # cnet compiler that translates .cnet -> .ll
@@ -42,7 +43,7 @@ stdlib_tests:
 	cd $(CTEST_DIR) && make all > /dev/null && make clean
 
 stdlib:
-	cd $(LIB_DIR) && make all > /dev/null && make clean
+	cd $(LIB_DIR) && make all > /dev/null
 
 #############################  Other targets  #################################
 .PHONY: clean

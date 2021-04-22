@@ -71,7 +71,7 @@ cnet_file *cnet_open_file(string *fname, string *mode)
     fname->data[fname->length] = '\0';
     mode->data[mode->length] = '\0';
 
-	FILE *f = fopen(fname->data, mode->data);
+    FILE *f = fopen(fname->data, mode->data);
 
     if (!f) {
 		perror("can't open file");
@@ -97,7 +97,8 @@ string *cnet_nread(void *ptr, int size)
     if (io->io_type == CNET_FILE_STDIN)
 	    io->f = stdin;
 
-    int buf_size = (DEFAULT_BUF_SIZE > size) ? size : DEFAULT_BUF_SIZE;
+    int buf_size = DEFAULT_BUF_SIZE;
+
     char buf[buf_size];
 
     while(size >= 0 && (n = fread(buf, 1, buf_size, io->f)) > 0){
@@ -156,17 +157,26 @@ string *cnet_read(void *ptr)
 //     return n+1;
 
 // }
+string *cnet_readln(void *ptr)
+{
+    int n = 0;
+    cnet_io *io = (cnet_io *)ptr;
 
-string *cnet_read_until(void *ptr, char *delim, int len){
-    cnet_io *io = (cnet_io *) ptr;
+    if (check_socket_type(io))
+        return 0;
+
+    if (io->io_type == CNET_FILE_STDIN)
+	    io->f = stdin;
+
     string *res = cnet_empty_str();
     int buf_size = DEFAULT_BUF_SIZE;
-    int found = 0, curr = 0, n = 0;
+    int found = 0, curr = 0, len = 0;
     char buf[buf_size];
-    char temp[len];
+    char temp[buf_size];
     int total = 0; // temp var for testing
 
-    strncpy(temp, delim, len);
+    // Will what is this line ?
+    /* strncpy(temp, delim, len); */
 
     if (check_socket_type(io))
         die("cannot read on a listening socket");
@@ -202,46 +212,45 @@ string *cnet_read_until(void *ptr, char *delim, int len){
     return res;
 }
 
-string *cnet_readln(void *ptr)
-{
-    return cnet_read_until(ptr, "\n", 1);
-    // int n, idx;
-    // cnet_io *io = (cnet_io *)ptr;
-    // printf("reading line\n");
-    // if (check_socket_type(io))
-    //     return 0;
+/* string *cnet_readln(void *ptr) */
+/* { */
+/*     return cnet_read_until(ptr, "\n", 1); */
+/*     // int n, idx; */
+/*     // cnet_io *io = (cnet_io *)ptr; */
+/*     // printf("reading line\n"); */
+/*     // if (check_socket_type(io)) */
+/*     //     return 0; */
+/*     // string *res = cnet_empty_str(); */
+/*     // int buf_size = DEFAULT_BUF_SIZE; */
+/*     // char buf[buf_size]; */
 
-    // string *res = cnet_empty_str();
-    // int buf_size = DEFAULT_BUF_SIZE;
-    // char buf[buf_size];
+/*     // while(fgets(buf, buf_size, io->f) != NULL){ */
+/*     //     if (ferror(io->f)) { */
+/*     //         die("Error in readln"); */
+/*     //     } */
 
-    // while(fgets(buf, buf_size, io->f) != NULL){
-    //     if (ferror(io->f)) {
-    //         die("Error in readln");
-    //     }
-
-    //     if (feof(io->f)) {
-    //         cnet_strmerge_custom(res, buf, n);
-    //         break;
-    //     }
+/*     //     if (feof(io->f)) { */
+/*     //         cnet_strmerge_custom(res, buf, n); */
+/*     //         break; */
+/*     //     } */
 
 
-    // while((n = fread(buf, 1, 1, io->f)) > 0){
-    //     printf("in the loop trying to read\n");
-    //     idx = find_nl_index(buf, n);
-    //     cnet_strmerge_custom(res, buf, ((idx < n)?idx:n));
-    //     if (idx <= n)
-    //         break;
-    // }
+/*     // while((n = fread(buf, 1, 1, io->f)) > 0){ */
+/*     //     printf("in the loop trying to read\n"); */
+/*     //     idx = find_nl_index(buf, n); */
+/*     //     cnet_strmerge_custom(res, buf, ((idx < n)?idx:n)); */
+/*     //     if (idx <= n) */
+/*     //         break; */
+/*     // } */
 
-    // if (ferror(io->f)){
-    //     cnet_free(res);
-    //     perror("fread failed");
-    // }
+/*     // if (ferror(io->f)){ */
+/*     //     cnet_free(res); */
+/*     //     perror("fread failed"); */
+/*     // } */
 
-    // return res;
+/*     // return res; */
 
-}
+/* } */
 
 
 
@@ -249,6 +258,10 @@ int cnet_nwrite(void *ptr, string *s, int length)
 {
     int n;
     cnet_io *io = (cnet_io *)ptr;
+
+    if (!ptr)
+	    die("write/writeln called on invalid socket/file");
+
     if (check_socket_type(io))
         return 0;
 
@@ -274,6 +287,8 @@ int writeln(void *ptr, string *s)
 {
     int n;
     string nl = {NULL, "\n", 1};
+    if (s == NULL)
+	    die("ptr is NULL in writeln");
     n  = cnet_nwrite(ptr, s, s->length);
     n += cnet_nwrite(ptr, &nl, nl.length);
 
@@ -441,7 +456,6 @@ int cnet_check_error(void *ptr)
 {
     return (cnet_io *)ptr == NULL;
 }
-
 
 cnet_file cnet_stdin_ac = {
     .cnet_free = NULL,

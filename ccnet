@@ -71,6 +71,7 @@ def handle_full(options, sourcef):
 				outputf = sourcef.split('.')[0]
 				with open(outputf, 'wb') as outfile:
 						outfile.write(ret.stdout)
+				os.chmod(outputf, 0o755) # make it executable
 				sys.exit(0)
 
 
