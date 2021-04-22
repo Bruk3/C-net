@@ -22,7 +22,7 @@ void *mem_alloc(int size)
 	return mem;
 }
 
-/* free yourself */ 
+/* free yourself */
 void cnet_free(void *s)
 {
 	cnet_io *fs = (cnet_io *)s;
@@ -77,11 +77,18 @@ cnet_array *cnet_init_array(int len, int sizei_t, ...)
 
 	return new_arr;
 
-} 
+}
 
 void *cnet_index_arr(void *ptr, int index)
 {
+	char s[100];
+
 	cnet_array *arr = (cnet_array *)ptr;
+
+	sprintf(s, "Index %d is out of range for array", index);
+
+	if (index > arr->length)
+		die(s);
 
 	return (void *)((char *)arr->data)+arr_offset(index, arr->i_t);
 }
@@ -89,6 +96,6 @@ void *cnet_index_arr(void *ptr, int index)
 int cnet_arr_length(void *ptr)
 {
 	cnet_array *arr = (cnet_array *)ptr;
-	
+
 	return arr->length;
 }

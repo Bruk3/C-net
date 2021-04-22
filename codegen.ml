@@ -175,7 +175,12 @@ let translate (sdecl_list : sprogram) =
   in
   let memset_func =
     L.declare_function "memset" memset_t the_module in
-  (* TODO: read_line, read, print, send, atoi, ... *)
+
+  let cnet_index_arr_t =
+    L.function_type str_t [|str_t; i32_t |]
+  in
+  let cnet_index_arr_func =
+    L.declare_function "cnet_index_arr" cnet_index_arr_t the_module in
 
   (*******************************************************************************
    *                            Function signatures
@@ -251,51 +256,34 @@ let translate (sdecl_list : sprogram) =
             lookup_helper n tl
       in
 
-      let rec lookup n (t : A.typ) scope builder = match n with
-          SFinalID s -> lookup_helper s scope
-        | SRID(r, member) ->
-          let vd, ll = lookup r t scope builder in
-          let sname = match vd.vtyp with Struct(n) -> n in
-          let sd,s = find_checked sname cstructs in
-          let the_struct = L.build_load ll "tmp" builder in
-          (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "" builder)
-
-          (*   lookup_helper r curr_scope  (*This is wrong, need to fix*)*)
-          (* | Index(r,e)     -> lookup_helper r curr_scope   (*This is wrong, need to fix*)*)
-          (* | RID(r, member) ->
-            let the_struct = lookup_helper r scope
-            in (match the_struct with
-              Struct(sname) ->
-                 let the_struct = StringMap.find sname cstructs in (*This is wrong, need to fix*)
-                 match List.filter (fun t -> t.vname = member) the_struct.members with
-                   m :: [] -> m)
-
-          | Index(r, e) ->
-            let (t, _) = expr builder e scope in *)
-
-
-
-
-
-      in
       (* Todo: Recursive lookup for complex data types*)
       (* let lookup n scopes = lookup_helper n (lookup_scope n scopes) *)
       (* in *)
 
-      let type_of_pointer ll =
-        L.build_gep
-      in
-
     (* Construct code for an expression; return its value *)
 
-    let rec expr builder ((t, e) : sexpr) scope  = match e with
-        SNoexpr     -> L.const_int i32_t 0
-      | SIntlit i   -> L.const_int i32_t i
-      | SCharlit c  -> L.const_int i8_t c
-      | SFloatlit f -> L.const_float float_t f
-      | SId s       -> L.build_load (snd (lookup s t scope builder)) (U.final_id_of_sid s) builder
+      let rec expr builder ((t, e) : sexpr) scope  =
+        let rec lookup n = match n with
+            SFinalID s -> lookup_helper s scope
+          | SRID(r, member) ->
+            let vd, ll = lookup r in
+            let sname = match vd.vtyp with Struct(n) -> n in
+            let sd,s = find_checked sname cstructs in
+            let the_struct = L.build_load ll "tmp" builder in
+            (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "" builder)
+          | SIndex(r, ex) ->
+            let vd, arr = lookup r in
+            vd, L.build_call cnet_index_arr_func [| arr; expr builder ex scope |] "" builder
+        in
+
+        match e with
+          SNoexpr     -> L.const_int i32_t 0
+        | SIntlit i   -> L.const_int i32_t i
+        | SCharlit c  -> L.const_int i8_t c
+        | SFloatlit f -> L.const_float float_t f
+        | SId s       -> L.build_load (snd (lookup s )) (U.final_id_of_sid s) builder
       | SBinassop (s, op, e) -> let e' =  expr builder e scope
-                                  in ignore(L.build_store e' (snd (lookup s t scope builder)) builder); e'
+                                  in ignore(L.build_store e' (snd (lookup s)) builder); e'
       | SBinop ((A.Float,_ ) as e1, op, e2) ->
         let e1' = expr builder e1 scope
         and e2' = expr builder e2 scope in

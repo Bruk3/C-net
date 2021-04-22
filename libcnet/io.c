@@ -219,7 +219,6 @@ string *cnet_readln(void *ptr)
 /*     // printf("reading line\n"); */
 /*     // if (check_socket_type(io)) */
 /*     //     return 0; */
-
 /*     // string *res = cnet_empty_str(); */
 /*     // int buf_size = DEFAULT_BUF_SIZE; */
 /*     // char buf[buf_size]; */
@@ -258,6 +257,10 @@ int cnet_nwrite(void *ptr, string *s, int length)
 {
     int n;
     cnet_io *io = (cnet_io *)ptr;
+
+    if (!ptr)
+	    die("write/writeln called on invalid socket/file");
+
     if (check_socket_type(io))
         return 0;
 
