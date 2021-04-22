@@ -1,17 +1,10 @@
 LIB_DIR = ./libcnet
 CTEST_DIR = ./tests/stdlib
 
-# The "opam exec --" part is for compatiblity with github CI actions
 ############################# TEST TARGETS ####################################
-test: test-scanner test-parser
-	@echo "SUCCESS"
-
-test-scanner: ccnet
+test: ccnet
 	./runtests.sh
-
-test-parser:
-	ocamlyacc -v parser.mly
-	rm parser.ml parser.mli
+	@echo "SUCCESS"
 
 ############################# cnet top level ##################################
 
@@ -69,14 +62,3 @@ all: clean cnet.native
 .PHONY: nobin
 nobin:
 	rm -f *.o *.a libcnet/*.o libcnet/*.a
-
-
-##################################################################
-###### Targets below are for the github action workflows #########
-
-
-ci-parser:
-	opam exec -- ocamlyacc parser.mly
-
-ci-test: ci-parser clean test-scanner
-
