@@ -14,29 +14,6 @@ let line_num lexbuf = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum
 
 
                                 (* SAST utils *)
-let my_sast = (
-  [],
-  [],
-  [
-    {
-      styp = A.Int;
-      sfname = "main";
-      sparameters = [];
-      sbody =
-        [
-          SExpr( A.Int,
-                 SCall
-                   (
-                     "println",
-                     [(File, SId(FinalID("stdout"))); (A.String, SStrlit("Hello World!\n")) ]
-                   )
-               );
-          SReturn(A.Int, SIntlit(0))
-        ]
-    }
-  ]
-)
-
 (* Gets the FinalID part of a recursive id. For example, it extracts println
  * from my_struct.my_other_struct.my_file.println
  *)
@@ -46,13 +23,19 @@ let rec final_id_of_rid = function
   | A.Index(rid, _) -> final_id_of_rid rid
 ;;
 
+let rec final_id_of_sid = function
+  SFinalID(fid) -> fid
+  | SRID(_, mem) -> mem
+  | SIndex(sid, _) -> final_id_of_sid sid
+;;
+
 (* Get a default value for a global variable based on its type *)
 let default_global = function
     A.Char | A.Int -> (A.Int, SIntlit(0))
   | A.Float -> (A.Float, SFloatlit(0.0))
   | A.String -> (A.String, SStrlit(""))
   | A.Void   -> semant_err "[COMPILER BUG] uncaught void global variable detected"
-  | _ -> (A.Void, SNoexpr)
+  | t -> (t, SNoexpr)
 ;;
 
 (* compute the value of a global variable assignment at compile time. Global
@@ -130,11 +113,11 @@ let handle_strings sexp =
   let rec handle_helper stmts cur_exp n = match cur_exp with
       (A.String as st, SCall(fn, args)) ->
       let cur_tmp = "tmp" ^ (string_of_int n) in
-      assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(A.FinalID(cur_tmp))), n + 1
+      assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(SFinalID(cur_tmp))), n + 1
 
     (* All binary assignments should have been converted to = in semant *)
     | (A.String, SBinassop(s1, _, s2)) -> let new_stmts, s2', n' = handle_helper stmts s2 n
-      in new_stmts, (String, SCall("cnet_strcpy", [String, SId(s1); (s2')])), n'
+      in new_stmts, (String, SBinassop(s1, Assign, (String, SCall("cnet_strcpy", [String, SId(s1); (s2')])))), n'
 
     | (A.String, SBinop((t1, e1), op, (t2, e2))) -> (match (t1, t2) with
 
@@ -146,8 +129,8 @@ let handle_strings sexp =
              let cs2, e2', n'' = handle_helper cs1 (t1,e2) n'
              in
              let cur_tmp = "tmp" ^ (string_of_int n'') in
-             assign cur_tmp (String, SCall("cnet_stradd", [e1'; e2'])) :: cs2,
-                (String, SId(FinalID(cur_tmp))), n'' + 1
+             print_endline "got to the add part"; assign cur_tmp (String, SCall("cnet_strcat", [e1'; e2'])) :: cs2,
+                (String, SId(SFinalID(cur_tmp))), n'' + 1
            | _ -> semant_err ("[COMPILER BUG] only + should be allowed on two strings (handle_strings)"))
 
         | (String, Int) | (Int, String) ->
@@ -156,8 +139,8 @@ let handle_strings sexp =
              Mul ->
              let cs1, the_str', n' = handle_helper stmts (String, the_str) n in
              let cur_tmp = "tmp" ^ (string_of_int n') in
-             assign cur_tmp (String, SCall("cnet_strmul", [the_str'; Int, the_int ])) :: cs1 ,
-             (String, SId(FinalID(cur_tmp))), n' + 1
+             assign cur_tmp (String, SCall("cnet_strmult", [the_str'; Int, the_int ])) :: cs1 ,
+             (String, SId(SFinalID(cur_tmp))), n' + 1
            | _ -> semant_err "[COMPILER BUG] only * should be allowed on string-int (hanlde_strings)")
 
         | _ -> semant_err ("[COMPILER BUG] handle_string given illegal combination of expressions in binary operator")
@@ -170,7 +153,7 @@ let handle_strings sexp =
   match pre_stmts with
     [] -> SExpr(new_exp)
   | l -> let convert_to_free = function
-        SVdecl_ass({vtyp=_; vname=vn}, _) -> SDelete(String, SId(FinalID(vn)))
+        SVdecl_ass({vtyp=_; vname=vn}, _) -> SDelete(String, SId(SFinalID(vn)))
       | _ -> semant_err ("[COMPILER BUG] convert_to_free not setup properly")
     in
     let l = List.rev l in
@@ -200,27 +183,40 @@ let builtin_funcs, builtin_funcs_l =
       (* I/O *)
       (* Sockets *)
       (Socket, "user_nopen", [(String, "name"); (String, "protocol"); (Int, "port"); (String, "type")]);
-      (Int, "println", [(Socket, "sock"); (String, "s")]);
+      (* (Int, "println", [(Socket, "sock"); (String, "s")]); *)
+
       (Int, "write", [(Socket, "sock"); (String, "s")]);
       (String, "readln", [(Socket, "sock")]);
       (String, "read", [(Socket, "sock"); (Int, "len")]);
 
       (* Files *)
       (File, "user_fopen", [(String, "name"); (String, "mode");]);
-      (Int, "println", [(File, "f"); (String, "s")]);
+      (Int, "writeln", [(File, "f"); (String, "s")]);
       (Int, "write", [(File, "f"); (String, "s")]);
       (String, "readln", [(File, "f")]);
       (String, "read", [(File, "f"); (Int, "len")]);
 
       (* Strings *)
       (Int, "slength", [(String, "s")]);
+      (String, "soi", [(Int, "i")]); (* string of int *)
       (String, "user_soi", [(Int, "i")]); (* string of int *)
+      (String, "cnet_strcpy", [(String, "t"); (String, "s")]);
 
       (* Arrays *)
-      (Int, "alength", [((Array(Void)), "s")])
+      (Int, "alength", [((Array(Void)), "s")]);
+
+        (* Cnet *)
+        (Int, "cnet_free", [(String, "s")])
     ]
 ;;
 
+
+(* sast version of built-in functions *)
+let sbuiltin_funcs_l =
+  List.map
+    (fun {t=ty; name=n ; parameters=params; body=_; locals: _} ->
+       {styp=ty; sfname=n; sparameters=params; sbody=[]}) builtin_funcs_l
+;;
 
 (* Codegen utils *)
 (* Changes the format of an sast program, which is a list of sdecls, to one the
@@ -229,7 +225,7 @@ let builtin_funcs, builtin_funcs_l =
  *)
 let decompose_program (sprog : sdecl list) =
   let helper (vdecls, strct_decls, fdecls) decl = match decl with
-    | SGVdecl_ass (vd, _) -> (vd :: vdecls, strct_decls, fdecls) (* TODO: handle SGVdecl_ass properly *)
+    | SGVdecl_ass (vd, v) -> ((vd, v) :: vdecls, strct_decls, fdecls) (* TODO: handle SGVdecl_ass properly *)
     | SSdecl(sd) -> (vdecls, sd :: strct_decls, fdecls)
     | SFdecl(fd) -> (vdecls, strct_decls, fd :: fdecls)
   in
@@ -239,15 +235,32 @@ let decompose_program (sprog : sdecl list) =
 (* the built-in structs in cnet. These MUST be in exact conjunction with those
  * declared in the libcnet/*.c and libcnet/*.h source files
  *)
-let builtin_structs =
-  let add_builtin_strct m s = StringMap.add s.sname s m in
+let builtin_structs_l =
   let vd t n = {vtyp=t;vname=n} in
-  List.fold_left add_builtin_strct StringMap.empty
     [
+      (* Some of the String types here are actually just void *s that will be
+       * cast later.
+       *)
       {sname="string"; members=[vd String "stub"; vd String "data"; vd Int "length"]};
-      {sname="cnet_file"; members=[vd String "stub"; vd String "f"; vd Int "io_type"]}
+      {sname="array"; members=[vd String "stub"; vd String "data"; vd Int "length"; vd Int "i_t"]};
+      {sname="cnet_file"; members=[vd String "stub"; vd String "f"; vd Int "io_type"]};
+      {sname="cnet_socket"; members=[vd String "stub"; vd String "f"; vd Int
+                                       "io_type"; vd Int "fd"; vd Int "port"; vd
+                                       Int "type"; vd String "addr"]}
     ]
-
-
 ;;
 
+let builtin_structs =
+  let add_builtin_strct m s = StringMap.add s.sname s m in
+  List.fold_left add_builtin_strct StringMap.empty
+    builtin_structs_l
+;;
+
+
+let mem_to_idx sd member =
+  let rec helper n l = match l with
+    hd :: tl when hd.vname = member -> n
+    | hd :: tl -> helper (n + 1) tl
+  in
+  helper 0 sd.members
+;;

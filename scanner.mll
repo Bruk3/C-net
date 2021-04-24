@@ -1,8 +1,14 @@
 {
-    open Parser;;
-    open Utils;;
-    exception ScannerError of string;;
+open Parser;;
+open Utils;;
+exception ScannerError of string;;
+
+let scanner_err msg linenum =
+  raise (ScannerError (Printf.sprintf msg linenum))
+;;
+
 }
+
 
 
 let alpha = ['a'-'z' 'A'-'Z']
@@ -85,9 +91,9 @@ rule tokenize = parse
 | normal_id as lxm {ID(lxm)}
 | integer as lxm { INTLIT(int_of_string lxm) }
 (* | '"' ((print_char)* as str) '"' { STRLIT(str) } *)
-| '"' (sliterals as str) '"' { STRLIT(str) }
+| '"' { STRLIT(strlit "" lexbuf) }
 | squote bslash ((octal_triplet) as oct_num)  squote { CHARLIT(int_of_string ("0o" ^ oct_num)) }
-| squote squote { raise (ScannerError(Printf.sprintf "empty char literal on line %d" (line_num lexbuf)))}
+| squote squote { scanner_err "empty char literal on line %d" (line_num lexbuf)}
 | squote bslash (['f' 'n' 'r' 't' '\\' '0' '\''] as spec_char) squote {
     match spec_char with
       'f' -> CHARLIT(12)
@@ -97,19 +103,31 @@ rule tokenize = parse
     | '\\' -> CHARLIT(92)
     | '0' -> CHARLIT(0)
     | '\'' -> CHARLIT(47)
+    | _ -> scanner_err "[COMPILER BUG] unaccounted escape character line %d" (line_num lexbuf)
 }
 
 | squote print_char squote as lxm               {CHARLIT(Char.code(lxm.[1]))} (*For chars like 'a'*)
 | cfloat as flt { FLOATLIT(float_of_string flt) } (* TODO Optional negative sign *)
 
 (* Error cases *)
-| '"' | squote { raise (ScannerError( Printf.sprintf "unmatched quote on line %d"
-                                (line_num lexbuf)))}
-| _ as char { raise (ScannerError(Printf.sprintf "illegal character %s on line %d"
-                                    (Char.escaped char) (line_num lexbuf))) }
+| '"' | squote { scanner_err "unmatched quote on line %d" (line_num lexbuf) }
+| _ { scanner_err "illegal character on line %d" (line_num lexbuf) }
 
 | eof { EOF }
 
+and strlit str_so_far = parse
+    '"' { str_so_far }
+| "\\n" { strlit (str_so_far ^ "\n") lexbuf }
+| "\\t" { strlit (str_so_far ^ "\t") lexbuf }
+| "\\r" { strlit (str_so_far ^ "\r") lexbuf }
+| "\\0" { strlit (str_so_far ^ (String.make 1 (Char.chr 0))) lexbuf }
+| "\\\\" { strlit (str_so_far ^ "\\") lexbuf }
+| "\""    { strlit (str_so_far ^ "\"") lexbuf }
+| "\\" ((octal_triplet) as oct_num)
+   { strlit (str_so_far ^ (String.make 1 (Char.chr (int_of_string ("0o" ^ oct_num))))) lexbuf }
+| print_char as lxm { strlit (str_so_far ^ (String.make 1 lxm)) lexbuf }
+| eof { scanner_err "unmatched quote on line %d" (line_num lexbuf) }
+| _ { scanner_err "illegal character in string literal on line %d" (line_num lexbuf) }
 
 and scomment = parse
 '\n' { Lexing.new_line lexbuf; tokenize lexbuf }

@@ -4,10 +4,10 @@ struct mstruct {
 
 int main()
 {
-int x;
+int x = (int : 0);
 while ((int : 1)) {
-struct mstruct[][] x;
-(float : x[0][0].id);
+struct mstruct[][] x = (struct mstruct[][] : );
+(float : x[(int : 0)][(int : 0)].id);
 }
 return (int : 0);
 }

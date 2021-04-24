@@ -8,7 +8,7 @@ int main(string[] args)
 	file arg_count = fopen("argl", "w");
 	socket send = nopen("www.google.com", "tcp", 80, "connect");
 
-	arg_count.println(soi(arg1len));
+	arg_count.writeln(soi(arg1len));
 
 	return 0;
 }

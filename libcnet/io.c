@@ -7,6 +7,7 @@
 #include <netdb.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <fcntl.h>
 #include "utils.h"
 #include "str.h"
 #include "io.h"
@@ -21,7 +22,7 @@ static prot_type ptype[] = {
 
 static void cnet_close_file(FILE *f)
 {
-	if (fclose(f) < 0)
+	if (!f && (fclose(f) < 0))
 		fprintf(stderr, "error: %s\n", strerror(errno));
 
 }
@@ -70,7 +71,7 @@ cnet_file *cnet_open_file(string *fname, string *mode)
     fname->data[fname->length] = '\0';
     mode->data[mode->length] = '\0';
 
-	FILE *f = fopen(fname->data, mode->data);
+    FILE *f = fopen(fname->data, mode->data);
 
     if (!f) {
 		perror("can't open file");
@@ -93,7 +94,11 @@ string *cnet_nread(void *ptr, int size)
     if (check_socket_type(io))
         return res;
 
-    int buf_size = (DEFAULT_BUF_SIZE > size) ? size : DEFAULT_BUF_SIZE;
+    if (io->io_type == CNET_FILE_STDIN)
+	    io->f = stdin;
+
+    int buf_size = DEFAULT_BUF_SIZE;
+
     char buf[buf_size];
 
     while(size >= 0 && (n = fread(buf, 1, buf_size, io->f)) > 0){
@@ -118,6 +123,9 @@ string *cnet_read(void *ptr)
     string *res = cnet_empty_str();
     if (check_socket_type(io))
         return res;
+
+    if (io->io_type == CNET_FILE_STDIN)
+	    io->f = stdin;
 
     int buf_size = DEFAULT_BUF_SIZE;
     char buf[buf_size];
@@ -149,17 +157,21 @@ string *cnet_read(void *ptr)
 //     return n+1;
 
 // }
+string *cnet_read_until(void *ptr, char *delim, int len)
+{
+    cnet_io *io = (cnet_io *)ptr;
 
-string *cnet_read_until(void *ptr, char *delim, int len){
-    cnet_io *io = (cnet_io *) ptr;
+    if (check_socket_type(io))
+        return NULL;
+
+    if (io->io_type == CNET_FILE_STDIN)
+	    io->f = stdin;
+
     string *res = cnet_empty_str();
     int buf_size = DEFAULT_BUF_SIZE;
     int found = 0, curr = 0, n = 0;
     char buf[buf_size];
-    char temp[len];
     int total = 0; // temp var for testing
-
-    strncpy(temp, delim, len);
 
     if (check_socket_type(io))
         die("cannot read on a listening socket");
@@ -178,7 +190,8 @@ string *cnet_read_until(void *ptr, char *delim, int len){
             break;
         }
 
-        if (strncmp(buf + curr, temp, len) == 0){
+        // n = len (the delimiter has been found, break and return)
+        if (memcmp(buf + curr, delim, len) == 0){
             cnet_strmerge_custom(res, buf, curr + n);
             break;
         }
@@ -197,13 +210,26 @@ string *cnet_read_until(void *ptr, char *delim, int len){
 
 string *cnet_readln(void *ptr)
 {
-    // if (max <= 0) {
-    //     return cnet_read_until(ptr, "\n");
-    // }
-
     return cnet_read_until(ptr, "\n", 1);
-
 }
+
+
+/*     // while((n = fread(buf, 1, 1, io->f)) > 0){ */
+/*     //     printf("in the loop trying to read\n"); */
+/*     //     idx = find_nl_index(buf, n); */
+/*     //     cnet_strmerge_custom(res, buf, ((idx < n)?idx:n)); */
+/*     //     if (idx <= n) */
+/*     //         break; */
+/*     // } */
+
+/*     // if (ferror(io->f)){ */
+/*     //     cnet_free(res); */
+/*     //     perror("fread failed"); */
+/*     // } */
+
+/*     // return res; */
+
+/* } */
 
 
 
@@ -211,13 +237,20 @@ int cnet_nwrite(void *ptr, string *s, int length)
 {
     int n;
     cnet_io *io = (cnet_io *)ptr;
+
+    if (!ptr)
+	    die("write/writeln called on invalid socket/file");
+
     if (check_socket_type(io))
         return 0;
+
+    if (io->io_type == CNET_FILE_STDOUT)
+	    io->f = stdout;
 
     length = (length > s->length) ? s->length : length;
     n = fwrite(s->data, 1, length, io->f);
 
-    if (ferror(io->f)){
+    if (ferror(io->f)) {
         perror("fwrite failed");
     }
 
@@ -229,10 +262,12 @@ int cnet_write(void *ptr, string *s)
 	return cnet_nwrite(ptr, s, s->length);
 }
 
-int cnet_writeln(void *ptr, string *s)
+int writeln(void *ptr, string *s)
 {
     int n;
     string nl = {NULL, "\n", 1};
+    if (s == NULL)
+	    die("ptr is NULL in writeln");
     n  = cnet_nwrite(ptr, s, s->length);
     n += cnet_nwrite(ptr, &nl, nl.length);
 
@@ -400,3 +435,19 @@ int cnet_check_error(void *ptr)
 {
     return (cnet_io *)ptr == NULL;
 }
+
+cnet_file cnet_stdin_ac = {
+    .cnet_free = NULL,
+    .f         = NULL,
+    .io_type    = CNET_FILE_STDIN
+};
+
+cnet_file *cnet_stdin = &cnet_stdin_ac;
+
+cnet_file cnet_stdout_ac = {
+    .cnet_free = NULL,
+    .f         = NULL,
+    .io_type    = CNET_FILE_STDOUT
+};
+
+cnet_file *cnet_stdout = &cnet_stdout_ac;

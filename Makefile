@@ -1,23 +1,17 @@
 LIB_DIR = ./libcnet
 CTEST_DIR = ./tests/stdlib
 
-# The "opam exec --" part is for compatiblity with github CI actions
 ############################# TEST TARGETS ####################################
-test: test-scanner test-parser
-	@echo "SUCCESS"
-
-test-scanner: ccnet
+test: ccnet
 	./runtests.sh
-
-test-parser:
-	ocamlyacc -v parser.mly
-	rm parser.ml parser.mli
+	@echo "SUCCESS"
 
 ############################# cnet top level ##################################
 
 ## cnet top level compiler that compiles and links a cnet source file into an executable
 .PHONY: ccnet
-ccnet: cnet.native stdlib_tests
+ccnet: nobin cnet.native stdlib
+	cd $(LIB_DIR) && make
 
 
 # cnet compiler that translates .cnet -> .ll
@@ -46,10 +40,10 @@ ast: ast.ml
 .PHONY: stdlib stdlib_tests
 
 stdlib_tests:
-	cd $(CTEST_DIR) && make all && make clean
+	cd $(CTEST_DIR) && make all > /dev/null && make clean
 
 stdlib:
-	cd $(LIB_DIR) && make all && make clean
+	cd $(LIB_DIR) && make all > /dev/null
 
 #############################  Other targets  #################################
 .PHONY: clean
@@ -63,15 +57,9 @@ clean:
 	cd $(CTEST_DIR) && make clean
 
 .PHONY: all
-all: clean cnet.native
+all: clean ccnet
 
-
-##################################################################
-###### Targets below are for the github action workflows #########
-
-
-ci-parser:
-	opam exec -- ocamlyacc parser.mly
-
-ci-test: ci-parser clean test-scanner
-
+# to make ocamlbuild happy
+.PHONY: nobin
+nobin:
+	rm -f *.o *.a libcnet/*.o libcnet/*.a

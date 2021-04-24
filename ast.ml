@@ -57,7 +57,7 @@ and expr =
   (* Operators *)
   | Binop of expr * binop * expr
   | Unop of unop * expr
-  | Binassop of rid * bin_assign_op      * expr
+  | Binassop of rid * bin_assign_op * expr
   (* Arrays and new/delete *)
   | New of newable
   | ArrayLit of typ * expr * expr list (* expr:length and expr list:array literal *)
@@ -164,7 +164,6 @@ and string_of_expr = function
   | ArrayLit(t, e, el) ->
     "new " ^ string_of_typ t ^ "[" ^ string_of_expr e ^ "] = {" ^
     String.concat ", " (List.map string_of_expr el) ^ "}"
-  (* | Index(id, e) -> string_of_rid id ^ "[" ^ string_of_expr e ^ "]" *)
   | Call(f, el) ->
     string_of_rid f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
 

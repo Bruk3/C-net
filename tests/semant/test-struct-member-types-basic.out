@@ -9,7 +9,7 @@ struct person {
 
 int main()
 {
-struct person s;
+struct person s = (struct person : );
 (struct person : s);
 (struct pid : s.x);
 (int : s.x.id);

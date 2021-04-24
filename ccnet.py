@@ -1,17 +1,16 @@
-#!/usr/bin/env python3
+#!/bin/python3
 
 import getopt
 import sys
 import os
 import subprocess
-import stat
 
 CC		= "gcc"			# C compiler
 LLC		= "llc"			# LLVM compiler
 CNET	= "cnet.native" # CNET compiler
 LIBCNET = "libcnet/libcnet.a"
 
-USAGEMSG  = """USAGE: {} -[t|a|s|l|b] source """.format(sys.argv[0])
+USAGEMSG  = """USAGE: {} -(t|a|s|l|b) source """.format(sys.argv[0])
 
 def invalid_options(options, source):
 		if len(options) > 2: return True
@@ -46,7 +45,7 @@ def handle_full(options, sourcef):
 		if (ret.returncode != 0): die(ret)
 
 		# compile LLVM to assembly
-		args = [LLC, "-relocation-model=pic"]
+		args = [LLC]
 		ret = subprocess.run(args, capture_output=True, input=ret.stdout)
 		if (ret.returncode != 0): die(ret)
 
@@ -55,7 +54,7 @@ def handle_full(options, sourcef):
 		with open(tmpfile, "w") as tmp:
 				tmp.write(ret.stdout.decode())
 
-		args = [CC, "-g", "-Wall", tmpfile, LIBCNET, "-o", "/dev/stdout"]
+		args = [CC, tmpfile, LIBCNET, "-o", "/dev/stdout"]
 		ret = subprocess.run(args, capture_output=True)
 
 		if (ret.returncode != 0): die(ret)
@@ -65,14 +64,12 @@ def handle_full(options, sourcef):
 		if 'o' in options: # user specified a file
 				with open(options['o'], 'wb') as outfile:
 						outfile.write(ret.stdout)
-				os.chmod(options['o'], 0o755) # make it executable
 				sys.exit(0)
-		else:
-				outputf = sourcef.split('.')[0]
-				with open(outputf, 'wb') as outfile:
-						outfile.write(ret.stdout)
-				os.chmod(outputf, 0o755) # make it executable
-				sys.exit(0)
+		# else:
+		# 		outputf = sourcef.split('.')
+		# 		with open(outputf, 'wb') as outfile:
+		# 				outfile.write(ret.stdout)
+		# 		sys.exit(0)
 
 
 		sys.stdout.buffer.write(ret.stdout)
@@ -98,8 +95,7 @@ def main():
 				sys.exit(1)
 
 
-		if "b" not in options and len(options) > 0 and \
-		not (len(options) == 1 and 'o' in options): # not a full compilation
+		if "b" not in options and len(options) > 0: # not a full compilation
 				handle_normal(options, source[0])
 		else:
 				handle_full(options, source[0])
