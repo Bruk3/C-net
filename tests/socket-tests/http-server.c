@@ -15,28 +15,12 @@ int main(string[] argv)
     socket listener = nopen(0, 0, argv[1].stoi());
 
     int clntsock;
-    FILE *fp_sock_r, *fp_sock_w, *fp_target;
-    char buf[4096];
     while (1) {
 
         // Accept an incoming connection
 
-        clntlen = sizeof(clntaddr); // initialize the in-out parameter
 	    socket clntsock = naccept(listener);
-        /*
-        // accept() returned a connected socket (also called client socket)
-        // and filled in the client's address into clntaddr
-
-        if((fp_sock_r = fdopen(clntsock, "rb")) == NULL){
-            die("fdopen read failed");
-        }
-        if ((fp_sock_w = fdopen(clntsock, "wb")) == NULL){
-            die("fdopen write failed");
-        }
-        */
-
         string req_line = clntsock.read_ln(buf);
-
         string[] tokens = new string[3];
         req_line.split(" ", tokens, 3);
 
@@ -45,7 +29,6 @@ int main(string[] argv)
         string httpVersion = tokens[2];
 
         string fileName;
-
         string respHeader;
         int size;
 
@@ -55,9 +38,6 @@ int main(string[] argv)
         else if (method != "GET" || (httpVersion != "HTTP/1.0" && httpVersion != "HTTP/1.1")
             respHeader = "501 Not Implemented"
 
-        else if (req_URI[0] != '/' || strstr(request_URI, "/../") != NULL || strncmp(request_URI+(strlen(request_URI)-3),"/..", 3) == 0){
-            sprintf(respHeader, "400 Bad Request");
-        }
 
         else
         {
@@ -68,88 +48,44 @@ int main(string[] argv)
             if (req_URI[req_URI.length() - 1] == '/'){
                 fileName += "index.html";
             }
-            // Check if the URI is a directory
-            // stat(fileName, &stat_buffer);
-            // if (stat(fileName, &stat_buffer) == -1 ){
-            //     sprintf(respHeader, "404 Not Found");
-            //     }
-            // else if (S_ISDIR(stat_buffer.st_mode) == 1){
-            //     // concatenate /index.html on request_URI
-            //     strcat(fileName, "/index.html");
-            // }
 
-            file target;
+            file targetFile;
             // Try to open the file or give a 404
-            if ((target = fopen(fileName, "rb")) == NULL){
+            if ((targetFile = fopen(fileName, "rb")) == L){
                 respHeader = "404 Not Found";
             }
             else{
                 respHeader = "200 OK";
             }
         }
-
+        // log the request
+        stdout.writeln(request_method + " " + req_URI + " " + httpVersion + " " + respHeader);
         char temp_buffer[100];
         char neutral_buf[1000];
 
-        if(strcmp(respHeader, "200 OK") == 0 || strcmp(respHeader, "404 Not Found") == 0){
+        if (respHeader == "200 OK" || respHeader == "404 Not Found") {
+            // read socket until end of header/body of request
             //fprintf(stderr,"inside the 200 Ok or the 404 NOT found... need one more line");
 
             while(strcmp(fgets(neutral_buf, sizeof(neutral_buf), fp_sock_r), "\r\n")!=0 && strcmp(neutral_buf,"\n")!=0);
         }
 
-        size = sprintf(temp_buffer, "HTTP/1.0 %s \r\n\r\n", respHeader);
-        if (fwrite(temp_buffer,1,size,fp_sock_w) != size){
-            die("sending response header failed");
-        }
+        clntsock.writeln("HTTP/1.0 " + respHeader + "\r\n\r\n");
 
-        char looking_up[500] = "";
-
-
-        if (strcmp(respHeader, "200 OK") == 0){
-
-        // If the request is for a file and not for /mdb-lookup or /mdb-lookup?key=
-            // Format and print the correct logging output similar to Jae's
-            fprintf(stderr, "%s%s \"%s %s %s\" %s\n",looking_up,inet_ntoa(clntaddr.sin_addr),
-                    (request_method ? request_method : "(null)"),
-                    (request_URI ? request_URI : "(null)"),
-                    (httpVersion ? httpVersion : "(null)"),respHeader);
-
+        if(respHeader == "200 OK"){
+            // TODO
             // Send the file
-
-            while((size = fread(buf, 1, sizeof(buf), fp_target)) > 0){
-                if (fwrite(buf, 1, size, fp_sock_w) != size){
-                    die("sending fwrite failed");
-                }
-            }
-            fflush(fp_sock_w);
-            fclose(fp_target);
+            // source file: targetFile
+            // dest socket: clntsock
+            targetFile.close();
         }
-
         else{
             // If the request returned a 404, 400 or 501
-
-            // Format and print the correct logging output similar to Jae's
-            fprintf(stderr, "%s%s \"%s %s %s\" %s\n",looking_up,inet_ntoa(clntaddr.sin_addr),
-                  (request_method ? request_method : "(null)"),
-                  (request_URI ? request_URI : "(null)"),
-                  (httpVersion ? httpVersion : "(null)"),respHeader);
-
-
-            size = snprintf(buf,sizeof(buf),
-                    "<html><body><h1>%s</h1></body></html>", respHeader);
-            if (size != fwrite(buf, 1, size, fp_sock_w)){
-                die("write response failed");
-            }
-            fflush(fp_sock_w);
+            string htmlResponse = "<html><body><h1>" + respHeader + "</h1></body></html>";
+            clntsock.write(htmlResponse);
         }
 
-
-        // Finally, close the client connection and go back to accept()
-        fclose(fp_sock_w);
-        fclose(fp_sock_r);
-
-        close(clntsock);
-
+        clntsock.close();
     }
 
 }
