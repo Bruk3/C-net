@@ -136,7 +136,7 @@ let rec string_of_sstmt = function
     "{\n" ^ String.concat "" (List.map string_of_sstmt stmts) ^ "}\n";;
 
 let string_of_sfunc (t, n, p, b) =
-  string_of_typ t ^ " " ^ n ^ "(" ^ String.concat "," (List.map string_of_id p) ^
+  string_of_typ t ^ " " ^ remove_prefix n "user_" ^ "(" ^ String.concat "," (List.map string_of_id p) ^
   ")\n{\n" ^ String.concat ""
     (List.map
        string_of_sstmt
