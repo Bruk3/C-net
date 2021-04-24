@@ -129,7 +129,7 @@ let handle_strings sexp =
              let cs2, e2', n'' = handle_helper cs1 (t1,e2) n'
              in
              let cur_tmp = "tmp" ^ (string_of_int n'') in
-             print_endline "got to the add part"; assign cur_tmp (String, SCall("cnet_strcat", [e1'; e2'])) :: cs2,
+             assign cur_tmp (String, SCall("cnet_strcat", [e1'; e2'])) :: cs2,
                 (String, SId(SFinalID(cur_tmp))), n'' + 1
            | _ -> semant_err ("[COMPILER BUG] only + should be allowed on two strings (handle_strings)"))
 
@@ -201,6 +201,8 @@ let builtin_funcs, builtin_funcs_l =
       (String, "soi", [(Int, "i")]); (* string of int *)
       (String, "user_soi", [(Int, "i")]); (* string of int *)
       (String, "cnet_strcpy", [(String, "t"); (String, "s")]);
+      (String, "cnet_strmult", [(String, "t"); (Int, "i")]);
+      (String, "cnet_strcat", [(String, "t"); (String, "s")]);
 
       (* Arrays *)
       (Int, "alength", [((Array(Void)), "s")]);
