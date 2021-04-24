@@ -1,18 +1,15 @@
-void die(string s) { s.write_ln; exit(1); }
-
 int main(string[] argv)
 {
-    if (argv.slength() != 3){
-        fprintf(stderr, "usage: %s <server-port> <web-root>", argv[0]);
-        exit(1);
+    if (argv.alength() != 3){
+        stdout.writeln("usage: " + argv[0] + " <server-port> <web-root>");
     }
 
-    unsigned short server_port = atoi(argv[1]);
-    char *webroot = argv[2];
+    string webroot = argv[2];
 
     // Create a listening socket (also called server socket)
     // for liking with the mdb-lookup server.
-    socket listener = nopen(0, 0, argv[1].stoi());
+    // socket listener = nopen(0, 0, argv[1].stoi());
+    socket listener;
 
     int clntsock;
     while (1) {
@@ -35,8 +32,8 @@ int main(string[] argv)
         if (method.length() == 0 || httpVersion.length() == 0 ){
             respHeader = "501 Not Implemented";
         }
-        else if (method != "GET" || (httpVersion != "HTTP/1.0" && httpVersion != "HTTP/1.1")
-            respHeader = "501 Not Implemented"
+        else if (method != "GET" || (httpVersion != "HTTP/1.0" && httpVersion != "HTTP/1.1"))
+            respHeader = "501 Not Implemented";
 
 
         else
@@ -60,8 +57,6 @@ int main(string[] argv)
         }
         // log the request
         stdout.writeln(request_method + " " + req_URI + " " + httpVersion + " " + respHeader);
-        char temp_buffer[100];
-        char neutral_buf[1000];
 
         if (respHeader == "200 OK" || respHeader == "404 Not Found") {
             // read socket until end of header/body of request
