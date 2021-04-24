@@ -499,7 +499,7 @@ let check  = function
         in (* body of check_function *)
 
         { styp = func.t;
-          sfname = func.name;
+          sfname = if func.name = "main" then func.name else "user_" ^ func.name;
           sparameters = func.parameters;
           sbody =
             (* add formals to scope first *)
