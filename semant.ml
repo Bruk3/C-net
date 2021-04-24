@@ -473,9 +473,23 @@ let check  = function
           | Vdecl (vd) -> SVdecl_ass(vd, U.default_global vd.vtyp), add_free vd
 
           | Vdecl_ass ({vtyp; vname}, e) ->
-            let (d, newscp) = SVdecl_ass({vtyp; vname}, expr scope e) , check_binds_scoped scope {vtyp; vname} in
-                      ignore (expr newscp (Binassop(FinalID(vname), Assign, e))) ;
-                      d, add_free {vtyp; vname}
+            let (e', newscp) = expr scope e , check_binds_scoped scope {vtyp; vname} in
+            ignore (expr newscp (Binassop(FinalID(vname), Assign, e)))
+            ;
+            let pres, e'', fres = U.handle_strings e' in
+            let the_decl = SVdecl_ass({vname=vname; vtyp=vtyp}, U.default_global vtyp) in
+            let the_ass = SExpr(vtyp, match vtyp with
+                String ->
+                let the_cp =
+                  (String, SCall("cnet_strcpy", [String, SId(SFinalID(vname)); e'']))
+                in
+                SBinassop(SFinalID(vname), Assign, the_cp)
+              | _ -> SBinassop(SFinalID(vname), Assign, e'')
+
+              ) in
+            (* let the_assignment = SVdecl_ass({vname=vname; vtyp=vtyp}, e'') in *)
+            SBlock(pres @ [the_decl; the_ass] @ fres) , add_free {vtyp; vname}
+
           | Return e -> let (t, e') = expr scope e in
             if t = func.t && t != String then SReturn (t, e'), sp
             else if t = func.t && t == String then

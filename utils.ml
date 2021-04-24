@@ -225,6 +225,7 @@ let builtin_funcs, builtin_funcs_l =
       (String, "cnet_strcpy", [(String, "t"); (String, "s")]);
       (String, "cnet_strmult", [(String, "t"); (Int, "i")]);
       (String, "cnet_strcat", [(String, "t"); (String, "s")]);
+      (Int, "cnet_strcmp", [(String, "t"); (String, "s")]);
 
       (* Arrays *)
       (Int, "alength", [((Array(Void)), "s")]);
