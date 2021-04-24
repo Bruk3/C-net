@@ -121,11 +121,11 @@ let handle_strings sexp : sstmt list * sexpr * sstmt list=
     | (A.String, SBinassop(s1, _, s2)) -> let new_stmts, s2', n' = handle_helper stmts s2 n
       in new_stmts, (String, SBinassop(s1, Assign, (String, SCall("cnet_strcpy", [String, SId(s1); (s2')])))), n'
 
-    | (A.String, SBinop((t1, e1), op, (t2, e2))) -> (match (t1, t2) with
+    | (fst_typ, SBinop((t1, e1), op, (t2, e2))) -> (match (t1, t2) with
 
           (String, String) ->
           (match op with
-             Add ->
+             Add -> (* "hello" + "there" *)
              let cs1, e1', n' = handle_helper stmts (t1, e1) n
              in
              let cs2, e2', n'' = handle_helper cs1 (t1,e2) n'
@@ -133,6 +133,16 @@ let handle_strings sexp : sstmt list * sexpr * sstmt list=
              let cur_tmp = "tmp" ^ (string_of_int n'') in
              assign cur_tmp (String, SCall("cnet_strcat", [e1'; e2'])) :: cs2,
                 (String, SId(SFinalID(cur_tmp))), n'' + 1
+           | Eq ->
+             let cs1, e1', n' = handle_helper stmts (t1, e1) n
+             in
+             let cs2, e2', n'' = handle_helper cs1 (t1,e2) n'
+             in
+             let cur_tmp = "tmp" ^ (string_of_int n'') in
+             let cur_exp = (Int, SCall("cnet_strcmp", [e1'; e2'])) in
+             let cur_ass = SVdecl_ass({vtyp=Int; vname = cur_tmp}, cur_exp) in
+             cur_ass :: cs2,
+             (Int, SId(SFinalID(cur_tmp))), n'' + 1
            | _ -> semant_err ("[COMPILER BUG] only + should be allowed on two strings (handle_strings)"))
 
         | (String, Int) | (Int, String) ->
@@ -145,7 +155,7 @@ let handle_strings sexp : sstmt list * sexpr * sstmt list=
              (String, SId(SFinalID(cur_tmp))), n' + 1
            | _ -> semant_err "[COMPILER BUG] only * should be allowed on string-int (hanlde_strings)")
 
-        | _ -> semant_err ("[COMPILER BUG] handle_string given illegal combination of expressions in binary operator")
+        | _ -> [], (fst_typ, SBinop((t1, e1), op, (t2, e2))), n
       )
 
     |(A.String, x) -> stmts , (A.String, x), n
@@ -153,7 +163,8 @@ let handle_strings sexp : sstmt list * sexpr * sstmt list=
   in
   let pre_stmts, new_exp, _  = handle_helper [] sexp 0 in
   let convert_to_free = function
-      SVdecl_ass({vtyp=_; vname=vn}, _) -> SDelete(String, SId(SFinalID(vn)))
+      SVdecl_ass({vtyp=String; vname=vn}, _) -> SDelete(String, SId(SFinalID(vn)))
+    | SVdecl_ass({vtyp=Int; vname=vn}, _) -> SExpr(Void, SNoexpr)
     | _ -> semant_err ("[COMPILER BUG] convert_to_free not setup properly")
   in
   let l = List.rev pre_stmts in

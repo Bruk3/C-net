@@ -425,8 +425,8 @@ let check  = function
             Expr e ->
             let exp = expr scope e in
             string_flatten exp, sp
-          | Delete n ->
 
+          | Delete n ->
             let t, id' = type_of_identifier scope n in
             let err = "illegal identifier for delete: [" ^ string_of_typ t ^ " " ^ string_of_rid n ^
                       "]. Identifier should be of type Struct or Array" in
@@ -442,10 +442,17 @@ let check  = function
           | Continue -> semant_err ("continue used without being in a loop")
 
           | If(e_s_l, s) ->
-            let sif_of_if (e_i, s_i) =
-              (check_bool_expr scope e_i), (fst (check_stmt new_scope s_i))
+            let sif_of_if (pre_l, fre_l, e_s_l) (e_i,s_i) =
+              let e' = check_bool_expr scope e_i in
+              let pres, e'', fres = U.handle_strings e' in
+              let s_i' = fst (check_stmt new_scope s_i) in
+              (pre_l @ pres, fre_l @ fres, (e'' , s_i') :: e_s_l)
             in
-            SIf(List.rev (List.map sif_of_if e_s_l), fst (check_stmt new_scope s)), sp
+            let e_s_l' = (Intlit(1), s) :: e_s_l in
+            let (pres, frees, e_s_l'') =
+              List.fold_left sif_of_if ([], [], []) e_s_l'
+            in
+            SBlock(pres @ [SIf(e_s_l'')] @ frees), sp
 
           | For(e1, e2, e3, st) ->
             SFor(expr scope e1, check_bool_expr scope e2, expr scope e3, fst

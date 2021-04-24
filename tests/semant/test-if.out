@@ -2,12 +2,22 @@ int main(string[] argv)
 {
 int a = (int : 5);
 int b = (int : 4);
-if ((int : (int : a) > (int : b)))
-else if ((int : (int : a) == (int : b)))
-else if ((int : (int : a) <= (int : b)))
-else{
 {
-(void : );
+if ((int : (int : a) > (int : b)))
+{
+(int : writeln((file : cnet_stdout), (string : "a is greater than b")));
+}
+else if ((int : (int : a) == (int : b)))
+{
+(int : writeln((file : cnet_stdout), (string : "a is equal to b")));
+}
+else if ((int : (int : a) <= (int : b)))
+{
+(int : writeln((file : cnet_stdout), (string : "a is less than or equal to b")));
+}
+else if ((int : 1))
+{
+(int : writeln((file : cnet_stdout), (string : "b is greater than a")));
 }
 }
 return (int : 0);
