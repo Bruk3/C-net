@@ -415,9 +415,10 @@ let check  = function
                     (* semant_err "[COMPILER BUG] empty list passed to insert_frees"*)
             | hd :: tl -> (List.map insert_free hd), {scp=tscp; fl=tl; il=til}
           in
+          let handle_string exp = U.handle_strings (expr scope exp) in
 
           match aexp with
-            Expr e -> U.handle_strings (expr scope e), sp
+            Expr e -> handle_string e, sp
           | Delete n ->
 
             let t, id' = type_of_identifier scope n in
@@ -436,7 +437,7 @@ let check  = function
 
           | If(e_s_l, s) ->
             let sif_of_if (e_i, s_i) =
-              check_bool_expr scope e_i, (fst (check_stmt new_scope s_i))
+              (check_bool_expr scope e_i), (fst (check_stmt new_scope s_i))
             in
             SIf(List.rev (List.map sif_of_if e_s_l), fst (check_stmt new_scope s)), sp
 

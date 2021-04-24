@@ -308,6 +308,7 @@ let translate (sdecl_list : sprogram) =
               codegen_err "internal error: semant should have rejected and/or on float"
           ) e1' e2' "tmp" builder
       | SBinop (e1, op, e2) ->
+        let result =
                 let e1' = expr builder e1 scope
                 and e2' = expr builder e2 scope in
                 (match op with
@@ -325,6 +326,8 @@ let translate (sdecl_list : sprogram) =
                     | A.Gt      -> L.build_icmp L.Icmp.Sgt
                     | A.Geq     -> L.build_icmp L.Icmp.Sge
                 ) e1' e2' "tmp" builder
+        in
+        L.build_sext_or_bitcast result i32_t "tmp_cast" builder
       | SUnop (op,  ((t, _) as e)) -> let e' = expr builder e scope in
                                             (match op with
                                                 A.Minus when t = A.Float -> L.build_fneg
@@ -440,8 +443,42 @@ let translate (sdecl_list : sprogram) =
           | _ -> L.build_ret (expr builder e scope) builder)
                    ; scope, builder
 
-        (* do not attempt *)
-      (* | SIf (psl, else_stmt) -> *)
+      (* do not attempt *)
+      | SIf (psl, else_stmt) ->
+        (* let if_elif_bb = L.append_block context "if_elif" the_function in *)
+        let add_if (if_bbs, my_pred_bb) (if_pred, then_stmt) =
+          (* cast the value to a bool (1 bit) *)
+          let mpbb_builder = L.builder_at_end context my_pred_bb in
+          let pred_val = expr mpbb_builder if_pred scope  in
+          let pred_val =
+            L.build_icmp L.Icmp.Ne pred_val (L.const_int i32_t 0) "tmp" mpbb_builder
+          in
+          let my_then_bb = L.append_block context "if_body" the_function in
+          let next_bb = L.append_block context "elif" the_function in
+          ignore (L.build_cond_br pred_val my_then_bb next_bb mpbb_builder);
+          ignore (stmt (new_scope, L.builder_at_end context my_then_bb) then_stmt);
+          (my_then_bb :: if_bbs, next_bb)
+        in
+
+        (* we'll start it off in the 'main' bb *)
+        let first_bb = L.insertion_block builder in
+        let if_bbs, else_pred_bb  = List.fold_left add_if ([], first_bb) psl in
+        let else_then_bb = L.append_block context "else_then" the_function in
+
+
+        (* If all else fails, go to the else case *)
+        let _ = L.build_br else_then_bb (L.builder_at_end context else_pred_bb) in
+        let _ = (stmt (new_scope, L.builder_at_end context else_then_bb) else_stmt) in
+
+        let merge_bb = L.append_block context "if_merge" the_function in
+        let _ = List.map
+            (fun bb -> add_terminal (L.builder_at_end context bb) (L.build_br merge_bb))
+            (if_bbs @ [else_then_bb])
+
+        in
+        scope, L.builder_at_end context merge_bb
+
+
       (*   let predicate_list = List.map (fun (p,_) -> expr builder p scope) psl in *)
       (*   let merge_bb = L.append_block context "merge" the_function in *)
       (*   let build_br_merge = L.build_br merge_bb in (1* partial function *1) *)
@@ -465,7 +502,7 @@ let translate (sdecl_list : sprogram) =
         ignore (L.build_br pred_bb builder);
 
         let body_bb = L.append_block context "while_body" the_function in
-        let builder' = snd (stmt (scope, (L.builder_at_end context body_bb)) body) in
+        let builder' = snd (stmt (new_scope, (L.builder_at_end context body_bb)) body) in
         add_terminal builder' (L.build_br pred_bb);
 
         let pred_builder = L.builder_at_end context pred_bb in
@@ -477,7 +514,7 @@ let translate (sdecl_list : sprogram) =
 
         let merge_bb = L.append_block context "merge" the_function in
         ignore (L.build_cond_br pred_val body_bb merge_bb pred_builder);
-        (new_scope, L.builder_at_end context merge_bb)
+        (scope, L.builder_at_end context merge_bb)
 
       | SBlock(sl) ->
         List.fold_left stmt (new_scope, builder) sl
