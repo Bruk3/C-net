@@ -455,10 +455,19 @@ let check  = function
             SBlock(pres @ [SIf(e_s_l'')] @ frees), sp
 
           | For(e1, e2, e3, st) ->
-            SFor(expr scope e1, check_bool_expr scope e2, expr scope e3, fst
-                   (check_stmt new_loop_scope (mkblock st))), sp
+            let for_blk = Block [Expr(e1); While(e2, Block([st; Expr(e3)]))] in
+            check_stmt sp for_blk
+            (* SFor(expr scope e1, check_bool_expr scope e2, expr scope e3, fst *)
+            (*        (check_stmt new_loop_scope (mkblock st))), sp *)
 
-          | While(p, s) -> SWhile(check_bool_expr scope p, fst (check_stmt new_loop_scope (mkblock s))), sp
+          | While(p, s) ->
+            let p' = check_bool_expr scope p in
+            let pres, p'', fres = U.handle_strings p' in
+            let s' = match fst (check_stmt new_loop_scope (mkblock s)) with
+              SBlock s -> SBlock (s @ (U.strip_decls pres))
+              | s -> SBlock ([s] @ (U.strip_decls pres)) (* add the computations to the end of the while *)
+            in
+            SBlock(pres @ [SWhile(p'', s')] @ fres), sp
 
           (* add variable to highest scope *)
           | Vdecl (vd) -> SVdecl_ass(vd, U.default_global vd.vtyp), add_free vd

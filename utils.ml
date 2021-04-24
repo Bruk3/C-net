@@ -161,7 +161,7 @@ let handle_strings sexp : sstmt list * sexpr * sstmt list=
     |(A.String, x) -> stmts , (A.String, x), n
     | _ -> stmts, cur_exp, n
   in
-  let pre_stmts, new_exp, _  = handle_helper [] sexp 0 in
+  let pre_stmts, new_exp, _  = handle_helper [] sexp 1000 in
   let convert_to_free = function
       SVdecl_ass({vtyp=String; vname=vn}, _) -> SDelete(String, SId(SFinalID(vn)))
     | SVdecl_ass({vtyp=Int; vname=vn}, _) -> SExpr(Void, SNoexpr)
@@ -171,6 +171,17 @@ let handle_strings sexp : sstmt list * sexpr * sstmt list=
   let free_stmts = List.map convert_to_free l in
   l , new_exp , free_stmts
 ;;
+
+let strip_decls dl =
+  let strip_helper = function
+    SVdecl_ass({vtyp=t; vname=vn}, exp) ->
+    SExpr(t, SBinassop(SFinalID(vn), Assign, exp))
+    | _ ->
+      semant_err "[COMPILER BUG] strip_decls passed something other than a declaration_assign list"
+  in
+  List.map strip_helper dl
+;;
+
 
 
 (* the built-in variables in cnet that cannot be declared by users *)
