@@ -382,11 +382,16 @@ let check  = function
         in
 
         let check_bool_expr scope e =
-              let (t', e') = expr scope e
-              and err = "expected integer expression in " ^ (string_of_expr e)
-              in (if t' != Int then semant_err err else (t', e'))
+          let (t', e') = expr scope e
+          and err = "expected integer expression in " ^ (string_of_expr e)
+          in (if t' != Int then semant_err err else (t', e'))
 
-          in
+        in
+        let string_flatten exp =
+          let pres, e, fres = U.handle_strings exp in match pres with
+            [] -> SExpr(e)
+          | _ -> SBlock( pres @ [SExpr(e)] @ fres)
+        in
 
 
           (* Take the current statement and the current scope.  Returns the new
@@ -415,10 +420,11 @@ let check  = function
                     (* semant_err "[COMPILER BUG] empty list passed to insert_frees"*)
             | hd :: tl -> (List.map insert_free hd), {scp=tscp; fl=tl; il=til}
           in
-          let handle_string exp = U.handle_strings (expr scope exp) in
 
           match aexp with
-            Expr e -> handle_string e, sp
+            Expr e ->
+            let exp = expr scope e in
+            string_flatten exp, sp
           | Delete n ->
 
             let t, id' = type_of_identifier scope n in
@@ -460,7 +466,7 @@ let check  = function
               let free_stmts, _ = insert_frees sp in
               SBlock ([ SBlock(free_stmts);
                         SVdecl({vtyp=String; vname="ret_tmp"});
-                        U.handle_strings (String, SBinassop(SFinalID("ret_tmp"), Assign, (t, e')));
+                        string_flatten (String, SBinassop(SFinalID("ret_tmp"), Assign, (t, e')));
                         SReturn(String, SId(SFinalID("ret_tmp")))
                       ])
             , {scp=scope; fl=[]; il=inloop}

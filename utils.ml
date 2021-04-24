@@ -107,8 +107,10 @@ let ids_to_vdecls (ids : A.id list)=
  * to the appropriate string library functions. It also creats temporary
  * variables for handling return values of things
  * *)
-let handle_strings sexp =
+let handle_strings sexp : sstmt list * sexpr * sstmt list=
   let assign a b = SVdecl_ass({A.vtyp=String; A.vname = a}, b) in
+  let styp = A.String in (* just for easier reading *)
+
   (* (stmt list -> sexpr -> sstmt list, sexpr) *)
   let rec handle_helper stmts cur_exp n = match cur_exp with
       (A.String as st, SCall(fn, args)) ->
@@ -150,15 +152,13 @@ let handle_strings sexp =
     | _ -> stmts, cur_exp, n
   in
   let pre_stmts, new_exp, _  = handle_helper [] sexp 0 in
-  match pre_stmts with
-    [] -> SExpr(new_exp)
-  | l -> let convert_to_free = function
-        SVdecl_ass({vtyp=_; vname=vn}, _) -> SDelete(String, SId(SFinalID(vn)))
-      | _ -> semant_err ("[COMPILER BUG] convert_to_free not setup properly")
-    in
-    let l = List.rev l in
-    let free_stmts = List.map convert_to_free l in
-    SBlock(l @ [SExpr(new_exp)] @ free_stmts)
+  let convert_to_free = function
+      SVdecl_ass({vtyp=_; vname=vn}, _) -> SDelete(String, SId(SFinalID(vn)))
+    | _ -> semant_err ("[COMPILER BUG] convert_to_free not setup properly")
+  in
+  let l = List.rev pre_stmts in
+  let free_stmts = List.map convert_to_free l in
+  l , new_exp , free_stmts
 ;;
 
 
