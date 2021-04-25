@@ -217,8 +217,8 @@ let builtin_funcs, builtin_funcs_l =
     [
       (* I/O *)
       (* Sockets *)
-      (Socket, "user_nopen", [(String, "name"); (String, "protocol"); (Int, "port"); (String, "type")]);
-      (* (Int, "println", [(Socket, "sock"); (String, "s")]); *)
+      (Socket, "user_nopen", [(String, "host"); (String, "protocol"); (Int, "port"); (String, "type")]);
+      (Int, "writeln", [(Socket, "f"); (String, "s")]);
 
       (Int, "write", [(Socket, "sock"); (String, "s")]);
       (String, "readln", [(Socket, "sock")]);
@@ -233,19 +233,19 @@ let builtin_funcs, builtin_funcs_l =
 
       (* Strings *)
       (Int, "slength", [(String, "s")]);
-      (String, "user_itos", [(Int, "num")]);
-      (String, "soi", [(Int, "i")]); (* string of int *)
+      (Int, "use_toint", [(String, "s")]); (* string of int *)
       (String, "user_soi", [(Int, "i")]); (* string of int *)
       (String, "cnet_strcpy", [(String, "t"); (String, "s")]);
       (String, "cnet_strmult", [(String, "t"); (Int, "i")]);
       (String, "cnet_strcat", [(String, "t"); (String, "s")]);
       (Int, "cnet_strcmp", [(String, "t"); (String, "s")]);
+      (String, "cnet_str_upper", [(String, "t")]);
 
       (* Arrays *)
       (Int, "alength", [((Array(Void)), "s")]);
 
-        (* Cnet *)
-        (Int, "cnet_free", [(String, "s")])
+      (* Cnet *)
+      (Int, "cnet_free", [(String, "s")])
     ]
 ;;
 
@@ -263,12 +263,18 @@ let sbuiltin_funcs_l =
  * fdecls
  *)
 let decompose_program (sprog : sdecl list) =
-  let helper (vdecls, strct_decls, fdecls) decl = match decl with
-    | SGVdecl_ass (vd, v) -> ((vd, v) :: vdecls, strct_decls, fdecls) (* TODO: handle SGVdecl_ass properly *)
-    | SSdecl(sd) -> (vdecls, sd :: strct_decls, fdecls)
-    | SFdecl(fd) -> (vdecls, strct_decls, fd :: fdecls)
+  let helper (vdecls, strct_decls, fdecls, main) decl = match decl with
+    | SGVdecl_ass (vd, v) -> ((vd, v) :: vdecls, strct_decls, fdecls, main) (* TODO: handle SGVdecl_ass properly *)
+    | SSdecl(sd) -> (vdecls, sd :: strct_decls, fdecls, main)
+    | SFdecl(fd) -> match fd.sfname with 
+                    "main" ->
+                      let new_params = if (fd.sparameters = []) then [(Array(String), "__(*_*)__")] (*Fake name that user cannot use*)
+                                       else fd.sparameters in
+                      let user_main = {styp=fd.styp;sfname="user_main";sparameters=new_params;sbody=fd.sbody} in 
+                        (vdecls, strct_decls, user_main :: fdecls, false)
+                    | _      -> (vdecls, strct_decls,fd::fdecls, main)
   in
-  List.fold_left helper ([], [], []) sprog
+  List.fold_left helper ([], [], [], true) sprog
 
 
 (* the built-in structs in cnet. These MUST be in exact conjunction with those

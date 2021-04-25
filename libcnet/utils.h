@@ -53,7 +53,10 @@ struct cnet_array {
 	void *data;
 	int length;
 	int i_t;
+	int type_t;
 };
+
+enum cnet_types {Num, Float, String, Complex};
 
 typedef struct cnet_array cnet_array;
 
@@ -63,4 +66,7 @@ void *mem_alloc(int size);
 
 void cnet_free(void *s);
 
+cnet_array *cnet_init_array(int sizei_t, int type_t, int len, int arr_lit_len, ...);
+
+int user_main(cnet_array *args);
 #endif

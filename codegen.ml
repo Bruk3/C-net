@@ -18,7 +18,7 @@ let codegen_err (msg : string) =
 (* translate : Sast.program -> Llvm.module *)
 let translate (sdecl_list : sprogram) =
   (* replace with (vdecls, strct_decls, fdecls) *)
-  let (vdecls, sdecls, fdecls) = U.decompose_program sdecl_list in
+  let (vdecls, sdecls, fdecls, main_func_present) = U.decompose_program sdecl_list in
 (* let translate ((vdecls : (A.vdecl * sexpr) list), (strct_decls : strct list), (fdecls : sfunc list)) = *)
   let context    = L.global_context () in
 
@@ -56,7 +56,7 @@ let translate (sdecl_list : sprogram) =
     | A.String          -> ptr_t (snd (find_checked "string" cstrcts))
     | A.Struct(n)       -> ptr_t (snd (find_checked n cstrcts))
     | A.Array(typ)      -> ptr_t (snd (find_checked "array" cstrcts))
-    | A.Socket          -> ptr_t (snd (find_checked "cnet_socket" cstrcts))
+    | A.Socket          -> ptr_t (snd (find_checked "cnet_file" cstrcts))
     | A.File            -> ptr_t (snd (find_checked "cnet_file" cstrcts))
   in
 
@@ -74,8 +74,16 @@ let translate (sdecl_list : sprogram) =
   let  size_of t = match t with
     A.Char            -> 1
   | A.Int             -> 4
-  | _                 -> 8 (* Will Implement later*)
+  | _                 -> 8
   in
+
+  let type_of t = match t with
+    A.Char            -> 0  
+  | A.Int             -> 0
+  | A.Float           -> 1
+  | A.String          -> 2
+  | _                 -> 3 
+in
 
 (*******************************************************************************
    *                            Declare all the structs
@@ -156,13 +164,14 @@ let translate (sdecl_list : sprogram) =
   (* let println_func : L.llvalue = *)
   (*   L.declare_function "println" println_t the_module in *)
   let var_arr_t t : L.lltype =
-      L.var_arg_function_type (ltype_of_typ (A.Array(t))) [| i32_t; i32_t; i32_t; (ltype_of_typ t) |] in
+      L.var_arg_function_type (ltype_of_typ (A.Array(t))) [| i32_t; i32_t; i32_t; i32_t; (ltype_of_typ t) |] in
   let init_array_func t: L.llvalue =
       L.declare_function "cnet_init_array" (var_arr_t t) the_module in
-  let arr_idx_t t: L.lltype =
-    L.function_type  (ltype_of_typ t) [| L.pointer_type (ltype_of_typ t) ; i32_t|] in
-  let get_arr_index_func t: L.llvalue =
-    L.declare_function "get_arr_index" (arr_idx_t t) the_module in
+  let arr_idx_t t: L.lltype = match t with 
+    A.Array(typ) -> L.function_type  (L.pointer_type (ltype_of_typ typ)) [| ltype_of_typ t; i32_t|] 
+    | _          -> codegen_err "[COMPILER BUG] Cannot index non-array type" in
+  let cnet_index_arr_func t: L.llvalue =
+    L.declare_function "cnet_index_arr" (arr_idx_t t) the_module in
 
   let cnet_new_str_nolen_t: L.lltype =
     L.function_type (ltype_of_typ A.String) [| ptr_t i8_t |] in
@@ -179,11 +188,9 @@ let translate (sdecl_list : sprogram) =
   let memset_func =
     L.declare_function "memset" memset_t the_module in
 
-  let cnet_index_arr_t =
-    L.function_type str_t [|str_t; i32_t |]
-  in
-  let cnet_index_arr_func =
-    L.declare_function "cnet_index_arr" cnet_index_arr_t the_module in
+  let main_t : L.lltype =
+      L.function_type (ltype_of_typ Int) [| i32_t; ptr_t (ptr_t i8_t)|] in  
+  let main_func = L.declare_function "main" (main_t) the_module in
 
   (*******************************************************************************
    *                            Function signatures
@@ -230,8 +237,7 @@ let translate (sdecl_list : sprogram) =
        declared variables.  Allocate each on the stack, initialize their
        value, if appropriate, and remember their values in the "locals" map *)
       let local_vars : (A.vdecl * L.llvalue) StringMap.t=
-        let add_formal m (t, n) p =
-          L.set_value_name n p;
+        let add_formal m (t, n) p = L.set_value_name n p;
           let local = L.build_alloca (ltype_of_typ t) n builder in
                 ignore (L.build_store p local builder);
           StringMap.add n ({vtyp=t;vname=n},local) m
@@ -274,8 +280,9 @@ let translate (sdecl_list : sprogram) =
           let the_struct = L.build_load ll "tmp" builder in
           (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "" builder)
         | SIndex(r, ex) ->
-          let vd, arr = lookup r scope builder in
-          vd, L.build_call cnet_index_arr_func [| arr; expr builder ex scope |] "" builder
+          let vd, arr = lookup r scope builder in 
+          let ll_arr = L.build_load arr "arr" builder in
+          vd, L.build_call (cnet_index_arr_func (vd.vtyp)) [| ll_arr; expr builder ex scope |] "" builder 
 
       and expr builder ((t, e) : sexpr) scope  =
         let lookup n = lookup n scope builder in
@@ -288,7 +295,13 @@ let translate (sdecl_list : sprogram) =
         | SId s       -> L.build_load (snd (lookup s )) (U.final_id_of_sid s) builder
 
         | SBinassop (s, op, e) -> let e' =  expr builder e scope
-          in ignore(L.build_store e' (snd (lookup s)) builder); e'
+          in (match e with
+                _, SNoexpr ->
+                let the_null = (L.build_sext_or_bitcast e' (ltype_of_typ t) "tmp" builder)
+                in
+                ignore (L.build_store the_null (snd (lookup s)) builder); e'
+              | _ -> ignore(L.build_store e' (snd (lookup s)) builder); e'
+            )
         | SBinop ((A.Float,_ ) as e1, op, e2) ->
           let e1' = expr builder e1 scope
           and e2' = expr builder e2 scope in
@@ -327,7 +340,8 @@ let translate (sdecl_list : sprogram) =
                     | A.Geq     -> L.build_icmp L.Icmp.Sge
                 ) e1' e2' "tmp" builder
         in
-        L.build_sext_or_bitcast result i32_t "tmp_cast" builder
+        (* L.build_sext_or_bitcast result i32_t "tmp_cast" builder *)
+        result
       | SUnop (op,  ((t, _) as e)) -> let e' = expr builder e scope in
                                             (match op with
                                                 A.Minus when t = A.Float -> L.build_fneg
@@ -348,10 +362,10 @@ let translate (sdecl_list : sprogram) =
       | SArrayLit (t, s, arr_lit) ->
         let size_t = expr builder (A.Int,SIntlit((size_of t))) scope in
         let arr_len = expr builder s scope in
-        let f = if t = A.Float then 1 else 0 in
-        let floating = expr builder (A.Int,SIntlit(f)) scope in
+        let arr_lit_len = expr builder (A.Int,SIntlit((List.length arr_lit))) scope in
+        let type_t = expr builder (A.Int,SIntlit((type_of t))) scope in
         let ll_arr_lit = List.map (fun a -> expr builder a scope) arr_lit in
-        let ll_va_args =  size_t :: floating:: arr_len :: ll_arr_lit in
+        let ll_va_args =  size_t :: type_t :: arr_len ::arr_lit_len :: ll_arr_lit in
         L.build_call (init_array_func t) (Array.of_list ll_va_args) "cnet_init_array" builder
       | SCall (n, args) ->
         let (fdef, fdecl) = find_checked n function_decls in
@@ -464,7 +478,10 @@ let translate (sdecl_list : sprogram) =
         (* we'll start it off in the 'main' bb *)
         let first_bb = L.insertion_block builder in
         let if_bbs, else_pred_bb  = List.fold_left add_if ([], first_bb) psl in
-        let else_then_bb = L.append_block context "else_then" the_function in
+        (* let else_then_bb = L.append_block context "else_then" the_function in *)
+
+        (* we don't need the last bb *)
+        let _ = L.delete_block else_pred_bb in
 
 
         (* If all else fails, go to the else case *)

@@ -13,7 +13,7 @@ int main()
 	cnet_io io = {NULL, sdout, CNET_FILE};
 	string *filename = cnet_new_str(fname, strlen(fname));
 	string *mode	 = cnet_new_str("a+", strlen("a+"));
-	cnet_file *file  = cnet_open_file(filename, mode);
+	cnet_file *file  = user_fopen(filename, mode);
 
 	string *s = cnet_new_str(line, fread(line, 1, 18, file->f));
 	writeln(&io, s);

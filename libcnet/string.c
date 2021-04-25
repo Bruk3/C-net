@@ -78,7 +78,7 @@ string *cnet_new_str_nolen(char* data)
 {
 	int len = strlen(data);
 	char *new_data = malloc(len);
-	strncpy(new_data, data, len);
+	memcpy(new_data, data, len);
 	return cnet_new_str(data, len);
 }
 
@@ -311,6 +311,27 @@ float cnet_str_atof(string *s)
 	return atof(s->data);
 }
 
+
+void cnet_str_split(string *s,  string *delim, string **dest, int max)
+{
+	if (!s || !s->data)
+		die("Error: Null Pointer\n");
+
+	s->data[s->length] = '\0';
+	delim->data[delim->length] = '\0';
+	char *token = strtok(s->data, delim->data);
+
+	int i = 0;
+	while (token != NULL && i < max){
+		string *new_str = cnet_new_str_nolen(token);
+		dest[i] = new_str;
+		token = strtok(NULL, delim->data);
+		i += 1;
+	}
+
+}
+
+
 string *user_itos(int num)
 {
 	char buf[12]; //
@@ -339,8 +360,5 @@ void print_cnet_str(string *s)
 	s->data[s->length] = '\0';
 	printf("%s", s->data);
 
-	// for(int i=0; i<s->length;i++){
-	// 	printf("%c",cnet_char_at(s,i));
-	// }
 
 }
