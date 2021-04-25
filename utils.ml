@@ -111,11 +111,24 @@ let handle_strings sexp : sstmt list * sexpr * sstmt list=
   let assign a b = SVdecl_ass({A.vtyp=String; A.vname = a}, b) in
   let styp = A.String in (* just for easier reading *)
 
-  (* (stmt list -> sexpr -> sstmt list, sexpr) *)
   let rec handle_helper stmts cur_exp n = match cur_exp with
-      (A.String as st, SCall(fn, args)) ->
-      let cur_tmp = "tmp" ^ (string_of_int n) in
-      assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(SFinalID(cur_tmp))), n + 1
+
+      (* (A.String as st, SCall(fn, args)) -> *)
+      (* let cur_tmp = "tmp" ^ (string_of_int n) in *)
+      (* assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(SFinalID(cur_tmp))), n + 1 *)
+
+    (st, SCall(fn, args)) ->
+      let foldable_helper (pres, es, n) exp =
+        let cur_pres, cur_e, n' = handle_helper [] exp n in
+        pres @ cur_pres, cur_e :: es, n'
+      in
+      let pres, es, n' = List.fold_left foldable_helper (stmts,[],n) args in
+      (match st with
+         String ->
+         let cur_tmp = "tmp" ^ (string_of_int n') in
+         assign cur_tmp (st, SCall(fn, List.rev es)) :: pres, (st, SId(SFinalID(cur_tmp))), n' + 1
+       | _ -> pres, (st, SCall(fn, List.rev es)), n'
+      )
 
     (* All binary assignments should have been converted to = in semant *)
     | (A.String, SBinassop(s1, _, s2)) -> let new_stmts, s2', n' = handle_helper stmts s2 n

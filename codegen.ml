@@ -404,10 +404,11 @@ let translate (sdecl_list : sprogram) =
         SExpr e -> ignore(expr builder e scope); (scope, builder)
 
       | SVdecl vd ->
-        let new_var =
-          L.build_alloca (ltype_of_typ vd.vtyp) vd.vname builder
-        in
-        (add_var (vd,new_var) scope), builder
+        stmt (scope,builder) (SVdecl_ass(vd, U.default_global vd.vtyp))
+        (* let new_var = *)
+        (*   L.build_alloca (ltype_of_typ vd.vtyp) vd.vname builder *)
+        (* in *)
+        (* (add_var (vd,new_var) scope), builder *)
 
       | SVdecl_ass (vd, (t, e)) ->
         let new_var = L.build_alloca (ltype_of_typ vd.vtyp) vd.vname builder
