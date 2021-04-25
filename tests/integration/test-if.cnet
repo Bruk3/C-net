@@ -1,0 +1,8 @@
+int main ()
+{
+    int i = 4; 
+    if (i>0){
+        stdout.writeln("hello");
+    }
+    return 0;
+}
