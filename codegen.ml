@@ -288,7 +288,13 @@ let translate (sdecl_list : sprogram) =
         | SId s       -> L.build_load (snd (lookup s )) (U.final_id_of_sid s) builder
 
         | SBinassop (s, op, e) -> let e' =  expr builder e scope
-          in ignore(L.build_store e' (snd (lookup s)) builder); e'
+          in (match e with
+                _, SNoexpr ->
+                let the_null = (L.build_sext_or_bitcast e' (ltype_of_typ t) "tmp" builder)
+                in
+                ignore (L.build_store the_null (snd (lookup s)) builder); e'
+              | _ -> ignore(L.build_store e' (snd (lookup s)) builder); e'
+            )
         | SBinop ((A.Float,_ ) as e1, op, e2) ->
           let e1' = expr builder e1 scope
           and e2' = expr builder e2 scope in
