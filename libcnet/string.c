@@ -85,11 +85,8 @@ string *cnet_new_str_nolen(char* data)
 /*(deep copy) eg.
  * string s1 = "Hi";
  * string s2 = "Hell0";
-<<<<<<< HEAD
  * s1 = s2;
-=======
  * s3 = (s1 = s2);
->>>>>>> 455c9dd
  */
 string *cnet_strcpy(string *dst, string *src)
 {
@@ -312,6 +309,14 @@ float cnet_str_atof(string *s)
 
 	s->data[s->length] = '\0';
 	return atof(s->data);
+}
+
+string *user_itos(int num)
+{
+	char buf[12]; //
+	sprintf(buf, "%d", num);
+	string *s = cnet_new_str_nolen(buf);
+	return s;
 }
 
 int cnet_find_char(string *s, char c)
