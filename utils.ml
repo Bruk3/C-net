@@ -227,9 +227,9 @@ let builtin_funcs, builtin_funcs_l =
       (* Files *)
       (File, "user_fopen", [(String, "name"); (String, "mode");]);
       (Int, "writeln", [(File, "f"); (String, "s")]);
-      (Int, "write", [(File, "f"); (String, "s")]);
+      (Int, "nwrite", [(File, "f"); (String, "s"); (Int, "num")]);
       (String, "readln", [(File, "f")]);
-      (String, "read", [(File, "f"); (Int, "len")]);
+      (String, "readall", [(File, "f")]);
 
       (* Strings *)
       (Int, "slength", [(String, "s")]);
@@ -266,11 +266,11 @@ let decompose_program (sprog : sdecl list) =
   let helper (vdecls, strct_decls, fdecls, main) decl = match decl with
     | SGVdecl_ass (vd, v) -> ((vd, v) :: vdecls, strct_decls, fdecls, main) (* TODO: handle SGVdecl_ass properly *)
     | SSdecl(sd) -> (vdecls, sd :: strct_decls, fdecls, main)
-    | SFdecl(fd) -> match fd.sfname with 
+    | SFdecl(fd) -> match fd.sfname with
                     "main" ->
                       let new_params = if (fd.sparameters = []) then [(Array(String), "__(*_*)__")] (*Fake name that user cannot use*)
                                        else fd.sparameters in
-                      let user_main = {styp=fd.styp;sfname="user_main";sparameters=new_params;sbody=fd.sbody} in 
+                      let user_main = {styp=fd.styp;sfname="user_main";sparameters=new_params;sbody=fd.sbody} in
                         (vdecls, strct_decls, user_main :: fdecls, false)
                     | _      -> (vdecls, strct_decls,fd::fdecls, main)
   in
