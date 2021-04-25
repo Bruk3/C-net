@@ -49,13 +49,18 @@ static void cnet_free_socket(void *ptr)
 
 static int inline check_socket_type(cnet_io *io)
 {
-    if(io->io_type == CNET_SOCKET &&
-         ((cnet_socket *)io)->type == LISTEN){
-        fprintf(stderr, "error: %s", "Cannot write to listening socket");
-        return 1;
-    }
+	if (io == NULL) {
+		fprintf(stderr, "read/write operation attempted on uninitialized file/socket\n");
+		exit(1);
+	}
 
-    return 0;
+	if(io->io_type == CNET_SOCKET &&
+			((cnet_socket *)io)->type == LISTEN){
+		fprintf(stderr, "error: %s", "Cannot write to listening socket");
+		return 1;
+	}
+
+	return 0;
 }
 
 static void cnet_strmerge_custom(string *s, char *buf, int len)
@@ -66,7 +71,7 @@ static void cnet_strmerge_custom(string *s, char *buf, int len)
 
 }
 
-cnet_file *cnet_open_file(string *fname, string *mode)
+cnet_file *user_fopen(string *fname, string *mode)
 {
     fname->data[fname->length] = '\0';
     mode->data[mode->length] = '\0';
@@ -81,6 +86,7 @@ cnet_file *cnet_open_file(string *fname, string *mode)
     cnet_file *file = (cnet_file *)mem_alloc(sizeof(cnet_file));
     file->cnet_free = cnet_free_file;
     file->f         = f;
+    file->io_type   = CNET_FILE;
 
     // Bruk: only needs to be different from 0 and 1 which are allocated
     // for STDIN and STDOUT;
@@ -165,6 +171,7 @@ string *cnet_read(void *ptr)
 //     return n+1;
 
 // }
+
 string *cnet_read_until(void *ptr, char *delim, int len)
 {
     cnet_io *io = (cnet_io *)ptr;

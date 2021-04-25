@@ -56,7 +56,7 @@ let translate (sdecl_list : sprogram) =
     | A.String          -> ptr_t (snd (find_checked "string" cstrcts))
     | A.Struct(n)       -> ptr_t (snd (find_checked n cstrcts))
     | A.Array(typ)      -> ptr_t (snd (find_checked "array" cstrcts))
-    | A.Socket          -> ptr_t (snd (find_checked "cnet_socket" cstrcts))
+    | A.Socket          -> ptr_t (snd (find_checked "cnet_file" cstrcts))
     | A.File            -> ptr_t (snd (find_checked "cnet_file" cstrcts))
   in
 
@@ -292,7 +292,13 @@ in
         | SId s       -> L.build_load (snd (lookup s )) (U.final_id_of_sid s) builder
 
         | SBinassop (s, op, e) -> let e' =  expr builder e scope
-          in ignore(L.build_store e' (snd (lookup s)) builder); e'
+          in (match e with
+                _, SNoexpr ->
+                let the_null = (L.build_sext_or_bitcast e' (ltype_of_typ t) "tmp" builder)
+                in
+                ignore (L.build_store the_null (snd (lookup s)) builder); e'
+              | _ -> ignore(L.build_store e' (snd (lookup s)) builder); e'
+            )
         | SBinop ((A.Float,_ ) as e1, op, e2) ->
           let e1' = expr builder e1 scope
           and e2' = expr builder e2 scope in
@@ -469,7 +475,10 @@ in
         (* we'll start it off in the 'main' bb *)
         let first_bb = L.insertion_block builder in
         let if_bbs, else_pred_bb  = List.fold_left add_if ([], first_bb) psl in
-        let else_then_bb = L.append_block context "else_then" the_function in
+        (* let else_then_bb = L.append_block context "else_then" the_function in *)
+
+        (* we don't need the last bb *)
+        let _ = L.delete_block else_pred_bb in
 
 
         (* If all else fails, go to the else case *)
