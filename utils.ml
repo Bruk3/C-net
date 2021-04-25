@@ -245,7 +245,7 @@ let builtin_funcs, builtin_funcs_l =
       (Int, "alength", [((Array(Void)), "s")]);
 
         (* Cnet *)
-        (Int, "cnet_free", [(String, "s")])
+        (Int, "cnet_free", [(String, "s")]);
     ]
 ;;
 
