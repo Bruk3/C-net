@@ -10,7 +10,10 @@ struct Shape {
 
 int main()
 {
-struct Shape circle = (struct Shape : new Shape);
+{
+struct Shape circle = (struct Shape : );
+(struct Shape : circle=(struct Shape : new Shape));
+}
 (string : circle.type=(string : cnet_strcpy((string : circle.type), (string : "circle"))));
 (float : circle.dimension.width=(float : 5.));
 return (int : 0);

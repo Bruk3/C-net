@@ -1,18 +1,18 @@
 int main(string[] argv) {
-    int a = 5;
-    int b = 4;
-    if (a > b) {
-        ;/* stdout.println("a is greater than b"); */
-    }
-    else if (a == b) {
-        ;/* stdout.println("a is equal to b"); */
-    }
-    else if (a <= b ){
-        ;/* stdout.println("a is less than or equal to b"); */
-    }
-    else {
-        ;/* stdout.println("b is greater than a"); */
-    }
+	int a = 5;
+	int b = 4;
+	if (a > b) {
+		stdout.writeln("a is greater than b");
+	}
+	else if (a == b) {
+		stdout.writeln("a is equal to b");
+	}
+	else if (a <= b ){
+		stdout.writeln("a is less than or equal to b");
+	}
+	else {
+		stdout.writeln("b is greater than a");
+	}
 
-    return 0;
+	return 0;
 }

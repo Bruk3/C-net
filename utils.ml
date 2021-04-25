@@ -107,30 +107,55 @@ let ids_to_vdecls (ids : A.id list)=
  * to the appropriate string library functions. It also creats temporary
  * variables for handling return values of things
  * *)
-let handle_strings sexp =
+let handle_strings sexp : sstmt list * sexpr * sstmt list=
   let assign a b = SVdecl_ass({A.vtyp=String; A.vname = a}, b) in
-  (* (stmt list -> sexpr -> sstmt list, sexpr) *)
+  let styp = A.String in (* just for easier reading *)
+
   let rec handle_helper stmts cur_exp n = match cur_exp with
-      (A.String as st, SCall(fn, args)) ->
-      let cur_tmp = "tmp" ^ (string_of_int n) in
-      assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(SFinalID(cur_tmp))), n + 1
+
+      (* (A.String as st, SCall(fn, args)) -> *)
+      (* let cur_tmp = "tmp" ^ (string_of_int n) in *)
+      (* assign cur_tmp (st, SCall(fn, args)) :: stmts, (st, SId(SFinalID(cur_tmp))), n + 1 *)
+
+    (st, SCall(fn, args)) ->
+      let foldable_helper (pres, es, n) exp =
+        let cur_pres, cur_e, n' = handle_helper [] exp n in
+        pres @ cur_pres, cur_e :: es, n'
+      in
+      let pres, es, n' = List.fold_left foldable_helper (stmts,[],n) args in
+      (match st with
+         String ->
+         let cur_tmp = "tmp" ^ (string_of_int n') in
+         assign cur_tmp (st, SCall(fn, List.rev es)) :: pres, (st, SId(SFinalID(cur_tmp))), n' + 1
+       | _ -> pres, (st, SCall(fn, List.rev es)), n'
+      )
 
     (* All binary assignments should have been converted to = in semant *)
     | (A.String, SBinassop(s1, _, s2)) -> let new_stmts, s2', n' = handle_helper stmts s2 n
       in new_stmts, (String, SBinassop(s1, Assign, (String, SCall("cnet_strcpy", [String, SId(s1); (s2')])))), n'
 
-    | (A.String, SBinop((t1, e1), op, (t2, e2))) -> (match (t1, t2) with
+    | (fst_typ, SBinop((t1, e1), op, (t2, e2))) -> (match (t1, t2) with
 
           (String, String) ->
           (match op with
-             Add ->
+             Add -> (* "hello" + "there" *)
              let cs1, e1', n' = handle_helper stmts (t1, e1) n
              in
              let cs2, e2', n'' = handle_helper cs1 (t1,e2) n'
              in
              let cur_tmp = "tmp" ^ (string_of_int n'') in
-             print_endline "got to the add part"; assign cur_tmp (String, SCall("cnet_strcat", [e1'; e2'])) :: cs2,
+             assign cur_tmp (String, SCall("cnet_strcat", [e1'; e2'])) :: cs2,
                 (String, SId(SFinalID(cur_tmp))), n'' + 1
+           | Eq ->
+             let cs1, e1', n' = handle_helper stmts (t1, e1) n
+             in
+             let cs2, e2', n'' = handle_helper cs1 (t1,e2) n'
+             in
+             let cur_tmp = "tmp" ^ (string_of_int n'') in
+             let cur_exp = (Int, SCall("cnet_strcmp", [e1'; e2'])) in
+             let cur_ass = SVdecl_ass({vtyp=Int; vname = cur_tmp}, cur_exp) in
+             cur_ass :: cs2,
+             (Int, SId(SFinalID(cur_tmp))), n'' + 1
            | _ -> semant_err ("[COMPILER BUG] only + should be allowed on two strings (handle_strings)"))
 
         | (String, Int) | (Int, String) ->
@@ -143,23 +168,33 @@ let handle_strings sexp =
              (String, SId(SFinalID(cur_tmp))), n' + 1
            | _ -> semant_err "[COMPILER BUG] only * should be allowed on string-int (hanlde_strings)")
 
-        | _ -> semant_err ("[COMPILER BUG] handle_string given illegal combination of expressions in binary operator")
+        | _ -> [], (fst_typ, SBinop((t1, e1), op, (t2, e2))), n
       )
 
     |(A.String, x) -> stmts , (A.String, x), n
     | _ -> stmts, cur_exp, n
   in
-  let pre_stmts, new_exp, _  = handle_helper [] sexp 0 in
-  match pre_stmts with
-    [] -> SExpr(new_exp)
-  | l -> let convert_to_free = function
-        SVdecl_ass({vtyp=_; vname=vn}, _) -> SDelete(String, SId(SFinalID(vn)))
-      | _ -> semant_err ("[COMPILER BUG] convert_to_free not setup properly")
-    in
-    let l = List.rev l in
-    let free_stmts = List.map convert_to_free l in
-    SBlock(l @ [SExpr(new_exp)] @ free_stmts)
+  let pre_stmts, new_exp, _  = handle_helper [] sexp 1000 in
+  let convert_to_free = function
+      SVdecl_ass({vtyp=String; vname=vn}, _) -> SDelete(String, SId(SFinalID(vn)))
+    | SVdecl_ass({vtyp=Int; vname=vn}, _) -> SExpr(Void, SNoexpr)
+    | _ -> semant_err ("[COMPILER BUG] convert_to_free not setup properly")
+  in
+  let l = List.rev pre_stmts in
+  let free_stmts = List.map convert_to_free l in
+  l , new_exp , free_stmts
 ;;
+
+let strip_decls dl =
+  let strip_helper = function
+    SVdecl_ass({vtyp=t; vname=vn}, exp) ->
+    SExpr(t, SBinassop(SFinalID(vn), Assign, exp))
+    | _ ->
+      semant_err "[COMPILER BUG] strip_decls passed something other than a declaration_assign list"
+  in
+  List.map strip_helper dl
+;;
+
 
 
 (* the built-in variables in cnet that cannot be declared by users *)
@@ -201,6 +236,9 @@ let builtin_funcs, builtin_funcs_l =
       (String, "soi", [(Int, "i")]); (* string of int *)
       (String, "user_soi", [(Int, "i")]); (* string of int *)
       (String, "cnet_strcpy", [(String, "t"); (String, "s")]);
+      (String, "cnet_strmult", [(String, "t"); (Int, "i")]);
+      (String, "cnet_strcat", [(String, "t"); (String, "s")]);
+      (Int, "cnet_strcmp", [(String, "t"); (String, "s")]);
 
       (* Arrays *)
       (Int, "alength", [((Array(Void)), "s")]);

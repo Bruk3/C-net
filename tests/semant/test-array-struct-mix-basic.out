@@ -5,9 +5,11 @@ struct mstruct {
 int main()
 {
 int x = (int : 0);
+{
 while ((int : 1)) {
 struct mstruct[][] x = (struct mstruct[][] : );
 (float : x[(int : 0)][(int : 0)].id);
+}
 }
 return (int : 0);
 }

@@ -43,7 +43,7 @@ type sstmt =
   | SDelete of sexpr
   | SBreak
   | SContinue
-  | SIf of (sexpr * sstmt) list * sstmt
+  | SIf of (sexpr * sstmt) list
   | SFor of sexpr * sexpr * sexpr * sstmt
   | SWhile of sexpr * sstmt
   | SVdecl of vdecl
@@ -117,11 +117,11 @@ let rec string_of_sstmt = function
   SExpr(expr) -> string_of_sexpr expr ^ ";\n";
   | SReturn(expr) -> "return " ^ string_of_sexpr expr ^ ";\n";
   | SDelete(expr) -> "delete " ^ string_of_sexpr expr ^ ";\n";
-  | SIf(e_s_l, SExpr(Void, SNoexpr)) -> let string_of_sif ((e, _)) =
-  "if (" ^ string_of_sexpr e ^ ")\n" in String.concat "else " (List.map string_of_sif e_s_l)
-  | SIf(e_s_l, s) -> let string_of_sif ((e, _)) =
-      "if (" ^ string_of_sexpr e ^ ")\n" in String.concat "else " (List.map string_of_sif e_s_l)  ^
-      "else{\n" ^ string_of_sstmt s ^ "}\n";
+  | SIf(e_s_l) ->
+    let string_of_sif (e, s) =
+      "if (" ^ string_of_sexpr e ^ ")\n" ^ string_of_sstmt s
+    in
+    String.concat "else " (List.map string_of_sif e_s_l)
   | SFor(e1, e2, e3, s) ->
       "for (" ^ string_of_sexpr e1  ^ " ; " ^ string_of_sexpr e2 ^ " ; " ^
       string_of_sexpr e3  ^ ")\n\t " ^ string_of_sstmt s

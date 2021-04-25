@@ -8,8 +8,14 @@ struct person john = (struct person : );
 struct person jane = (struct person : );
 int[] myInts = (int[] : );
 (int[] : myInts=(int[] : new int[(int : 4)] = {(int : 1), (int : 2), (int : 3), (int : 4)}));
-string[] myStrings = (string[] : new string[(int : 2)] = {(string : "hello"), (string : "world")});
-struct person[] myPeople = (struct person[] : new struct person[(int : 2)] = {(struct person : john), (struct person : jane)});
+{
+string[] myStrings = (string[] : );
+(string[] : myStrings=(string[] : new string[(int : 2)] = {(string : "hello"), (string : "world")}));
+}
+{
+struct person[] myPeople = (struct person[] : );
+(struct person[] : myPeople=(struct person[] : new struct person[(int : 2)] = {(struct person : john), (struct person : jane)}));
+}
 delete (struct person : myPeople[(int : 0)]);
 delete (struct person[] : myPeople);
 delete (struct person : john);
