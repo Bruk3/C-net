@@ -530,7 +530,7 @@ in
         let pred_builder = L.builder_at_end context pred_bb in
         let pred_val = expr pred_builder pred scope  in
         (* cast the value to a bool (1 bit) *)
-        let pred_val = L.build_icmp L.Icmp.Ne pred_val (L.const_int i1_t 0)
+        let pred_val = L.build_icmp L.Icmp.Ne pred_val (L.const_int i32_t 0)
             "tmp" pred_builder in
 
 
