@@ -232,14 +232,19 @@ let builtin_funcs, builtin_funcs_l =
       (String, "readall", [(File, "f")]);
 
       (* Strings *)
-      (Int, "slength", [(String, "s")]);
-      (Int, "use_toint", [(String, "s")]); (* string of int *)
-      (String, "user_soi", [(Int, "i")]); (* string of int *)
       (String, "cnet_strcpy", [(String, "t"); (String, "s")]);
       (String, "cnet_strmult", [(String, "t"); (Int, "i")]);
       (String, "cnet_strcat", [(String, "t"); (String, "s")]);
       (Int, "cnet_strcmp", [(String, "t"); (String, "s")]);
-      (String, "cnet_str_upper", [(String, "t")]);
+      (Int, "slength", [(String, "s")]);
+      (Float, "tofloat", [(String, "s")]); (* float of string *)
+      (Int, "toint", [(String, "s")]); (* int of string *)
+      (String, "user_soi", [(Int, "i")]); (* string of int *)
+      (String, "upper", [(String, "t")]);
+      (String, "lower", [(String, "t")]);
+      (String, "substring", [(String, "t"); (Int, "start"); (Int, "end")]);
+      (String, "reverse", [(String, "t")]);
+      (Char, "find_char", [(String, "t"); (Char, "c")]);
 
       (* Arrays *)
       (Int, "alength", [((Array(Void)), "s")]);
@@ -263,18 +268,18 @@ let sbuiltin_funcs_l =
  * fdecls
  *)
 let decompose_program (sprog : sdecl list) =
-  let helper (vdecls, strct_decls, fdecls, main) decl = match decl with
-    | SGVdecl_ass (vd, v) -> ((vd, v) :: vdecls, strct_decls, fdecls, main) (* TODO: handle SGVdecl_ass properly *)
-    | SSdecl(sd) -> (vdecls, sd :: strct_decls, fdecls, main)
+  let helper (vdecls, strct_decls, fdecls) decl = match decl with
+    | SGVdecl_ass (vd, v) -> ((vd, v) :: vdecls, strct_decls, fdecls) (* TODO: handle SGVdecl_ass properly *)
+    | SSdecl(sd) -> (vdecls, sd :: strct_decls, fdecls)
     | SFdecl(fd) -> match fd.sfname with
                     "main" ->
-                      let new_params = if (fd.sparameters = []) then [(Array(String), "__(*_*)__")] (*Fake name that user cannot use*)
+                      let new_params = if (fd.sparameters = []) then [(Array(String), "__(*_*)__")] (*Fake name that user cannot reference*)
                                        else fd.sparameters in
                       let user_main = {styp=fd.styp;sfname="user_main";sparameters=new_params;sbody=fd.sbody} in
-                        (vdecls, strct_decls, user_main :: fdecls, false)
-                    | _      -> (vdecls, strct_decls,fd::fdecls, main)
+                        (vdecls, strct_decls, user_main :: fdecls)
+                    | _      -> (vdecls, strct_decls,fd::fdecls)
   in
-  List.fold_left helper ([], [], [], true) sprog
+  List.fold_left helper ([], [], []) sprog
 
 
 (* the built-in structs in cnet. These MUST be in exact conjunction with those
