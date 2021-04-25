@@ -1,0 +1,13 @@
+
+int main(){
+
+  file f = fopen("_tags", "rb");
+  int i = 0;
+  while (i < 9){
+    string line = f.readln();
+    // write extra line because of readln and writeln double usage
+    stdout.writeln(line);
+    i += 1;
+  }
+  return 0;
+}
