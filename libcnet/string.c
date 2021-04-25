@@ -78,7 +78,7 @@ string *cnet_new_str_nolen(char* data)
 {
 	int len = strlen(data);
 	char *new_data = malloc(len);
-	strncpy(new_data, data, len);
+	memcpy(new_data, data, len);
 	return cnet_new_str(data, len);
 }
 

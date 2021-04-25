@@ -67,7 +67,7 @@ cnet_array *cnet_init_array(int sizei_t, int type_t, int len, int arr_lit_len, .
 	int n;
 	unsigned long ptr;
 	double d;
-	
+
 
 	for (int i = 0; i<(arr_lit_len*sizei_t); i+=sizei_t){
 		if (sizei_t == 1){
@@ -129,25 +129,4 @@ int alength(void *ptr)
 	cnet_array *arr = (cnet_array *)ptr;
 
 	return arr->length;
-}
-
-cnet_array *parse_main_args(int argc, char **argv)
-{
-	cnet_array *args = cnet_init_array(8, String, argc, 0);
-	string **data = (string **)args->data;
-	for(int i = 0 ; i < argc; i++){
-		string *new_str = cnet_new_str_nolen(argv[i]);
-		cnet_strcpy(data[i], new_str);
-		cnet_free(new_str);
-	}
-
-	return args;
-}
-
-int main(int argc, char **argv)
-{
-	cnet_array *string_arr = parse_main_args(argc-1, &argv[1]);
-	int ret = user_main(string_arr);
-	cnet_free(string_arr);
-	return ret;
 }

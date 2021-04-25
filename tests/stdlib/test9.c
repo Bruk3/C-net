@@ -7,7 +7,7 @@
 
 int main(){
 
-    cnet_file *file = cnet_open_file(cnet_new_str_nolen("file.txt"), cnet_new_str_nolen("rb"));
+    cnet_file *file = user_fopen(cnet_new_str_nolen("file.txt"), cnet_new_str_nolen("rb"));
     string *newline = cnet_new_str_nolen("\n");
 
 
