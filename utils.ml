@@ -218,7 +218,7 @@ let builtin_funcs, builtin_funcs_l =
       (* I/O *)
       (* Sockets *)
       (Socket, "user_nopen", [(String, "host"); (String, "protocol"); (Int, "port"); (String, "type")]);
-      (Int, "println", [(Socket, "sock"); (String, "s")]);
+      (Int, "writeln", [(Socket, "f"); (String, "s")]);
 
       (Int, "write", [(Socket, "sock"); (String, "s")]);
       (String, "readln", [(Socket, "sock")]);
