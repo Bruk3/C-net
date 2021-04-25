@@ -49,7 +49,7 @@ float tofloat(string *s);
 
 int find_char(string *s, char c);
 
-string *stringof(int n);
+string *user_soi(int n);
 
 void print_cnet_str(string *s);
 

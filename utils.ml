@@ -239,7 +239,7 @@ let builtin_funcs, builtin_funcs_l =
       (Int, "slength", [(String, "s")]);
       (Float, "tofloat", [(String, "s")]); (* float of string *)
       (Int, "toint", [(String, "s")]); (* int of string *)
-      (String, "stringof", [(Int, "i")]); (* string of int *)
+      (String, "user_soi", [(Int, "i")]); (* string of int *)
       (String, "upper", [(String, "t")]);
       (String, "lower", [(String, "t")]);
       (String, "substring", [(String, "t"); (Int, "start"); (Int, "end")]);

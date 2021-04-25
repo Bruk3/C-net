@@ -331,7 +331,7 @@ void cnet_str_split(string *s,  string *delim, string **dest, int max)
 
 }
 
-string *stringof(int num)
+string *user_soi(int num)
 {
 	char buf[12]; //
 	sprintf(buf, "%d", num);
