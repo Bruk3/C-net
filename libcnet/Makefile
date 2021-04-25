@@ -4,6 +4,10 @@ OBJS := string.o utils.o io.o
 DEPENDS := string.h utils.h io.h
 
 # clean up object files cause we don't need them
+libcnet-main.a: stdlib driver.o
+	ar -cq libcnet-main.a *.o
+	rm -f *.o
+
 libcnet.a: stdlib
 	ar -cq libcnet.a *.o
 	rm -f *.o

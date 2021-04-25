@@ -10,7 +10,7 @@ import shutil
 CC		= "gcc"			# C compiler
 LLC		= "llc"			# LLVM compiler
 CNET	= "cnet.native" # CNET compiler
-LIBCNET = "libcnet/libcnet.a"
+LIBCNET = "libcnet/libcnet-main.a"
 
 USAGEMSG  = """USAGE: {} -[t|a|s|l|b] source """.format(sys.argv[0])
 
