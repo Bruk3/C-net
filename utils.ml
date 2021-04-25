@@ -233,7 +233,7 @@ let builtin_funcs, builtin_funcs_l =
 
       (* Strings *)
       (Int, "slength", [(String, "s")]);
-      (Int, "toint", [(String, "s")]); (* string of int *)
+      (Int, "use_toint", [(String, "s")]); (* string of int *)
       (String, "user_soi", [(Int, "i")]); (* string of int *)
       (String, "cnet_strcpy", [(String, "t"); (String, "s")]);
       (String, "cnet_strmult", [(String, "t"); (Int, "i")]);

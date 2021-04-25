@@ -34,6 +34,8 @@ string *cnet_nread(void *ptr, int size);
 
 string *cnet_readln(void *ptr);
 
+string *cnet_read_until(void *ptr, char *delim, int len);
+
 cnet_socket *cnet_connect_to_host(string *host_str, int port, int domain, int type);
 
 int cnet_check_error(void *ptr);

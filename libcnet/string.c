@@ -85,11 +85,8 @@ string *cnet_new_str_nolen(char* data)
 /*(deep copy) eg.
  * string s1 = "Hi";
  * string s2 = "Hell0";
-<<<<<<< HEAD
  * s1 = s2;
-=======
  * s3 = (s1 = s2);
->>>>>>> 455c9dd
  */
 string *cnet_strcpy(string *dst, string *src)
 {
@@ -314,6 +311,35 @@ float cnet_str_atof(string *s)
 	return atof(s->data);
 }
 
+
+void cnet_str_split(string *s,  string *delim, string **dest, int max)
+{
+	if (!s || !s->data)
+		die("Error: Null Pointer\n");
+
+	s->data[s->length] = '\0';
+	delim->data[delim->length] = '\0';
+	char *token = strtok(s->data, delim->data);
+
+	int i = 0;
+	while (token != NULL && i < max){
+		string *new_str = cnet_new_str_nolen(token);
+		dest[i] = new_str;
+		token = strtok(NULL, delim->data);
+		i += 1;
+	}
+
+}
+
+
+string *user_itos(int num)
+{
+	char buf[12]; //
+	sprintf(buf, "%d", num);
+	string *s = cnet_new_str_nolen(buf);
+	return s;
+}
+
 int cnet_find_char(string *s, char c)
 {
 	if (!s || !s->data)
@@ -334,8 +360,5 @@ void print_cnet_str(string *s)
 	s->data[s->length] = '\0';
 	printf("%s", s->data);
 
-	// for(int i=0; i<s->length;i++){
-	// 	printf("%c",cnet_char_at(s,i));
-	// }
 
 }
