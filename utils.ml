@@ -239,7 +239,7 @@ let builtin_funcs, builtin_funcs_l =
       (String, "cnet_strmult", [(String, "t"); (Int, "i")]);
       (String, "cnet_strcat", [(String, "t"); (String, "s")]);
       (Int, "cnet_strcmp", [(String, "t"); (String, "s")]);
-      (String, "cnet_str_upper", [(String, "t")]);
+      (String, "upper", [(String, "t")]);
 
       (* Arrays *)
       (Int, "alength", [((Array(Void)), "s")]);
@@ -266,11 +266,11 @@ let decompose_program (sprog : sdecl list) =
   let helper (vdecls, strct_decls, fdecls, main) decl = match decl with
     | SGVdecl_ass (vd, v) -> ((vd, v) :: vdecls, strct_decls, fdecls, main) (* TODO: handle SGVdecl_ass properly *)
     | SSdecl(sd) -> (vdecls, sd :: strct_decls, fdecls, main)
-    | SFdecl(fd) -> match fd.sfname with 
+    | SFdecl(fd) -> match fd.sfname with
                     "main" ->
                       let new_params = if (fd.sparameters = []) then [(Array(String), "__(*_*)__")] (*Fake name that user cannot use*)
                                        else fd.sparameters in
-                      let user_main = {styp=fd.styp;sfname="user_main";sparameters=new_params;sbody=fd.sbody} in 
+                      let user_main = {styp=fd.styp;sfname="user_main";sparameters=new_params;sbody=fd.sbody} in
                         (vdecls, strct_decls, user_main :: fdecls, false)
                     | _      -> (vdecls, strct_decls,fd::fdecls, main)
   in

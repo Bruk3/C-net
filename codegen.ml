@@ -78,11 +78,11 @@ let translate (sdecl_list : sprogram) =
   in
 
   let type_of t = match t with
-    A.Char            -> 0  
+    A.Char            -> 0
   | A.Int             -> 0
   | A.Float           -> 1
   | A.String          -> 2
-  | _                 -> 3 
+  | _                 -> 3
 in
 
 (*******************************************************************************
@@ -167,8 +167,8 @@ in
       L.var_arg_function_type (ltype_of_typ (A.Array(t))) [| i32_t; i32_t; i32_t; i32_t; (ltype_of_typ t) |] in
   let init_array_func t: L.llvalue =
       L.declare_function "cnet_init_array" (var_arr_t t) the_module in
-  let arr_idx_t t: L.lltype = match t with 
-    A.Array(typ) -> L.function_type  (L.pointer_type (ltype_of_typ typ)) [| ltype_of_typ t; i32_t|] 
+  let arr_idx_t t: L.lltype = match t with
+    A.Array(typ) -> L.function_type  (L.pointer_type (ltype_of_typ typ)) [| ltype_of_typ t; i32_t|]
     | _          -> codegen_err "[COMPILER BUG] Cannot index non-array type" in
   let cnet_index_arr_func t: L.llvalue =
     L.declare_function "cnet_index_arr" (arr_idx_t t) the_module in
@@ -183,13 +183,13 @@ in
     L.declare_function "cnet_empty_str" cnet_empty_str_t the_module in
 
 
-  let memset_t =
-    L.function_type str_t [|str_t; i32_t; i64_t |] in
-  let memset_func =
-    L.declare_function "memset" memset_t the_module in
+  let strlen_t =
+    L.function_type i64_t [|str_t|] in
+  let strlen_func =
+    L.declare_function "strlen" strlen_t the_module in
 
   let main_t : L.lltype =
-      L.function_type (ltype_of_typ Int) [| i32_t; ptr_t (ptr_t i8_t)|] in  
+      L.function_type (ltype_of_typ Int) [| i32_t; ptr_t (ptr_t i8_t)|] in
   let main_func = L.declare_function "main" (main_t) the_module in
 
   (*******************************************************************************
@@ -265,6 +265,37 @@ in
             lookup_helper n tl
       in
 
+      let get_strlit s builder =
+        let the_global_string = L.build_global_stringptr s "global_strlit" builder in
+        (* this is going to be stack allocated so we don't want a pointer, we
+         * want the actual string struct type, so don't use ltyp_of_typ
+         *)
+        let cnet_str_typ = snd (find_checked "string" cstructs) in
+        let the_str = L.build_alloca cnet_str_typ "stacked_strlit" builder in
+        let the_str_ptr = L.build_alloca (ltype_of_typ A.String) "strlit" builder in
+        let the_str_ptr = L.build_store the_str the_str_ptr builder in
+        let the_global_string' = L.build_sext_or_bitcast the_global_string
+            (ltype_of_typ A.String) "cast" builder
+        in
+        let data_mem = L.build_struct_gep the_str 1 "data" builder in (* the_str.data *)
+        let len_mem = L.build_struct_gep the_str 2 "data" builder in (* the_str.length *)
+        let _ = L.build_store the_global_string' data_mem builder in (* the_str.data = %strlit *)
+        let the_len = L.build_call strlen_func [| the_global_string |]
+            "strlit_len" builder
+        in
+        (* cast it to i32_t since strlen returns an i64_t *)
+        let the_len = L.build_trunc_or_bitcast the_len i32_t "strlit_len32" builder in
+        let _ = L.build_store the_len len_mem builder (* the_str.length = strlen(%strlit) *)
+
+        in
+        the_str
+
+
+(*           L.build_call cnet_new_str_func [| L.build_global_stringptr s "tmp" *)
+(*                                               builder |] "strlit" builder *)
+      in
+
+
       (* Todo: Recursive lookup for complex data types*)
       (* let lookup n scopes = lookup_helper n (lookup_scope n scopes) *)
       (* in *)
@@ -280,9 +311,9 @@ in
           let the_struct = L.build_load ll "tmp" builder in
           (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "" builder)
         | SIndex(r, ex) ->
-          let vd, arr = lookup r scope builder in 
+          let vd, arr = lookup r scope builder in
           let ll_arr = L.build_load arr "arr" builder in
-          vd, L.build_call (cnet_index_arr_func (vd.vtyp)) [| ll_arr; expr builder ex scope |] "" builder 
+          vd, L.build_call (cnet_index_arr_func (vd.vtyp)) [| ll_arr; expr builder ex scope |] "" builder
 
       and expr builder ((t, e) : sexpr) scope  =
         let lookup n = lookup n scope builder in
@@ -292,6 +323,8 @@ in
         | SIntlit i   -> L.const_int i32_t i
         | SCharlit c  -> L.const_int i8_t c
         | SFloatlit f -> L.const_float float_t f
+        | SStrlit s   -> get_strlit s builder
+
         | SId s       -> L.build_load (snd (lookup s )) (U.final_id_of_sid s) builder
 
         | SBinassop (s, op, e) -> let e' =  expr builder e scope
@@ -347,9 +380,6 @@ in
                                                 A.Minus when t = A.Float -> L.build_fneg
                                               | A.Minus                  -> L.build_neg
                                               | A.Not                  -> L.build_not) e' "tmp" builder
-      | SStrlit s   ->
-        L.build_call cnet_new_str_func [| L.build_global_stringptr s "tmp"
-                                            builder |] "strlit" builder
       | SNew s      ->
         let strct, ll_strct = StringMap.find s cstructs in
         let new_struct = L.build_malloc ll_strct "tmp" builder in

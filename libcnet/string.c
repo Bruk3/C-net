@@ -240,7 +240,7 @@ string *cnet_str_lower(string *s)
 	return s1;
 }
 
-string *cnet_str_upper(string *s)
+string *upper(string *s)
 {
 	if (!s || !s->data)
 		return s;
