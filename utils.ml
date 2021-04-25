@@ -228,7 +228,7 @@ let builtin_funcs, builtin_funcs_l =
       (File, "user_fopen", [(String, "name"); (String, "mode");]);
       (Int, "writeln", [(File, "f"); (String, "s")]);
       (Int, "write", [(File, "f"); (String, "s")]);
-      (* (String, "readln", [(File, "f")]); *)
+      (String, "readln", [(File, "f")]);
       (String, "read", [(File, "f"); (Int, "len")]);
 
       (* Strings *)

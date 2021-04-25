@@ -56,7 +56,7 @@ let translate (sdecl_list : sprogram) =
     | A.String          -> ptr_t (snd (find_checked "string" cstrcts))
     | A.Struct(n)       -> ptr_t (snd (find_checked n cstrcts))
     | A.Array(typ)      -> ptr_t (snd (find_checked "array" cstrcts))
-    | A.Socket          -> ptr_t (snd (find_checked "cnet_socket" cstrcts))
+    | A.Socket          -> ptr_t (snd (find_checked "cnet_file" cstrcts))
     | A.File            -> ptr_t (snd (find_checked "cnet_file" cstrcts))
   in
 
