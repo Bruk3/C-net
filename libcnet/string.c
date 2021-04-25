@@ -220,7 +220,7 @@ char cnet_char_at(string *str, int index)
 }
 
 /* Other string function */
-int cnet_strlen(string *s1)
+int slength(string *s1)
 {
 	if (!s1)
 		die("Error: Null Pointer\n");
@@ -228,7 +228,7 @@ int cnet_strlen(string *s1)
 	return s1->length;
 }
 
-string *cnet_str_lower(string *s)
+string *lower(string *s)
 {
 	if (!s || !s->data)
 		return s;
@@ -240,7 +240,7 @@ string *cnet_str_lower(string *s)
 	return s1;
 }
 
-string *cnet_str_upper(string *s)
+string *upper(string *s)
 {
 	if (!s || !s->data)
 		return s;
@@ -255,7 +255,7 @@ string *cnet_str_upper(string *s)
 }
 
 /* [start, end) */
-string *cnet_substring(string *s, int start, int end)
+string *substring(string *s, int start, int end)
 {
 	if (start >= end)
 		die("Error: Invalid range\n");
@@ -268,7 +268,7 @@ string *cnet_substring(string *s, int start, int end)
 
 }
 
-string *cnet_reverse_str(string *s)
+string *reverse(string *s)
 {
 	if (!s || !s->data)
 		return s;
@@ -293,7 +293,7 @@ void cpy_str(string *src, char *dst)
 }
 */
 
-int cnet_str_atoi(string *s)
+int toint(string *s)
 {
 	if (!s || !s->data)
 		die("Error: Null Pointer\n");
@@ -302,7 +302,7 @@ int cnet_str_atoi(string *s)
 	return atoi(s->data);
 }
 
-float cnet_str_atof(string *s)
+float tofloat(string *s)
 {
 	if (!s || !s->data)
 		die("Error: Null Pointer\n");
@@ -331,8 +331,7 @@ void cnet_str_split(string *s,  string *delim, string **dest, int max)
 
 }
 
-
-string *user_itos(int num)
+string *stringof(int num)
 {
 	char buf[12]; //
 	sprintf(buf, "%d", num);
@@ -340,7 +339,7 @@ string *user_itos(int num)
 	return s;
 }
 
-int cnet_find_char(string *s, char c)
+int find_char(string *s, char c)
 {
 	if (!s || !s->data)
 		die("Error: Null Pointer\n");
@@ -362,3 +361,4 @@ void print_cnet_str(string *s)
 
 
 }
+
