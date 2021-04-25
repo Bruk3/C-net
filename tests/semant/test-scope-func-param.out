@@ -1,6 +1,9 @@
 int main()
 {
-int z = (int : mul((int : 2), (int : x)));
+{
+int z = (int : 0);
+(int : z=(int : mul((int : 2), (int : x))));
+}
 return (int : 0);
 }
 

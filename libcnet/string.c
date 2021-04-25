@@ -49,7 +49,7 @@ static void __concat_str(char **s, string *s1, string *s2)
 	if(s1->data)
 		memcpy(*s, s1->data, s1->length);
 	if(s2->data)
-		memcpy((*s)+s1->length, s2->data, s2->length);
+		memcpy((*s) + s1->length, s2->data, s2->length);
 }
 
 /* Constructors */
@@ -76,17 +76,17 @@ string *cnet_new_str(char *data, int length)
 /* char *data must be null terminated */
 string *cnet_new_str_nolen(char* data)
 {
-	return cnet_new_str(data, strlen(data));
+	int len = strlen(data);
+	char *new_data = malloc(len);
+	strncpy(new_data, data, len);
+	return cnet_new_str(data, len);
 }
 
 /*(deep copy) eg.
  * string s1 = "Hi";
  * string s2 = "Hell0";
-<<<<<<< HEAD
  * s1 = s2;
-=======
  * s3 = (s1 = s2);
->>>>>>> 455c9dd
  */
 string *cnet_strcpy(string *dst, string *src)
 {
@@ -124,7 +124,7 @@ string *cnet_strassign(string *s)
 string *cnet_strcat(string *s1, string *s2)
 {
 	if (!s1 || !s2)
-		die("Error: Null Pointer\n");
+		die("Error: String addtion Null Pointer\n");
 
 	char *temp_data;
 	__concat_str(&temp_data, s1, s2);
@@ -331,6 +331,14 @@ void cnet_str_split(string *s,  string *delim, string **dest, int max)
 
 }
 
+
+string *user_itos(int num)
+{
+	char buf[12]; //
+	sprintf(buf, "%d", num);
+	string *s = cnet_new_str_nolen(buf);
+	return s;
+}
 
 int cnet_find_char(string *s, char c)
 {

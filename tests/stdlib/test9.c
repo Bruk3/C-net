@@ -14,11 +14,14 @@ int main(){
     /***************** Test cnet_readln  **************************/
     string *line = cnet_readln(file);
     string *temp = cnet_new_str_nolen("hellow");
-    string *expected = cnet_strcat(cnet_strmult(temp, 15), newline);
+    string *temp15 = cnet_strmult(temp, 15);
+    string *expected = cnet_strcat(temp15, newline);
     assert(cnet_strcmp(line, expected) == 0);
     printf("passed first line test\n");
     temp->cnet_free(temp);
+    temp->cnet_free(temp15);
     expected->cnet_free(expected);
+    line->cnet_free(line);
 
     for (int i=0; i < 5; i++) {
         string *line = cnet_readln(file);
@@ -35,11 +38,15 @@ int main(){
     // read very long line
     line = cnet_readln(file);
     printf("read length: %d\n", line->length);
-    expected = cnet_strcat(cnet_strmult(cnet_new_str_nolen("a"), 4341), newline);
+    string *a = cnet_new_str_nolen("a");
+    string *manyAs = cnet_strmult(a, 4341);
+    expected = cnet_strcat(manyAs, newline);
     assert(cnet_strcmp(line, expected) == 0);
     printf("passed long line test\n");
-    line->cnet_free(line);
+    line->cnet_free(line); a->cnet_free(a);
     expected->cnet_free(expected);
+    newline->cnet_free(newline);
+    manyAs->cnet_free(manyAs);
 
 
 

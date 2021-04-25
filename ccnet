@@ -51,7 +51,7 @@ def handle_full(options, sourcef):
 		if (ret.returncode != 0): die(ret)
 
 		# compile assembly to C
-		tmpfile = "/tmp/" + sourcef + ".s"
+		tmpfile = "/tmp/" + sourcef.split('/')[-1] + ".s"
 		with open(tmpfile, "w") as tmp:
 				tmp.write(ret.stdout.decode())
 

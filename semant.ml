@@ -382,11 +382,16 @@ let check  = function
         in
 
         let check_bool_expr scope e =
-              let (t', e') = expr scope e
-              and err = "expected integer expression in " ^ (string_of_expr e)
-              in (if t' != Int then semant_err err else (t', e'))
+          let (t', e') = expr scope e
+          and err = "expected integer expression in " ^ (string_of_expr e)
+          in (if t' != Int then semant_err err else (t', e'))
 
-          in
+        in
+        let string_flatten exp =
+          let pres, e, fres = U.handle_strings exp in match pres with
+            [] -> SExpr(e)
+          | _ -> SBlock( pres @ [SExpr(e)] @ fres)
+        in
 
 
           (* Take the current statement and the current scope.  Returns the new
@@ -415,12 +420,13 @@ let check  = function
                     (* semant_err "[COMPILER BUG] empty list passed to insert_frees"*)
             | hd :: tl -> (List.map insert_free hd), {scp=tscp; fl=tl; il=til}
           in
-          let handle_string exp = U.handle_strings (expr scope exp) in
 
           match aexp with
-            Expr e -> handle_string e, sp
-          | Delete n ->
+            Expr e ->
+            let exp = expr scope e in
+            string_flatten exp, sp
 
+          | Delete n ->
             let t, id' = type_of_identifier scope n in
             let err = "illegal identifier for delete: [" ^ string_of_typ t ^ " " ^ string_of_rid n ^
                       "]. Identifier should be of type Struct or Array" in
@@ -436,31 +442,61 @@ let check  = function
           | Continue -> semant_err ("continue used without being in a loop")
 
           | If(e_s_l, s) ->
-            let sif_of_if (e_i, s_i) =
-              (check_bool_expr scope e_i), (fst (check_stmt new_scope s_i))
+            let sif_of_if (pre_l, fre_l, e_s_l) (e_i,s_i) =
+              let e' = check_bool_expr scope e_i in
+              let pres, e'', fres = U.handle_strings e' in
+              let s_i' = fst (check_stmt new_scope s_i) in
+              (pre_l @ pres, fre_l @ fres, (e'' , s_i') :: e_s_l)
             in
-            SIf(List.rev (List.map sif_of_if e_s_l), fst (check_stmt new_scope s)), sp
+            let e_s_l' = (Intlit(1), s) :: e_s_l in
+            let (pres, frees, e_s_l'') =
+              List.fold_left sif_of_if ([], [], []) e_s_l'
+            in
+            SBlock(pres @ [SIf(e_s_l'')] @ frees), sp
 
           | For(e1, e2, e3, st) ->
-            SFor(expr scope e1, check_bool_expr scope e2, expr scope e3, fst
-                   (check_stmt new_loop_scope (mkblock st))), sp
+            let for_blk = Block [Expr(e1); While(e2, Block([st; Expr(e3)]))] in
+            check_stmt sp for_blk
+            (* SFor(expr scope e1, check_bool_expr scope e2, expr scope e3, fst *)
+            (*        (check_stmt new_loop_scope (mkblock st))), sp *)
 
-          | While(p, s) -> SWhile(check_bool_expr scope p, fst (check_stmt new_loop_scope (mkblock s))), sp
+          | While(p, s) ->
+            let p' = check_bool_expr scope p in
+            let pres, p'', fres = U.handle_strings p' in
+            let s' = match fst (check_stmt new_loop_scope (mkblock s)) with
+              SBlock s -> SBlock (s @ (U.strip_decls pres))
+              | s -> SBlock ([s] @ (U.strip_decls pres)) (* add the computations to the end of the while *)
+            in
+            SBlock(pres @ [SWhile(p'', s')] @ fres), sp
 
           (* add variable to highest scope *)
           | Vdecl (vd) -> SVdecl_ass(vd, U.default_global vd.vtyp), add_free vd
 
           | Vdecl_ass ({vtyp; vname}, e) ->
-            let (d, newscp) = SVdecl_ass({vtyp; vname}, expr scope e) , check_binds_scoped scope {vtyp; vname} in
-                      ignore (expr newscp (Binassop(FinalID(vname), Assign, e))) ;
-                      d, add_free {vtyp; vname}
+            let (e', newscp) = expr scope e , check_binds_scoped scope {vtyp; vname} in
+            ignore (expr newscp (Binassop(FinalID(vname), Assign, e)))
+            ;
+            let pres, e'', fres = U.handle_strings e' in
+            let the_decl = SVdecl_ass({vname=vname; vtyp=vtyp}, U.default_global vtyp) in
+            let the_ass = SExpr(vtyp, match vtyp with
+                String ->
+                let the_cp =
+                  (String, SCall("cnet_strcpy", [String, SId(SFinalID(vname)); e'']))
+                in
+                SBinassop(SFinalID(vname), Assign, the_cp)
+              | _ -> SBinassop(SFinalID(vname), Assign, e'')
+
+              ) in
+            (* let the_assignment = SVdecl_ass({vname=vname; vtyp=vtyp}, e'') in *)
+            SBlock(pres @ [the_decl; the_ass] @ fres) , add_free {vtyp; vname}
+
           | Return e -> let (t, e') = expr scope e in
             if t = func.t && t != String then SReturn (t, e'), sp
             else if t = func.t && t == String then
               let free_stmts, _ = insert_frees sp in
               SBlock ([ SBlock(free_stmts);
                         SVdecl({vtyp=String; vname="ret_tmp"});
-                        U.handle_strings (String, SBinassop(SFinalID("ret_tmp"), Assign, (t, e')));
+                        string_flatten (String, SBinassop(SFinalID("ret_tmp"), Assign, (t, e')));
                         SReturn(String, SId(SFinalID("ret_tmp")))
                       ])
             , {scp=scope; fl=[]; il=inloop}

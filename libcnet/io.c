@@ -186,7 +186,6 @@ string *cnet_read_until(void *ptr, char *delim, int len)
 
     while (!found) {
         if (curr + len >= buf_size) {
-            printf("cp1: curr: %d, len: %d\n", curr, len);
             cnet_strmerge_custom(res, buf, curr);
             curr = 0;
             continue;
@@ -195,14 +194,12 @@ string *cnet_read_until(void *ptr, char *delim, int len)
         n = fread(buf + curr, 1, len, io->f);
         total += n; // never reset to 0 unlike curr
         if (n < len) {
-            printf("cp2: curr: %d, len: %d, n: %d\n", curr, len, n);
             cnet_strmerge_custom(res, buf, curr + n);
             break;
         }
 
         // n = len (the delimiter has been found, break and return)
         if (memcmp(buf + curr, delim, len) == 0){
-            printf("cp2: curr: %d, len: %d, n: %d\n", curr, len, n);
             cnet_strmerge_custom(res, buf, curr + n);
             break;
         }

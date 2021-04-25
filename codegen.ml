@@ -404,10 +404,11 @@ let translate (sdecl_list : sprogram) =
         SExpr e -> ignore(expr builder e scope); (scope, builder)
 
       | SVdecl vd ->
-        let new_var =
-          L.build_alloca (ltype_of_typ vd.vtyp) vd.vname builder
-        in
-        (add_var (vd,new_var) scope), builder
+        stmt (scope,builder) (SVdecl_ass(vd, U.default_global vd.vtyp))
+        (* let new_var = *)
+        (*   L.build_alloca (ltype_of_typ vd.vtyp) vd.vname builder *)
+        (* in *)
+        (* (add_var (vd,new_var) scope), builder *)
 
       | SVdecl_ass (vd, (t, e)) ->
         let new_var = L.build_alloca (ltype_of_typ vd.vtyp) vd.vname builder
@@ -444,7 +445,7 @@ let translate (sdecl_list : sprogram) =
                    ; scope, builder
 
       (* do not attempt *)
-      | SIf (psl, else_stmt) ->
+      | SIf (psl) ->
         (* let if_elif_bb = L.append_block context "if_elif" the_function in *)
         let add_if (if_bbs, my_pred_bb) (if_pred, then_stmt) =
           (* cast the value to a bool (1 bit) *)
@@ -467,13 +468,13 @@ let translate (sdecl_list : sprogram) =
 
 
         (* If all else fails, go to the else case *)
-        let _ = L.build_br else_then_bb (L.builder_at_end context else_pred_bb) in
-        let _ = (stmt (new_scope, L.builder_at_end context else_then_bb) else_stmt) in
+        (* let _ = L.build_br else_then_bb (L.builder_at_end context else_pred_bb) in *)
+        (* let _ = (stmt (new_scope, L.builder_at_end context else_then_bb) else_stmt) in *)
 
         let merge_bb = L.append_block context "if_merge" the_function in
         let _ = List.map
             (fun bb -> add_terminal (L.builder_at_end context bb) (L.build_br merge_bb))
-            (if_bbs @ [else_then_bb])
+            if_bbs
 
         in
         scope, L.builder_at_end context merge_bb
