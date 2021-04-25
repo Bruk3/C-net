@@ -233,6 +233,7 @@ let builtin_funcs, builtin_funcs_l =
 
       (* Strings *)
       (Int, "slength", [(String, "s")]);
+      (String, "user_itos", [(Int, "num")]);
       (String, "soi", [(Int, "i")]); (* string of int *)
       (String, "user_soi", [(Int, "i")]); (* string of int *)
       (String, "cnet_strcpy", [(String, "t"); (String, "s")]);
