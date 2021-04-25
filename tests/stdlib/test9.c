@@ -11,8 +11,8 @@ int main(){
     string *newline = cnet_new_str_nolen("\n");
 
 
-    /***************** Test cnet_readln  **************************/
-    string *line = cnet_readln(file);
+    /***************** Test readln  **************************/
+    string *line = readln(file);
     string *temp = cnet_new_str_nolen("hellow");
     string *temp15 = cnet_strmult(temp, 15);
     string *expected = cnet_strcat(temp15, newline);
@@ -24,7 +24,7 @@ int main(){
     line->cnet_free(line);
 
     for (int i=0; i < 5; i++) {
-        string *line = cnet_readln(file);
+        string *line = readln(file);
         char curr[10];
         sprintf(curr, "line%d", i);
         string *temp = cnet_new_str_nolen(curr);
@@ -36,7 +36,7 @@ int main(){
     printf("passed consecutive 5 lines test\n");
 
     // read very long line
-    line = cnet_readln(file);
+    line = readln(file);
     printf("read length: %d\n", line->length);
     string *a = cnet_new_str_nolen("a");
     string *manyAs = cnet_strmult(a, 4341);

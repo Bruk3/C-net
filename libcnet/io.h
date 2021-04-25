@@ -32,7 +32,7 @@ string *cnet_read(void *ptr);
 
 string *cnet_nread(void *ptr, int size);
 
-string *cnet_readln(void *ptr);
+string *readln(void *ptr);
 
 string *cnet_read_until(void *ptr, char *delim, int len);
 

@@ -78,11 +78,11 @@ let translate (sdecl_list : sprogram) =
   in
 
   let type_of t = match t with
-    A.Char            -> 0  
+    A.Char            -> 0
   | A.Int             -> 0
   | A.Float           -> 1
   | A.String          -> 2
-  | _                 -> 3 
+  | _                 -> 3
 in
 
 (*******************************************************************************
@@ -167,8 +167,8 @@ in
       L.var_arg_function_type (ltype_of_typ (A.Array(t))) [| i32_t; i32_t; i32_t; i32_t; (ltype_of_typ t) |] in
   let init_array_func t: L.llvalue =
       L.declare_function "cnet_init_array" (var_arr_t t) the_module in
-  let arr_idx_t t: L.lltype = match t with 
-    A.Array(typ) -> L.function_type  (L.pointer_type (ltype_of_typ typ)) [| ltype_of_typ t; i32_t|] 
+  let arr_idx_t t: L.lltype = match t with
+    A.Array(typ) -> L.function_type  (L.pointer_type (ltype_of_typ typ)) [| ltype_of_typ t; i32_t|]
     | _          -> codegen_err "[COMPILER BUG] Cannot index non-array type" in
   let cnet_index_arr_func t: L.llvalue =
     L.declare_function "cnet_index_arr" (arr_idx_t t) the_module in
@@ -181,9 +181,9 @@ in
     L.function_type (ltype_of_typ A.String) [| |] in
   let cnet_empty_str_func: L.llvalue  =
     L.declare_function "cnet_empty_str" cnet_empty_str_t the_module in
-  let cnet_char_at_t: L.lltype = 
+  let cnet_char_at_t: L.lltype =
     L.function_type (ltype_of_typ A.Char) [|(ltype_of_typ A.String); i32_t |] in
-  let cnet_char_at_func: L.llvalue = 
+  let cnet_char_at_func: L.llvalue =
     L.declare_function "cnet_char_at" cnet_char_at_t the_module in
 
   let memset_t =
@@ -192,7 +192,7 @@ in
     L.declare_function "memset" memset_t the_module in
 
   let main_t : L.lltype =
-      L.function_type (ltype_of_typ Int) [| i32_t; ptr_t (ptr_t i8_t)|] in  
+      L.function_type (ltype_of_typ Int) [| i32_t; ptr_t (ptr_t i8_t)|] in
   let main_func = L.declare_function "main" (main_t) the_module in
 
   (*******************************************************************************
@@ -283,11 +283,11 @@ in
           let the_struct = L.build_load ll "tmp" builder in
           (vd, L.build_struct_gep the_struct (U.mem_to_idx sd member) "" builder)
         | SIndex(r, ex) ->
-          let vd, arr = lookup r scope builder in 
+          let vd, arr = lookup r scope builder in
           let ll_arr = L.build_load arr "arr" builder in
               match vd.vtyp with
-                String -> vd, L.build_call cnet_char_at_func [| ll_arr;  expr builder ex scope |] "" builder 
-              | _      -> vd, L.build_call (cnet_index_arr_func (vd.vtyp)) [| ll_arr; expr builder ex scope |] "" builder 
+                String -> vd, L.build_call cnet_char_at_func [| ll_arr;  expr builder ex scope |] "" builder
+              | _      -> vd, L.build_call (cnet_index_arr_func (vd.vtyp)) [| ll_arr; expr builder ex scope |] "" builder
 
       and expr builder ((t, e) : sexpr) scope  =
         let lookup n = lookup n scope builder in
