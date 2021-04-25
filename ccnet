@@ -5,6 +5,7 @@ import sys
 import os
 import subprocess
 import stat
+import shutil
 
 CC		= "gcc"			# C compiler
 LLC		= "llc"			# LLVM compiler
@@ -55,7 +56,7 @@ def handle_full(options, sourcef):
 		with open(tmpfile, "w") as tmp:
 				tmp.write(ret.stdout.decode())
 
-		args = [CC, "-g", "-Wall", tmpfile, LIBCNET, "-o", "/dev/stdout"]
+		args = [CC, "-g", "-Wall", tmpfile, LIBCNET, "-o", "a.out"]
 		ret = subprocess.run(args, capture_output=True)
 
 		if (ret.returncode != 0): die(ret)
@@ -63,14 +64,16 @@ def handle_full(options, sourcef):
 
 		outputf = ""
 		if 'o' in options: # user specified a file
-				with open(options['o'], 'wb') as outfile:
-						outfile.write(ret.stdout)
-				os.chmod(options['o'], 0o755) # make it executable
+				# with open(options['o'], 'wb') as outfile:
+				# 		outfile.write(ret.stdout)
+				shutil.copyfile("a.out", options['o'])
+				os.chmod(options['o'], 0o755)
 				sys.exit(0)
 		else:
 				outputf = sourcef.split('.')[0]
-				with open(outputf, 'wb') as outfile:
-						outfile.write(ret.stdout)
+				# with open(outputf, 'wb') as outfile:
+				# 		outfile.write(ret.stdout)
+				shutil.copyfile("a.out", outputf)
 				os.chmod(outputf, 0o755) # make it executable
 				sys.exit(0)
 

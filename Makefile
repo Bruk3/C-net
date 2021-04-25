@@ -49,10 +49,10 @@ stdlib:
 .PHONY: clean
 clean:
 	opam config exec -- ocamlbuild -clean
-	rm -f final parser.ml parser.mli scanner.ml parser.output \
+	rm -rf final parser.ml parser.mli scanner.ml parser.output \
 	scanner.ml scannertest scannertest.out *cmi *cmo \
 	*.log *.diff *.out *.err *.ll *.s *.o parser.output \
-	tests/integration/*.exe
+	tests/integration/*.exe a.out a.out.dsYM/
 	cd $(LIB_DIR) && make clean
 	cd $(CTEST_DIR) && make clean
 
