@@ -1,0 +1,6 @@
+int main() {
+    int a;
+    a = 4;
+    stdout.writeln(soi(5*a));
+    return 0;
+}

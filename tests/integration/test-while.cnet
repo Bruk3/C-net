@@ -1,0 +1,12 @@
+string foo (int x){
+    return soi(x);
+}
+
+int main (){
+    int i = 4;
+    while (i > 0){
+        stdout.writeln(foo(i));
+        i= i - 1;
+    }
+    return 0;
+}
