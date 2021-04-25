@@ -82,6 +82,10 @@ cnet_file *cnet_open_file(string *fname, string *mode)
     file->cnet_free = cnet_free_file;
     file->f         = f;
 
+    // Bruk: only needs to be different from 0 and 1 which are allocated
+    // for STDIN and STDOUT;
+    file->io_type   = 2;
+
 	return file;
 }
 
@@ -94,14 +98,18 @@ string *cnet_nread(void *ptr, int size)
     if (check_socket_type(io))
         return res;
 
-    if (io->io_type == CNET_FILE_STDIN)
+    if (io->io_type == CNET_FILE_STDIN){
+        printf("io->f == stdin but how?");
 	    io->f = stdin;
+    }
 
-    int buf_size = DEFAULT_BUF_SIZE;
+    int buf_size = (DEFAULT_BUF_SIZE > size) ? size : DEFAULT_BUF_SIZE;
 
     char buf[buf_size];
 
-    while(size >= 0 && (n = fread(buf, 1, buf_size, io->f)) > 0){
+    printf("in cnet_nread before while loop\n");
+    while(size > 0 && (n = fread(buf, 1, buf_size, io->f)) > 0){
+        printf("size: %d", size);
         cnet_strmerge_custom(res, buf, n);
         size -= n;
         buf_size = (DEFAULT_BUF_SIZE > size) ? size : DEFAULT_BUF_SIZE;
@@ -178,6 +186,7 @@ string *cnet_read_until(void *ptr, char *delim, int len)
 
     while (!found) {
         if (curr + len >= buf_size) {
+            printf("cp1: curr: %d, len: %d\n", curr, len);
             cnet_strmerge_custom(res, buf, curr);
             curr = 0;
             continue;
@@ -186,12 +195,14 @@ string *cnet_read_until(void *ptr, char *delim, int len)
         n = fread(buf + curr, 1, len, io->f);
         total += n; // never reset to 0 unlike curr
         if (n < len) {
+            printf("cp2: curr: %d, len: %d, n: %d\n", curr, len, n);
             cnet_strmerge_custom(res, buf, curr + n);
             break;
         }
 
         // n = len (the delimiter has been found, break and return)
         if (memcmp(buf + curr, delim, len) == 0){
+            printf("cp2: curr: %d, len: %d, n: %d\n", curr, len, n);
             cnet_strmerge_custom(res, buf, curr + n);
             break;
         }
