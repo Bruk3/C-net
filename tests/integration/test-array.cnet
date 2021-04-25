@@ -1,0 +1,8 @@
+int main (){
+    int[] arr = new int[4] {1,2,3};
+    arr[3]= 4;
+    {
+        stdout.writeln(soi(arr.alength()));
+    }
+    return 0;
+}
