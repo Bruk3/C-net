@@ -345,8 +345,7 @@ in
                     | A.Geq     -> L.build_icmp L.Icmp.Sge
                 ) e1' e2' "tmp" builder
         in
-        (* L.build_sext_or_bitcast result i32_t "tmp_cast" builder *)
-        result
+        L.build_sext_or_bitcast result i32_t "tmp_cast" builder
       | SUnop (op,  ((t, _) as e)) -> let e' = expr builder e scope in
                                             (match op with
                                                 A.Minus when t = A.Float -> L.build_fneg

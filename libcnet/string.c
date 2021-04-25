@@ -199,7 +199,7 @@ int cnet_strcmp(string *s1, string *s2)
 	// null-terminator is stored at the last extra byte alloated
 	s1->data[s1->length] = '\0';
 	s2->data[s2->length] = '\0';
-	return memcmp(s1->data, s2->data, min_length);
+	return !memcmp(s1->data, s2->data, min_length);
 }
 
 /* Operator [] */

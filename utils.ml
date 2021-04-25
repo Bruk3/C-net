@@ -244,11 +244,7 @@ let builtin_funcs, builtin_funcs_l =
       (String, "lower", [(String, "t")]);
       (String, "substring", [(String, "t"); (Int, "start"); (Int, "end")]);
       (String, "reverse", [(String, "t")]);
-      (Int, "find_char", [(String, "t"); (Char, "c")]);
-
-      
-
-
+      (Char, "find_char", [(String, "t"); (Char, "c")]);
 
       (* Arrays *)
       (Int, "alength", [((Array(Void)), "s")]);
