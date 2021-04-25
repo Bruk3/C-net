@@ -470,7 +470,10 @@ let translate (sdecl_list : sprogram) =
         (* we'll start it off in the 'main' bb *)
         let first_bb = L.insertion_block builder in
         let if_bbs, else_pred_bb  = List.fold_left add_if ([], first_bb) psl in
-        let else_then_bb = L.append_block context "else_then" the_function in
+        (* let else_then_bb = L.append_block context "else_then" the_function in *)
+
+        (* we don't need the last bb *)
+        let _ = L.delete_block else_pred_bb in
 
 
         (* If all else fails, go to the else case *)
