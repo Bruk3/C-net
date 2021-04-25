@@ -53,7 +53,10 @@ struct cnet_array {
 	void *data;
 	int length;
 	int i_t;
+	int type_t;
 };
+
+enum cnet_types {Num, Float, String, Complex};
 
 typedef struct cnet_array cnet_array;
 
