@@ -35,6 +35,8 @@ string *cnet_str_upper(string *s);
 
 string *cnet_substring(string *s, int start, int end);
 
+void cnet_str_split(string *s,  string *delim, string **dest, int max);
+
 string *cnet_reverse_str(string *s);
 
 // Bruk: This is deprecated because of the new one more extra byte allocation

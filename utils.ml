@@ -217,8 +217,8 @@ let builtin_funcs, builtin_funcs_l =
     [
       (* I/O *)
       (* Sockets *)
-      (Socket, "user_nopen", [(String, "name"); (String, "protocol"); (Int, "port"); (String, "type")]);
-      (* (Int, "println", [(Socket, "sock"); (String, "s")]); *)
+      (Socket, "user_nopen", [(String, "host"); (String, "protocol"); (Int, "port"); (String, "type")]);
+      (Int, "println", [(Socket, "sock"); (String, "s")]);
 
       (Int, "write", [(Socket, "sock"); (String, "s")]);
       (String, "readln", [(Socket, "sock")]);
@@ -233,19 +233,19 @@ let builtin_funcs, builtin_funcs_l =
 
       (* Strings *)
       (Int, "slength", [(String, "s")]);
-      (String, "user_itos", [(Int, "num")]);
-      (String, "soi", [(Int, "i")]); (* string of int *)
+      (Int, "use_toint", [(String, "s")]); (* string of int *)
       (String, "user_soi", [(Int, "i")]); (* string of int *)
       (String, "cnet_strcpy", [(String, "t"); (String, "s")]);
       (String, "cnet_strmult", [(String, "t"); (Int, "i")]);
       (String, "cnet_strcat", [(String, "t"); (String, "s")]);
       (Int, "cnet_strcmp", [(String, "t"); (String, "s")]);
+      (String, "cnet_str_upper", [(String, "t")]);
 
       (* Arrays *)
       (Int, "alength", [((Array(Void)), "s")]);
 
-        (* Cnet *)
-        (Int, "cnet_free", [(String, "s")]);
+      (* Cnet *)
+      (Int, "cnet_free", [(String, "s")])
     ]
 ;;
 

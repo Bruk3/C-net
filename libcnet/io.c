@@ -49,13 +49,18 @@ static void cnet_free_socket(void *ptr)
 
 static int inline check_socket_type(cnet_io *io)
 {
-    if(io->io_type == CNET_SOCKET &&
-         ((cnet_socket *)io)->type == LISTEN){
-        fprintf(stderr, "error: %s", "Cannot write to listening socket");
-        return 1;
-    }
+	if (io == NULL) {
+		fprintf(stderr, "read/write operation attempted on uninitialized file/socket\n");
+		exit(1);
+	}
 
-    return 0;
+	if(io->io_type == CNET_SOCKET &&
+			((cnet_socket *)io)->type == LISTEN){
+		fprintf(stderr, "error: %s", "Cannot write to listening socket");
+		return 1;
+	}
+
+	return 0;
 }
 
 static void cnet_strmerge_custom(string *s, char *buf, int len)
@@ -66,7 +71,7 @@ static void cnet_strmerge_custom(string *s, char *buf, int len)
 
 }
 
-cnet_file *cnet_open_file(string *fname, string *mode)
+cnet_file *user_fopen(string *fname, string *mode)
 {
     fname->data[fname->length] = '\0';
     mode->data[mode->length] = '\0';
@@ -81,6 +86,11 @@ cnet_file *cnet_open_file(string *fname, string *mode)
     cnet_file *file = (cnet_file *)mem_alloc(sizeof(cnet_file));
     file->cnet_free = cnet_free_file;
     file->f         = f;
+    file->io_type   = CNET_FILE;
+
+    // Bruk: only needs to be different from 0 and 1 which are allocated
+    // for STDIN and STDOUT;
+    file->io_type   = 2;
 
 	return file;
 }
@@ -94,14 +104,18 @@ string *cnet_nread(void *ptr, int size)
     if (check_socket_type(io))
         return res;
 
-    if (io->io_type == CNET_FILE_STDIN)
+    if (io->io_type == CNET_FILE_STDIN){
+        printf("io->f == stdin but how?");
 	    io->f = stdin;
+    }
 
-    int buf_size = DEFAULT_BUF_SIZE;
+    int buf_size = (DEFAULT_BUF_SIZE > size) ? size : DEFAULT_BUF_SIZE;
 
     char buf[buf_size];
 
-    while(size >= 0 && (n = fread(buf, 1, buf_size, io->f)) > 0){
+    printf("in cnet_nread before while loop\n");
+    while(size > 0 && (n = fread(buf, 1, buf_size, io->f)) > 0){
+        printf("size: %d", size);
         cnet_strmerge_custom(res, buf, n);
         size -= n;
         buf_size = (DEFAULT_BUF_SIZE > size) ? size : DEFAULT_BUF_SIZE;
@@ -157,26 +171,22 @@ string *cnet_read(void *ptr)
 //     return n+1;
 
 // }
-string *cnet_readln(void *ptr)
+
+string *cnet_read_until(void *ptr, char *delim, int len)
 {
-    int n = 0;
     cnet_io *io = (cnet_io *)ptr;
 
     if (check_socket_type(io))
-        return 0;
+        return NULL;
 
     if (io->io_type == CNET_FILE_STDIN)
 	    io->f = stdin;
 
     string *res = cnet_empty_str();
     int buf_size = DEFAULT_BUF_SIZE;
-    int found = 0, curr = 0, len = 0;
+    int found = 0, curr = 0, n = 0;
     char buf[buf_size];
-    char temp[buf_size];
     int total = 0; // temp var for testing
-
-    // Will what is this line ?
-    /* strncpy(temp, delim, len); */
 
     if (check_socket_type(io))
         die("cannot read on a listening socket");
@@ -195,7 +205,8 @@ string *cnet_readln(void *ptr)
             break;
         }
 
-        if (strncmp(buf + curr, temp, len) == 0){
+        // n = len (the delimiter has been found, break and return)
+        if (memcmp(buf + curr, delim, len) == 0){
             cnet_strmerge_custom(res, buf, curr + n);
             break;
         }
@@ -212,27 +223,10 @@ string *cnet_readln(void *ptr)
     return res;
 }
 
-/* string *cnet_readln(void *ptr) */
-/* { */
-/*     return cnet_read_until(ptr, "\n", 1); */
-/*     // int n, idx; */
-/*     // cnet_io *io = (cnet_io *)ptr; */
-/*     // printf("reading line\n"); */
-/*     // if (check_socket_type(io)) */
-/*     //     return 0; */
-/*     // string *res = cnet_empty_str(); */
-/*     // int buf_size = DEFAULT_BUF_SIZE; */
-/*     // char buf[buf_size]; */
-
-/*     // while(fgets(buf, buf_size, io->f) != NULL){ */
-/*     //     if (ferror(io->f)) { */
-/*     //         die("Error in readln"); */
-/*     //     } */
-
-/*     //     if (feof(io->f)) { */
-/*     //         cnet_strmerge_custom(res, buf, n); */
-/*     //         break; */
-/*     //     } */
+string *cnet_readln(void *ptr)
+{
+    return cnet_read_until(ptr, "\n", 1);
+}
 
 
 /*     // while((n = fread(buf, 1, 1, io->f)) > 0){ */
