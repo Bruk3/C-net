@@ -263,12 +263,18 @@ let sbuiltin_funcs_l =
  * fdecls
  *)
 let decompose_program (sprog : sdecl list) =
-  let helper (vdecls, strct_decls, fdecls) decl = match decl with
-    | SGVdecl_ass (vd, v) -> ((vd, v) :: vdecls, strct_decls, fdecls) (* TODO: handle SGVdecl_ass properly *)
-    | SSdecl(sd) -> (vdecls, sd :: strct_decls, fdecls)
-    | SFdecl(fd) -> (vdecls, strct_decls, fd :: fdecls)
+  let helper (vdecls, strct_decls, fdecls, main) decl = match decl with
+    | SGVdecl_ass (vd, v) -> ((vd, v) :: vdecls, strct_decls, fdecls, main) (* TODO: handle SGVdecl_ass properly *)
+    | SSdecl(sd) -> (vdecls, sd :: strct_decls, fdecls, main)
+    | SFdecl(fd) -> match fd.sfname with 
+                    "main" ->
+                      let new_params = if (fd.sparameters = []) then [(Array(String), "__(*_*)__")] (*Fake name that user cannot use*)
+                                       else fd.sparameters in
+                      let user_main = {styp=fd.styp;sfname="user_main";sparameters=new_params;sbody=fd.sbody} in 
+                        (vdecls, strct_decls, user_main :: fdecls, false)
+                    | _      -> (vdecls, strct_decls,fd::fdecls, main)
   in
-  List.fold_left helper ([], [], []) sprog
+  List.fold_left helper ([], [], [], true) sprog
 
 
 (* the built-in structs in cnet. These MUST be in exact conjunction with those

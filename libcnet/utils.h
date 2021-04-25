@@ -66,4 +66,5 @@ void *mem_alloc(int size);
 
 void cnet_free(void *s);
 
+int user_main(cnet_array *args);
 #endif

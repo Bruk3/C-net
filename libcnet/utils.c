@@ -59,7 +59,7 @@ cnet_array *cnet_init_array(int sizei_t, int type_t, int len, int arr_lit_len, .
 	new_arr->i_t	    = sizei_t;
 	new_arr->type_t		= type_t;
 
-	printf("len:%d, arr_lit_len:%d\n", len, arr_lit_len);
+	// printf("len:%d, arr_lit_len:%d\n", len, arr_lit_len);
 	va_list arr_list;
 
 	va_start(arr_list, arr_lit_len);
@@ -116,7 +116,7 @@ void *cnet_index_arr(void *ptr, int index)
 
 	sprintf(s, "Index %d is out of range for array", index);
 
-	printf("Arr_len:%d\n", arr->length);
+	// printf("Arr_len:%d\n", arr->length);
 	if (index > arr->length)
 		die(s);
 
@@ -124,10 +124,30 @@ void *cnet_index_arr(void *ptr, int index)
 
 }
 
-int cnet_arr_length(void *ptr)
+int alength(void *ptr)
 {
 	cnet_array *arr = (cnet_array *)ptr;
 
 	return arr->length;
 }
 
+cnet_array *parse_main_args(int argc, char **argv)
+{
+	cnet_array *args = cnet_init_array(8, String, argc, 0);
+	string **data = (string **)args->data;
+	for(int i = 0 ; i < argc; i++){
+		string *new_str = cnet_new_str_nolen(argv[i]);
+		cnet_strcpy(data[i], new_str);
+		cnet_free(new_str);
+	}
+
+	return args;
+}
+
+int main(int argc, char **argv)
+{
+	cnet_array *string_arr = parse_main_args(argc-1, &argv[1]);
+	int ret = user_main(string_arr);
+	cnet_free(string_arr);
+	return ret;
+}

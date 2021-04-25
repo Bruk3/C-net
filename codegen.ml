@@ -18,7 +18,7 @@ let codegen_err (msg : string) =
 (* translate : Sast.program -> Llvm.module *)
 let translate (sdecl_list : sprogram) =
   (* replace with (vdecls, strct_decls, fdecls) *)
-  let (vdecls, sdecls, fdecls) = U.decompose_program sdecl_list in
+  let (vdecls, sdecls, fdecls, main_func_present) = U.decompose_program sdecl_list in
 (* let translate ((vdecls : (A.vdecl * sexpr) list), (strct_decls : strct list), (fdecls : sfunc list)) = *)
   let context    = L.global_context () in
 
@@ -188,6 +188,10 @@ in
   let memset_func =
     L.declare_function "memset" memset_t the_module in
 
+  let main_t : L.lltype =
+      L.function_type (ltype_of_typ Int) [| i32_t; ptr_t (ptr_t i8_t)|] in  
+  let main_func = L.declare_function "main" (main_t) the_module in
+
   (*******************************************************************************
    *                            Function signatures
    *******************************************************************************)
@@ -233,8 +237,7 @@ in
        declared variables.  Allocate each on the stack, initialize their
        value, if appropriate, and remember their values in the "locals" map *)
       let local_vars : (A.vdecl * L.llvalue) StringMap.t=
-        let add_formal m (t, n) p =
-          L.set_value_name n p;
+        let add_formal m (t, n) p = L.set_value_name n p;
           let local = L.build_alloca (ltype_of_typ t) n builder in
                 ignore (L.build_store p local builder);
           StringMap.add n ({vtyp=t;vname=n},local) m
