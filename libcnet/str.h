@@ -27,27 +27,29 @@ int cnet_strcmp(string *s1, string *s2);
 
 char cnet_char_at(string *str, int index);
 
-int cnet_strlen(string *s1);
+int slength(string *s1);
 
-string *cnet_str_lower(string *s);
+string *lower(string *s);
 
-string *cnet_str_upper(string *s);
+string *upper(string *s);
 
-string *cnet_substring(string *s, int start, int end);
+string *substring(string *s, int start, int end);
+
+string *reverse(string *s);
 
 void cnet_str_split(string *s,  string *delim, string **dest, int max);
-
-string *cnet_reverse_str(string *s);
 
 // Bruk: This is deprecated because of the new one more extra byte allocation
 // That extra byte is used to store a null terminator on demand.
 /* void cpy_str(string *src, char *dst); */
 
-int cnet_str_atoi(string *s);
+int toint(string *s);
 
-float cnet_str_atof(string *s);
+float tofloat(string *s);
 
-int cnet_find_char(string *s, char c);
+int find_char(string *s, char c);
+
+string *user_soi(int n);
 
 void print_cnet_str(string *s);
 
