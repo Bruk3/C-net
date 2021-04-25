@@ -59,7 +59,7 @@ cnet_array *cnet_init_array(int sizei_t, int type_t, int len, int arr_lit_len, .
 	new_arr->i_t	    = sizei_t;
 	new_arr->type_t		= type_t;
 
-	printf("len:%d, arr_lit_len:%d\n", len, arr_lit_len);
+	// printf("len:%d, arr_lit_len:%d\n", len, arr_lit_len);
 	va_list arr_list;
 
 	va_start(arr_list, arr_lit_len);
@@ -124,7 +124,7 @@ void *cnet_index_arr(void *ptr, int index)
 
 }
 
-int cnet_arr_length(void *ptr)
+int alength(void *ptr)
 {
 	cnet_array *arr = (cnet_array *)ptr;
 
@@ -146,7 +146,6 @@ cnet_array *parse_main_args(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-	printf("argc:%d argv[0]: %s\n", argc, argv);
 	cnet_array *string_arr = parse_main_args(argc-1, &argv[1]);
 	int ret = user_main(string_arr);
 	cnet_free(string_arr);

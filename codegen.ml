@@ -189,10 +189,8 @@ in
     L.declare_function "memset" memset_t the_module in
 
   let main_t : L.lltype =
-      L.function_type (ltype_of_typ Int) [| i32_t; ptr_t (ptr_t i8_t)|] in
-  let main_func: L.llvalue =
-      let main_func_name = if (main_func_present) then "user_main" else "main" in  
-      L.declare_function main_func_name (main_t) the_module in
+      L.function_type (ltype_of_typ Int) [| i32_t; ptr_t (ptr_t i8_t)|] in  
+  let main_func = L.declare_function "main" (main_t) the_module in
 
   (*******************************************************************************
    *                            Function signatures
