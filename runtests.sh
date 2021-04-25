@@ -200,23 +200,23 @@ do
     esac
 done
 
-# for file in $integrationtests
-# do
-#     case $file in
-# 	*test-*)
-# 	    './ccnet' $file
-# 	    Check $file ${file%.cnet}.exe 2>> $globallog
-# 	    rm ${file%.cnet}.exe
-# 	    ;;
-# 	*fail-*)
-# 	    # './ccnet' $file
-# 	    # CheckFail $file ${file%.cnet}.exe 2>> $globallog
-# 	    ;;
-# 	*)
-# 	    echo "unknown file type $file"
-# 	    globalerror=1
-# 	    ;;
-#     esac
-# done
+for file in $integrationtests
+do
+    case $file in
+	*test-*)
+	    './ccnet' $file
+	    Check ${file%.cnet} 2>> $globallog
+	    rm ${file%.cnet}
+	    ;;
+	*fail-*)
+	    # './ccnet' $file
+	    # CheckFail $file ${file%.cnet}.exe 2>> $globallog
+	    ;;
+	*)
+	    echo "unknown file type $file"
+	    globalerror=1
+	    ;;
+    esac
+done
 
 exit $globalerror
