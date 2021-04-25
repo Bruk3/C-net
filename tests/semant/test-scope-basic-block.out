@@ -5,12 +5,19 @@ int sum(int x,int y,int z)
 float y = (float : 0.);
 char[][] z = (char[][] : );
 (float : y);
-for ((int : x=(int : 3)) ; (int : (int : x) > (int : 2)) ; (int : x=(int : (int : x) - (int : 5))))
-	 {
+{
+(int : x=(int : 3));
+{
+while ((int : (int : x) > (int : 2))) {
+{
 int[] y = (int[] : );
 (int[] : y);
 (int : x);
 (char[][] : z);
+}
+(int : x=(int : (int : x) - (int : 5)));
+}
+}
 }
 }
 return (int : 0);

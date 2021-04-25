@@ -1,6 +1,11 @@
 int main()
 {
-string c = (string : (string : "a") + (string : "A"));
+{
+string tmp1000 = (string : cnet_strcat((string : "a"), (string : "A")));
+string c = (string : "");
+(string : c=(string : cnet_strcpy((string : c), (string : tmp1000))));
+delete (string : tmp1000);
+}
 delete (string : c);
 return (int : 0);
 }
