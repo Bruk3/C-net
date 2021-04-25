@@ -105,7 +105,6 @@ string *cnet_nread(void *ptr, int size)
         return res;
 
     if (io->io_type == CNET_FILE_STDIN){
-        printf("io->f == stdin but how?");
 	    io->f = stdin;
     }
 
@@ -113,9 +112,9 @@ string *cnet_nread(void *ptr, int size)
 
     char buf[buf_size];
 
-    printf("in cnet_nread before while loop\n");
+    // printf("in cnet_nread before while loop\n");
     while(size > 0 && (n = fread(buf, 1, buf_size, io->f)) > 0){
-        printf("size: %d", size);
+        // printf("size: %d", size);
         cnet_strmerge_custom(res, buf, n);
         size -= n;
         buf_size = (DEFAULT_BUF_SIZE > size) ? size : DEFAULT_BUF_SIZE;
@@ -129,7 +128,7 @@ string *cnet_nread(void *ptr, int size)
     return res;
 }
 
-string *cnet_read(void *ptr)
+string *readall(void *ptr)
 {
     int n;
     cnet_io *io = (cnet_io *)ptr;
@@ -223,7 +222,7 @@ string *cnet_read_until(void *ptr, char *delim, int len)
     return res;
 }
 
-string *cnet_readln(void *ptr)
+string *readln(void *ptr)
 {
     return cnet_read_until(ptr, "\n", 1);
 }
@@ -248,7 +247,7 @@ string *cnet_readln(void *ptr)
 
 
 
-int cnet_nwrite(void *ptr, string *s, int length)
+int nwrite(void *ptr, string *s, int length)
 {
     int n;
     cnet_io *io = (cnet_io *)ptr;
@@ -274,7 +273,7 @@ int cnet_nwrite(void *ptr, string *s, int length)
 
 int cnet_write(void *ptr, string *s)
 {
-	return cnet_nwrite(ptr, s, s->length);
+	return nwrite(ptr, s, s->length);
 }
 
 int writeln(void *ptr, string *s)
@@ -283,8 +282,8 @@ int writeln(void *ptr, string *s)
     string nl = {NULL, "\n", 1};
     if (s == NULL)
 	    die("ptr is NULL in writeln");
-    n  = cnet_nwrite(ptr, s, s->length);
-    n += cnet_nwrite(ptr, &nl, nl.length);
+    n  = nwrite(ptr, s, s->length);
+    n += nwrite(ptr, &nl, nl.length);
 
 	return n;
 }

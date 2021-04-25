@@ -1,0 +1,4 @@
+int main() {
+    stdout.writeln("RED" + "alert");
+    return 0;
+}

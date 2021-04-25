@@ -18,7 +18,7 @@ let codegen_err (msg : string) =
 (* translate : Sast.program -> Llvm.module *)
 let translate (sdecl_list : sprogram) =
   (* replace with (vdecls, strct_decls, fdecls) *)
-  let (vdecls, sdecls, fdecls, main_func_present) = U.decompose_program sdecl_list in
+  let (vdecls, sdecls, fdecls) = U.decompose_program sdecl_list in
 (* let translate ((vdecls : (A.vdecl * sexpr) list), (strct_decls : strct list), (fdecls : sfunc list)) = *)
   let context    = L.global_context () in
 
@@ -175,13 +175,16 @@ in
 
   let cnet_new_str_nolen_t: L.lltype =
     L.function_type (ltype_of_typ A.String) [| ptr_t i8_t |] in
-  let cnet_new_str_func  =
+  let cnet_new_str_func: L.llvalue  =
     L.declare_function "cnet_new_str_nolen" cnet_new_str_nolen_t the_module in
   let cnet_empty_str_t: L.lltype =
     L.function_type (ltype_of_typ A.String) [| |] in
-  let cnet_empty_str_func  =
+  let cnet_empty_str_func: L.llvalue  =
     L.declare_function "cnet_empty_str" cnet_empty_str_t the_module in
-
+  let cnet_char_at_t: L.lltype =
+    L.function_type (ltype_of_typ A.Char) [|(ltype_of_typ A.String); i32_t |] in
+  let cnet_char_at_func: L.llvalue =
+    L.declare_function "cnet_char_at" cnet_char_at_t the_module in
 
   let strlen_t =
     L.function_type i64_t [|str_t|] in
@@ -313,7 +316,9 @@ in
         | SIndex(r, ex) ->
           let vd, arr = lookup r scope builder in
           let ll_arr = L.build_load arr "arr" builder in
-          vd, L.build_call (cnet_index_arr_func (vd.vtyp)) [| ll_arr; expr builder ex scope |] "" builder
+              match vd.vtyp with
+                String -> vd, L.build_call cnet_char_at_func [| ll_arr;  expr builder ex scope |] "" builder
+              | _      -> vd, L.build_call (cnet_index_arr_func (vd.vtyp)) [| ll_arr; expr builder ex scope |] "" builder
 
       and expr builder ((t, e) : sexpr) scope  =
         let lookup n = lookup n scope builder in
@@ -373,8 +378,7 @@ in
                     | A.Geq     -> L.build_icmp L.Icmp.Sge
                 ) e1' e2' "tmp" builder
         in
-        (* L.build_sext_or_bitcast result i32_t "tmp_cast" builder *)
-        result
+        L.build_sext_or_bitcast result i32_t "tmp_cast" builder
       | SUnop (op,  ((t, _) as e)) -> let e' = expr builder e scope in
                                             (match op with
                                                 A.Minus when t = A.Float -> L.build_fneg
@@ -556,7 +560,7 @@ in
         let pred_builder = L.builder_at_end context pred_bb in
         let pred_val = expr pred_builder pred scope  in
         (* cast the value to a bool (1 bit) *)
-        let pred_val = L.build_icmp L.Icmp.Ne pred_val (L.const_int i1_t 0)
+        let pred_val = L.build_icmp L.Icmp.Ne pred_val (L.const_int i32_t 0)
             "tmp" pred_builder in
 
 

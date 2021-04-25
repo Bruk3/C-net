@@ -16,7 +16,7 @@
 #define LISTEN 0
 #define CONNECT 1
 
-cnet_file *cnet_open_file(string *filename, string *mode);
+cnet_file *user_fopen(string *filename, string *mode);
 
 cnet_socket *cnet_listen_socket(int domain, int type, unsigned short port);
 
@@ -32,7 +32,7 @@ string *cnet_read(void *ptr);
 
 string *cnet_nread(void *ptr, int size);
 
-string *cnet_readln(void *ptr);
+string *readln(void *ptr);
 
 string *cnet_read_until(void *ptr, char *delim, int len);
 
