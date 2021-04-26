@@ -20,7 +20,7 @@ cnet_file *user_fopen(string *filename, string *mode);
 
 cnet_socket *cnet_listen_socket(int domain, int type, unsigned short port);
 
-cnet_socket *cnet_accept_connection(cnet_socket *listener);
+cnet_socket *naccept(cnet_socket *listener);
 
 int cnet_write(void *ptr, string *s);
 
@@ -38,6 +38,6 @@ string *cnet_read_until(void *ptr, char *delim, int len);
 
 cnet_socket *cnet_connect_to_host(string *host_str, int port, int domain, int type);
 
-int cnet_check_error(void *ptr);
+int error(void *ptr);
 
 #endif

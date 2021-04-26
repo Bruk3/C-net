@@ -68,5 +68,7 @@ void cnet_free(void *s);
 
 cnet_array *cnet_init_array(int sizei_t, int type_t, int len, int arr_lit_len, ...);
 
+cnet_array *cnet_array_decl (int sizei_t, int type_t, int len);
+
 int user_main(cnet_array *args);
 #endif

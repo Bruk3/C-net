@@ -31,7 +31,8 @@ let rec final_id_of_sid = function
 
 (* Get a default value for a global variable based on its type *)
 let default_global = function
-    A.Char | A.Int -> (A.Int, SIntlit(0))
+    A.Char -> (A.Char, SCharlit(0))
+  | A.Int -> (A.Int, SIntlit(0))
   | A.Float -> (A.Float, SFloatlit(0.0))
   | A.String -> (A.String, SStrlit(""))
   | A.Void   -> semant_err "[COMPILER BUG] uncaught void global variable detected"
@@ -217,12 +218,15 @@ let builtin_funcs, builtin_funcs_l =
     [
       (* I/O *)
       (* Sockets *)
-      (Socket, "user_nopen", [(String, "host"); (String, "protocol"); (Int, "port"); (String, "type")]);
+      (Socket, "user_nopen", [(String, "host"); (Int, "port"); (String, "protocol"); (String, "type")]);
+      (Socket, "naccept", [(Socket, "sock")]);
       (Int, "writeln", [(Socket, "f"); (String, "s")]);
 
       (Int, "write", [(Socket, "sock"); (String, "s")]);
       (String, "readln", [(Socket, "sock")]);
+      (String, "readall", [(Socket, "sock")]);
       (String, "read", [(Socket, "sock"); (Int, "len")]);
+      (Int, "error", [(Socket, "s")]);
 
       (* Files *)
       (File, "user_fopen", [(String, "name"); (String, "mode");]);
@@ -230,6 +234,8 @@ let builtin_funcs, builtin_funcs_l =
       (Int, "nwrite", [(File, "f"); (String, "s"); (Int, "num")]);
       (String, "readln", [(File, "f")]);
       (String, "readall", [(File, "f")]);
+      (Int, "error", [(File, "f")]);
+
 
       (* Strings *)
       (String, "cnet_strcpy", [(String, "t"); (String, "s")]);
@@ -245,12 +251,15 @@ let builtin_funcs, builtin_funcs_l =
       (String, "substring", [(String, "t"); (Int, "start"); (Int, "end")]);
       (String, "reverse", [(String, "t")]);
       (Char, "find_char", [(String, "t"); (Char, "c")]);
+      (Void, "split", [(String, "t"); (String, "delim"); (Array(String), "dest")]);
+      (Char, "charat", [(String, "s"); (Int, "i")]);
 
       (* Arrays *)
       (Int, "alength", [((Array(Void)), "s")]);
 
       (* Cnet *)
-      (Int, "cnet_free", [(String, "s")])
+      (* (Int, "cnet_free", [(String, "s")]); *)
+      (Int, "cnet_free", [(Socket, "s")])
     ]
 ;;
 

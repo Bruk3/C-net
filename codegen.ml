@@ -167,6 +167,10 @@ in
       L.var_arg_function_type (ltype_of_typ (A.Array(t))) [| i32_t; i32_t; i32_t; i32_t; (ltype_of_typ t) |] in
   let init_array_func t: L.llvalue =
       L.declare_function "cnet_init_array" (var_arr_t t) the_module in
+  let non_variadic_arr_t t : L.lltype = 
+    L.function_type (ltype_of_typ (A.Array(t))) [| i32_t; i32_t; i32_t |] in 
+  let cnet_array_decl_func t: L.llvalue = 
+    L.declare_function "cnet_array_decl" (non_variadic_arr_t t) the_module in
   let arr_idx_t t: L.lltype = match t with
     A.Array(typ) -> L.function_type  (L.pointer_type (ltype_of_typ typ)) [| ltype_of_typ t; i32_t|]
     | _          -> codegen_err "[COMPILER BUG] Cannot index non-array type" in
@@ -259,7 +263,8 @@ in
       in
       (* Return the value for a variable or formal argument.
         Check local names first, then global names *)
-      let rec lookup_helper (n : string) scope : (A.vdecl * L.llvalue) = match scope with
+      let rec lookup_helper (n : string) scope : (A.vdecl * L.llvalue) =
+        match scope with
           [] -> codegen_err ("[COMPILER BUG] cannot find variable " ^ n)
         | hd :: tl ->
           if StringMap.mem n hd then
@@ -275,7 +280,7 @@ in
       (* Construct code for an expression; return its value *)
 
       let rec lookup n scope builder = match n with
-          SFinalID s -> lookup_helper s scope
+          SFinalID s -> lookup_helper s scope;
         | SRID(r, member) ->
           let vd, ll = lookup r scope builder in
           let sname = match vd.vtyp with Struct(n) -> n in
@@ -286,8 +291,9 @@ in
           let vd, arr = lookup r scope builder in
           let ll_arr = L.build_load arr "arr" builder in
               match vd.vtyp with
-                String -> vd, L.build_call cnet_char_at_func [| ll_arr;  expr builder ex scope |] "" builder
-              | _      -> vd, L.build_call (cnet_index_arr_func (vd.vtyp)) [| ll_arr; expr builder ex scope |] "" builder
+              String -> vd, L.build_call cnet_char_at_func [| ll_arr; expr builder ex scope |] "charAt" builder;
+            | _      -> vd, L.build_call (cnet_index_arr_func (vd.vtyp)) [|
+                ll_arr; expr builder ex scope |] "idx_elt" builder
 
       and expr builder ((t, e) : sexpr) scope  =
         let lookup n = lookup n scope builder in
@@ -297,15 +303,15 @@ in
         | SIntlit i   -> L.const_int i32_t i
         | SCharlit c  -> L.const_int i8_t c
         | SFloatlit f -> L.const_float float_t f
-        | SId s       -> L.build_load (snd (lookup s )) (U.final_id_of_sid s) builder
+        | SId s       -> L.build_load (snd (lookup s)) (U.final_id_of_sid s) builder
 
         | SBinassop (s, op, e) -> let e' =  expr builder e scope
           in (match e with
                 _, SNoexpr ->
-                let the_null = (L.build_sext_or_bitcast e' (ltype_of_typ t) "tmp" builder)
-                in
+                let the_null = (L.build_sext_or_bitcast e' (ltype_of_typ t) "tmp" builder) in
                 ignore (L.build_store the_null (snd (lookup s)) builder); e'
-              | _ -> ignore(L.build_store e' (snd (lookup s)) builder); e'
+              | _ ->
+                ignore(L.build_store e' (snd (lookup s)) builder); e'
             )
         | SBinop ((A.Float,_ ) as e1, op, e2) ->
           let e1' = expr builder e1 scope
@@ -370,7 +376,9 @@ in
         let type_t = expr builder (A.Int,SIntlit((type_of t))) scope in
         let ll_arr_lit = List.map (fun a -> expr builder a scope) arr_lit in
         let ll_va_args =  size_t :: type_t :: arr_len ::arr_lit_len :: ll_arr_lit in
-        L.build_call (init_array_func t) (Array.of_list ll_va_args) "cnet_init_array" builder
+        if ((List.length ll_arr_lit) = 0) 
+        then L.build_call (cnet_array_decl_func t) [| size_t ; type_t ; arr_len |] "cnet_array_decl" builder
+        else L.build_call (init_array_func t) (Array.of_list ll_va_args) "cnet_init_array" builder
       | SCall (n, args) ->
         let (fdef, fdecl) = find_checked n function_decls in
         let llargs = List.map (fun a -> expr builder a scope) args in
@@ -444,7 +452,10 @@ in
                           let to_be_deleted = L.build_load ll (U.final_id_of_sid s) builder in
                           let sname = match sd.vtyp with Struct(n) -> n in
                           let sd, _ = find_checked sname cstructs in
-                          let delete_str = fun s -> L.build_call (find_func "cnet_free") [| s |] "tmp" builder in
+                          let delete_str = fun s -> L.build_call (find_func
+                                                                    "cnet_free")
+                              [| L.build_sext_or_bitcast s (ltype_of_typ A.File)
+                              "cast" builder |] "tmp" builder in
                           let smem_ptr mem = L.build_struct_gep to_be_deleted (U.mem_to_idx sd mem.vname) "tmp" builder in
                           let del_func = fun smem -> ignore(delete_str (L.build_load (smem_ptr smem) "tmp" builder)) in
                           let str_members = List.filter (fun mem -> mem.vtyp = A.String ) sd.members in
@@ -452,6 +463,8 @@ in
                           L.build_free to_be_deleted builder)
 
           | _ -> let to_be_deleted = expr builder e scope in
+            let to_be_deleted = L.build_sext_or_bitcast to_be_deleted
+                (ltype_of_typ A.File) "cast" builder in
                  L.build_call (find_func "cnet_free") [| to_be_deleted |] "tmp" builder
       );(scope, builder)
 

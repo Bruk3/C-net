@@ -203,7 +203,7 @@ int cnet_strcmp(string *s1, string *s2)
 }
 
 /* Operator [] */
-char cnet_char_at(string *str, int index)
+char charat(string *str, int index)
 {
 	if (index >= str->length)
 		die("Error: Index out of bounds\n");
@@ -312,22 +312,28 @@ float tofloat(string *s)
 }
 
 
-void cnet_str_split(string *s,  string *delim, string **dest, int max)
+void split(string *s,  string *delim, cnet_array *dest)
 {
 	if (!s || !s->data)
 		die("Error: Null Pointer\n");
 
+	char *buf = mem_alloc(s->length);
+	memcpy(buf, s->data, s->length);
+
 	s->data[s->length] = '\0';
 	delim->data[delim->length] = '\0';
-	char *token = strtok(s->data, delim->data);
+	char *token = strtok(buf, delim->data);
 
 	int i = 0;
-	while (token != NULL && i < max){
-		string *new_str = cnet_new_str_nolen(token);
-		dest[i] = new_str;
+	string **d = dest->data;
+	// printf("before loop\n");
+	while (token != NULL && i < dest->length){
+		// printf("token: %s\n", token);
+		d[i] = cnet_new_str_nolen(token);
 		token = strtok(NULL, delim->data);
 		i += 1;
 	}
+	// printf("after loop\n");
 
 }
 
