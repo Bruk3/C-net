@@ -1,0 +1,18 @@
+
+struct person{ 
+  int age;
+};
+struct person f(struct person x){
+  struct person a = x;
+  return a;
+}
+int main(){
+  struct person x = new struct person; 
+  x.age = 20;
+  struct person b = new struct person; 
+  b = f(x);
+  stdout.writeln(soi(b.age)); //  prints 20 
+  x.age = 15; 
+  stdout.writeln(soi(b.age)); //  prints 15 
+  return 0;
+}
