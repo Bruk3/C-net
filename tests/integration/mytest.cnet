@@ -2,7 +2,7 @@ int main()
 {
     {
         int x = 5;
-        int y = 90;
+        int y = 15;
         {
             {
                 int y = 20;
@@ -17,7 +17,7 @@ int main()
             int z = x + y; // outer block x and y
             stdout.writeln("x is " + soi(x));
             stdout.writeln("y is " + soi(y));
-            stdout.writeln("z(16): " + soi(z)); 
+            stdout.writeln("z(22): " + soi(z)); 
         }
     }
     return 0;
