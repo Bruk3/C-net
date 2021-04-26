@@ -108,6 +108,28 @@ out:
 
 }
 
+cnet_array *cnet_array_decl (int sizei_t, int type_t, int len)
+{
+	cnet_array *new_arr = (cnet_array *)mem_alloc(sizeof(cnet_array));
+
+	new_arr->cnet_free  = free_cnet_array;
+	new_arr->data	    = (char *)mem_alloc(len * sizei_t);
+	new_arr->length	    = len;
+	new_arr->i_t	    = sizei_t;
+	new_arr->type_t		= type_t;
+
+	if (type_t != String)
+		goto out;
+
+	for (int i = 0; i<(len*sizei_t); i+=sizei_t){
+		string *new_str = cnet_empty_str();
+		memcpy(new_arr->data+i, &new_str, sizei_t);
+	}
+
+out:
+	return new_arr;
+}
+
 void *cnet_index_arr(void *ptr, int index)
 {
 	char s[100];

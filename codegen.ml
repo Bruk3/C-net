@@ -167,6 +167,10 @@ in
       L.var_arg_function_type (ltype_of_typ (A.Array(t))) [| i32_t; i32_t; i32_t; i32_t; (ltype_of_typ t) |] in
   let init_array_func t: L.llvalue =
       L.declare_function "cnet_init_array" (var_arr_t t) the_module in
+  let non_variadic_arr_t t : L.lltype = 
+    L.function_type (ltype_of_typ (A.Array(t))) [| i32_t; i32_t; i32_t |] in 
+  let cnet_array_decl_func t: L.llvalue = 
+    L.declare_function "cnet_array_decl" (non_variadic_arr_t t) the_module in
   let arr_idx_t t: L.lltype = match t with
     A.Array(typ) -> L.function_type  (L.pointer_type (ltype_of_typ typ)) [| ltype_of_typ t; i32_t|]
     | _          -> codegen_err "[COMPILER BUG] Cannot index non-array type" in
@@ -372,7 +376,9 @@ in
         let type_t = expr builder (A.Int,SIntlit((type_of t))) scope in
         let ll_arr_lit = List.map (fun a -> expr builder a scope) arr_lit in
         let ll_va_args =  size_t :: type_t :: arr_len ::arr_lit_len :: ll_arr_lit in
-        L.build_call (init_array_func t) (Array.of_list ll_va_args) "cnet_init_array" builder
+        if ((List.length ll_arr_lit) = 0) 
+        then L.build_call (cnet_array_decl_func t) [| size_t ; type_t ; arr_len |] "cnet_array_decl" builder
+        else L.build_call (init_array_func t) (Array.of_list ll_va_args) "cnet_init_array" builder
       | SCall (n, args) ->
         let (fdef, fdecl) = find_checked n function_decls in
         let llargs = List.map (fun a -> expr builder a scope) args in
