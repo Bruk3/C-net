@@ -203,7 +203,7 @@ int cnet_strcmp(string *s1, string *s2)
 }
 
 /* Operator [] */
-char cnet_char_at(string *str, int index)
+char charat(string *str, int index)
 {
 	if (index >= str->length)
 		die("Error: Index out of bounds\n");

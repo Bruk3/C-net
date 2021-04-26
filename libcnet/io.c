@@ -79,7 +79,7 @@ cnet_file *user_fopen(string *fname, string *mode)
     FILE *f = fopen(fname->data, mode->data);
 
     if (!f) {
-		perror("can't open file");
+	perror("can't open file");
         return NULL;
     }
 
