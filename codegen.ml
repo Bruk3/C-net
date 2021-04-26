@@ -267,23 +267,18 @@ in
           else
             lookup_helper n tl
       in
-
-      let get_strlit s builder =
-        let the_global_string = L.build_global_stringptr s "global_strlit" builder in
-        (* this is going to be stack allocated so we don't want a pointer, we
-         * want the actual string struct type, so don't use ltyp_of_typ
-         *)
-        let cnet_str_typ = snd (find_checked "string" cstructs) in
+      let get_strlit_general s_ptr builder =
+        let cnet_str_typ = non_ptr_typ A.String in
         let the_str = L.build_alloca cnet_str_typ "stacked_strlit" builder in
         let the_str_ptr = L.build_alloca (ltype_of_typ A.String) "strlit" builder in
         let the_str_ptr = L.build_store the_str the_str_ptr builder in
-        let the_global_string' = L.build_sext_or_bitcast the_global_string
+        let s_ptr' = L.build_sext_or_bitcast s_ptr
             (ltype_of_typ A.String) "cast" builder
         in
         let data_mem = L.build_struct_gep the_str 1 "data" builder in (* the_str.data *)
         let len_mem = L.build_struct_gep the_str 2 "data" builder in (* the_str.length *)
-        let _ = L.build_store the_global_string' data_mem builder in (* the_str.data = %strlit *)
-        let the_len = L.build_call strlen_func [| the_global_string |]
+        let _ = L.build_store s_ptr' data_mem builder in (* the_str.data = %strlit *)
+        let the_len = L.build_call strlen_func [| s_ptr |]
             "strlit_len" builder
         in
         (* cast it to i32_t since strlen returns an i64_t *)
@@ -292,12 +287,14 @@ in
 
         in
         the_str
-
-
-(*           L.build_call cnet_new_str_func [| L.build_global_stringptr s "tmp" *)
-(*                                               builder |] "strlit" builder *)
       in
 
+      (* builds a local string on the stack based on the string s *)
+      let get_strlit s builder =
+        let the_global_string = L.build_global_stringptr s "global_strlit" builder
+        in
+        get_strlit_general the_global_string builder
+      in
 
       (* Todo: Recursive lookup for complex data types*)
       (* let lookup n scopes = lookup_helper n (lookup_scope n scopes) *)
