@@ -15,8 +15,15 @@ void cleanup(struct conn client_conn)
 	return;
 }
 
-// void print_conn_details(struct conn s_conn)
-// {}
+void print_conn_details(struct conn s_conn)
+{
+	stdout.writeln("Connecting to host: " + s_conn.serv_addr 
+					+ "\nPort " + soi(s_conn.port));
+	stdout.writeln("Requesting " + s_conn.req_fname);
+	stdout.writeln("Protocol : HTTP/1.0");
+
+	return;
+}
 
 string req_line(string host, string fname){
 	return "GET " + fname + " HTTP/1.0\r\n"
@@ -37,20 +44,14 @@ int main(string [] args)
 	s_conn.serv_addr = args[1];
     s_conn.port = args[2].toint();
 	s_conn.req_fname = args[3];
+	print_conn_details(s_conn);
 
 	/* Making request to host server */
 	s_conn.sock = nopen(s_conn.serv_addr, s_conn.port, "tcp", "connect"); 
 	s_conn.sock.writeln(req_line(s_conn.serv_addr, s_conn.req_fname));
 
 	/* Reading from conn socket and writing to local file*/
-	string buf;
-	// while(!(s_conn.sock.error())){
-	// 	buf += s_conn.sock.readln();
-	// 	stdout.writeln(buf);
-	// }
-
 	s_conn.f = fopen(args[4], "wb");
-	// s_conn.f.nwrite(buf, buf.slength());
 	s_conn.f.writeln(s_conn.sock.readall());
 
 	cleanup(s_conn);
