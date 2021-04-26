@@ -1,0 +1,39 @@
+int _EXRATE = 6;
+int _RICHTHRESHOLD = 100000;
+
+struct employee {
+	int pid;
+    int salary;
+	string manager;
+};
+
+int convert_cedi(int b) {return b * _EXRATE;}
+int check_rich(struct employee e) {return e.salary >= _RICHTHRESHOLD;}
+
+int main() {
+    // Print array elements 
+    int[] x = new int[3]{1,2,3};
+    int i = 0;
+
+    for(i; i < 3; i = i + 1) {
+        stdout.writeln(soi(x[i]) + "");
+    }
+
+    // Print struct members 
+    struct employee e = new struct employee; 
+    e.pid = 1; 
+    e.salary = 100000; 
+    e.manager = "Bob"; 
+    stdout.writeln("Employee " + soi(e.pid) + " under " + e.manager + " earns " + soi(e.salary) + " USD"); 
+
+
+    // Get conversion from convert_cedi()
+    int sal_cedi = convert_cedi(e.salary); 
+    stdout.writeln("Employee " + soi(e.pid) + " under " + e.manager + " earns " + soi(sal_cedi) + " CEDI");
+
+    // Check if wealthy
+    if (check_rich(e)) {stdout.writeln("Employee " + soi(e.pid) + " is rich");}
+    else {stdout.writeln("Employee " + soi(e.pid) + " needs a raise");}
+
+    return 0;
+}

@@ -1,0 +1,24 @@
+int main()
+{
+    {
+        int x = 5;
+        int y = 90;
+        {
+            {
+                int y = 20;
+
+                x+=1;
+                stdout.writeln("x is " + soi(x));
+                y+=1;
+                stdout.writeln("y is " + soi(y)); 
+                int z = x + y; 
+                stdout.writeln("z(27): " + soi(z)); 
+            }            
+            int z = x + y; // outer block x and y
+            stdout.writeln("x is " + soi(x));
+            stdout.writeln("y is " + soi(y));
+            stdout.writeln("z(16): " + soi(z)); 
+        }
+    }
+    return 0;
+}
