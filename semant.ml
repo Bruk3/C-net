@@ -322,7 +322,7 @@ let check  = function
             let args = (match fname with
                   FinalID(_) -> args
                 | RID(sm,_) when isbuiltin -> Rid(sm) :: args
-                | RID(_,_) -> semant_err ("function call on member only allowed for builtin functions")
+                | RID(_,r) -> semant_err ("function call on member " ^ r ^ " is not a builtin function" )
                 | indx -> semant_err ("cannot call a function on index " ^ (string_of_rid indx))
               )
             in

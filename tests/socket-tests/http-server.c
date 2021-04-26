@@ -2,61 +2,72 @@ int main(string[] argv)
 {
     if (argv.alength() != 3){
         stdout.writeln("usage: " + argv[0] + " <server-port> <web-root>");
+        return -1;
     }
 
+    string port = argv[1];
     string webroot = argv[2];
 
     // Create a listening socket (also called server socket)
     // for liking with the mdb-lookup server.
-    // socket listener = nopen(0, 0, argv[1].stoi());
-    socket listener;
+    socket listener = nopen("", port.toint(), "tcp", "listen");
 
-    int clntsock;
+    socket clntsock = listener.naccept();
+    string req_line = clntsock.readln();
+    stdout.writeln(req_line);
+
+    // Accept an incoming connection
+    string[] tokens = new string[3]{"", "", ""};
+    req_line.split(" ", tokens);
+
+    string method = tokens[0];
+    string req_URI = tokens[1];
+    string httpVersion = tokens[2];
+
+    stdout.writeln(method + " " + req_URI + " " + httpVersion);
+
+    string fileName;
+    string respHeader;
+    int size;
+
+    if (method.slength() == 0 || httpVersion.slength() == 0 ){
+        respHeader = "501 Not Implemented";
+    }
+
+    else if (method != "GET" || (httpVersion != "HTTP/1.0" && httpVersion != "HTTP/1.1")) {
+         respHeader = "501 Not Implemented";
+    }
+    stdout.writeln(respHeader);
+    /*
+    else
+    {
+        fileName += webroot;
+        fileName += req_URI;
+
+        // if uri ends with a '/', append index.html
+        if (req_URI[req_URI.slength() - 1] == '/'){
+            fileName += "index.html";
+        }
+
+        file targetFile;
+        // Try to open the file or give a 404
+        targetFile = fopen(fileName, "rb");
+        if (targetFile.error()){
+            respHeader = "404 Not Found";
+        }
+        else{
+            respHeader = "200 OK";
+        }
+    }
+
+    // log the request
+    stdout.writeln(req_URI + " " + httpVersion + " " + respHeader);
+
+
+/*
     while (1) {
 
-        // Accept an incoming connection
 
-	    socket clntsock = naccept(listener);
-        string req_line = clntsock.read_ln(buf);
-        string[] tokens = new string[3];
-        req_line.split(" ", tokens, 3);
-
-        string method = tokens[0];
-        string req_URI = tokens[1];
-        string httpVersion = tokens[2];
-
-        string fileName;
-        string respHeader;
-        int size;
-
-        if (method.length() == 0 || httpVersion.length() == 0 ){
-            respHeader = "501 Not Implemented";
-        }
-        else if (method != "GET" || (httpVersion != "HTTP/1.0" && httpVersion != "HTTP/1.1"))
-            respHeader = "501 Not Implemented";
-
-
-        else
-        {
-            fileName += webroot;
-            fileName += request_URI;
-
-            // if uri ends with a '/', append index.html
-            if (req_URI[req_URI.length() - 1] == '/'){
-                fileName += "index.html";
-            }
-
-            file targetFile;
-            // Try to open the file or give a 404
-            if ((targetFile = fopen(fileName, "rb")) == L){
-                respHeader = "404 Not Found";
-            }
-            else{
-                respHeader = "200 OK";
-            }
-        }
-        // log the request
-        stdout.writeln(request_method + " " + req_URI + " " + httpVersion + " " + respHeader);
 
         if (respHeader == "200 OK" || respHeader == "404 Not Found") {
             // read socket until end of header/body of request
@@ -82,5 +93,8 @@ int main(string[] argv)
 
         clntsock.close();
     }
+    */
+
+   return 0;
 
 }

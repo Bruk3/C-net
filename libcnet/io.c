@@ -354,7 +354,7 @@ out:
     return sock;
 }
 
-cnet_socket *cnet_accept_connection(cnet_socket *listener)
+cnet_socket *naccept(cnet_socket *listener)
 {
     if (listener->type != LISTEN){
         perror("Non-Listener socket cannot accept connections.");
@@ -385,6 +385,33 @@ failed:
 
 out:
     return conn_sock;
+}
+
+cnet_socket *user_nopen(string *host, int port, string *prot, string *type)
+{
+    int protocol;
+
+    prot->data[prot->length] = '\0';
+
+    if (strcasecmp(prot->data, "tcp") == 0){
+        protocol = 0;
+    } else if (strcasecmp(prot->data, "udp") == 0){
+        protocol = 1;
+    } else {
+        die("Unknown transport protocol passed to nopen");
+    }
+
+    type->data[type->length] = '\0';
+
+    if (strcasecmp(type->data, "listen") == 0){
+        return cnet_listen_socket(0, protocol, port);
+    } else if (strcasecmp(type->data, "connect") == 0){
+        return cnet_connect_to_host(host, port, 0, protocol);
+    } else {
+        die("Invalid socket type passed to nopen");
+    }
+
+    return NULL;
 }
 
 /* client socket */
@@ -445,7 +472,7 @@ int cnet_get_socket_port(cnet_socket *sock)
     return sock->port;
 }
 
-int cnet_check_error(void *ptr)
+int error(void *ptr)
 {
     return (cnet_io *)ptr == NULL;
 }

@@ -28,7 +28,7 @@ cnet_array *parse_main_args(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-	cnet_array *string_arr = parse_main_args(argc-1, &argv[1]);
+	cnet_array *string_arr = parse_main_args(argc, argv);
 	int ret = user_main(string_arr);
 	cnet_free(string_arr);
 	return ret;
