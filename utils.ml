@@ -31,7 +31,8 @@ let rec final_id_of_sid = function
 
 (* Get a default value for a global variable based on its type *)
 let default_global = function
-    A.Char | A.Int -> (A.Int, SIntlit(0))
+    A.Char -> (A.Char, SCharlit(0))
+  | A.Int -> (A.Int, SIntlit(0))
   | A.Float -> (A.Float, SFloatlit(0.0))
   | A.String -> (A.String, SStrlit(""))
   | A.Void   -> semant_err "[COMPILER BUG] uncaught void global variable detected"
@@ -250,12 +251,14 @@ let builtin_funcs, builtin_funcs_l =
       (String, "reverse", [(String, "t")]);
       (Char, "find_char", [(String, "t"); (Char, "c")]);
       (Void, "split", [(String, "t"); (String, "delim"); (Array(String), "dest")]);
+      (Char, "charat", [(String, "s"); (Int, "i")]);
 
       (* Arrays *)
       (Int, "alength", [((Array(Void)), "s")]);
 
       (* Cnet *)
-      (Int, "cnet_free", [(String, "s")])
+      (* (Int, "cnet_free", [(String, "s")]); *)
+      (Int, "cnet_free", [(Socket, "s")])
     ]
 ;;
 
