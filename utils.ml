@@ -224,6 +224,7 @@ let builtin_funcs, builtin_funcs_l =
 
       (Int, "write", [(Socket, "sock"); (String, "s")]);
       (String, "readln", [(Socket, "sock")]);
+      (String, "readall", [(Socket, "sock")]);
       (String, "read", [(Socket, "sock"); (Int, "len")]);
       (Int, "error", [(Socket, "s")]);
 

@@ -141,12 +141,14 @@ string *readall(void *ptr)
     if (io->io_type == CNET_FILE_STDIN)
 	    io->f = stdin;
 
-    int buf_size = 1;
+    int buf_size = DEFAULT_BUF_SIZE;
     char buf[buf_size];
 
-    printf("starting readall\n");
-    while((n = fread(buf, 1, buf_size, io->f)) > 0){
+    // printf("starting readall\n");
+    while((n = fread(buf, buf_size, 1, io->f)) > 0){
         cnet_strmerge_custom(res, buf, n);
+        if (n < buf_size)
+            break;
         // printf("[buf]: %s\n", buf);
     }
 
