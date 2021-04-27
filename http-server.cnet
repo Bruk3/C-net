@@ -1,0 +1,74 @@
+
+int main(string[] argv)
+{
+	/* language provided array has built in length and safe member access */
+	if (argv.alength() != 3){
+		/* stdout/stdin is just another file */
+		stdout.writeln("usage: " + argv[0] + " <server-port> <web-root>");
+		return -1;
+	}
+
+	string port = argv[1];
+	string webroot = argv[2];
+
+	/* simple socket creation/deletion */
+	// Create a listening socket (also called server socket)
+	socket listener = nopen("", port.toint(), "tcp", "listen");
+  	stdout.writeln("Listening on port: " + port);
+
+	while (1) {
+		socket clntsock = listener.naccept(); /* gives connected socket */
+		/* files/sockets have similar well-defined read/write interfaces */
+		string req_line = clntsock.readln();
+
+		// Accept an incoming connection
+		string[] tokens = new string[3]{"", "", ""};
+		req_line.split(" ", tokens); /* standard library operations on strings are very convenient */
+
+		/* never have to worry about string management, everything is automatically cleaned up */
+		string method = tokens[0];
+		string req_URI = tokens[1];
+		string httpVersion = tokens[2];
+		string fileName;
+		string respHeader;
+
+		if (method.slength() == 0 || httpVersion.slength() == 0 ){
+			respHeader = "501 Not Implemented";
+		} else if (method == "GET") {
+			respHeader = "200 OK";
+			fileName += webroot;
+			fileName += req_URI;
+		} else {
+			stdout.writeln("unsupported HTTP method: " + method);
+			return -1;
+		}
+
+		// if uri ends with a '/', append index.html
+		if (req_URI.charat(req_URI.slength() - 1) == '/'){
+			fileName += "index.html";
+		}
+
+		file targetFile;
+		// Try to open the file or give a 404
+		targetFile = fopen(fileName, "rb");
+		if (targetFile.error()){
+			respHeader = "404 Not Found";
+			stdout.writeln("Requested file " + fileName + " could not be found");
+		} else {
+			respHeader = "200 OK";
+		}
+		// log the request
+		stdout.writeln(req_line);
+
+		if (respHeader == "200 OK")
+			clntsock.writeln("HTTP/1.0 200 OK\n\n" + targetFile.readall());
+		else
+			clntsock.writeln("HTTP/1.0 404 Not Found\n\n");
+
+		stdout.writeln("Finished with current client");
+
+		delete clntsock;
+
+	}
+	return 0;
+}

@@ -322,7 +322,7 @@ let check  = function
             let args = (match fname with
                   FinalID(_) -> args
                 | RID(sm,_) when isbuiltin -> Rid(sm) :: args
-                | RID(_,_) -> semant_err ("function call on member only allowed for builtin functions")
+                | RID(_,r) -> semant_err ("function call on member " ^ r ^ " is not a builtin function" )
                 | indx -> semant_err ("cannot call a function on index " ^ (string_of_rid indx))
               )
             in
@@ -427,12 +427,12 @@ let check  = function
             string_flatten exp, sp
 
           | Delete n ->
-            let t, id' = type_of_identifier scope n in
+            let t, _ = type_of_identifier scope n in
             let err = "illegal identifier for delete: [" ^ string_of_typ t ^ " " ^ string_of_rid n ^
                       "]. Identifier should be of type Struct or Array" in
             let e = Rid(n) in
             let check_valid_delete =  function
-                Array(_) | Struct(_) -> SDelete (expr scope e), sp (* Delete should only be called on arrays and structs *)
+                Array(_) | Struct(_) | File | Socket -> SDelete (expr scope e), sp (* Delete should only be called on arrays and structs *)
               | _ -> semant_err (err)
             in check_valid_delete t
 

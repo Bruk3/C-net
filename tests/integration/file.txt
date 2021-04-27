@@ -1,18 +1,10 @@
 Include the llvm and llvm.analysis packages while compiling
-
 true: package(llvm), package(llvm.analysis)
 
-
-
 # Disable unused variable, and pattern matching not exhaustive warnings
-
 # Enabling this might be useful for debugging in the future
-
 true : warn(+a-4-8-26-27-42)
 
 
-
-
-
 # Enble use of Str package
-
+true: use_str

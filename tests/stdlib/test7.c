@@ -13,7 +13,7 @@ int main()
 
 	cnet_socket *client_sock = cnet_connect_to_host(host_str, port, 0, 0);
 
-	if (cnet_check_error(client_sock))
+	if (error(client_sock))
 		goto failed;
 
 	printf("Connected to host %s\n", host);

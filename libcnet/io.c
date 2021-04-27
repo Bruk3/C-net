@@ -79,7 +79,7 @@ cnet_file *user_fopen(string *fname, string *mode)
     FILE *f = fopen(fname->data, mode->data);
 
     if (!f) {
-		perror("can't open file");
+	perror("can't open file");
         return NULL;
     }
 
@@ -130,6 +130,7 @@ string *cnet_nread(void *ptr, int size)
 
 string *readall(void *ptr)
 {
+
     int n;
     cnet_io *io = (cnet_io *)ptr;
 
@@ -140,11 +141,13 @@ string *readall(void *ptr)
     if (io->io_type == CNET_FILE_STDIN)
 	    io->f = stdin;
 
-    int buf_size = DEFAULT_BUF_SIZE;
+    int buf_size = 1;
     char buf[buf_size];
 
+    // printf("starting readall\n");
     while((n = fread(buf, 1, buf_size, io->f)) > 0){
         cnet_strmerge_custom(res, buf, n);
+        // printf("[buf]: %s\n", buf);
     }
 
     if (ferror(io->f)){
@@ -354,7 +357,7 @@ out:
     return sock;
 }
 
-cnet_socket *cnet_accept_connection(cnet_socket *listener)
+cnet_socket *naccept(cnet_socket *listener)
 {
     if (listener->type != LISTEN){
         perror("Non-Listener socket cannot accept connections.");
@@ -387,6 +390,33 @@ out:
     return conn_sock;
 }
 
+cnet_socket *user_nopen(string *host, int port, string *prot, string *type)
+{
+    int protocol;
+
+    prot->data[prot->length] = '\0';
+
+    if (strcasecmp(prot->data, "tcp") == 0){
+        protocol = 0;
+    } else if (strcasecmp(prot->data, "udp") == 0){
+        protocol = 1;
+    } else {
+        die("Unknown transport protocol passed to nopen");
+    }
+
+    type->data[type->length] = '\0';
+
+    if (strcasecmp(type->data, "listen") == 0){
+        return cnet_listen_socket(0, protocol, port);
+    } else if (strcasecmp(type->data, "connect") == 0){
+        return cnet_connect_to_host(host, port, 0, protocol);
+    } else {
+        die("Invalid socket type passed to nopen");
+    }
+
+    return NULL;
+}
+
 /* client socket */
 cnet_socket *cnet_connect_to_host(string *host, int port, int domain, int type)
 {
@@ -398,6 +428,7 @@ cnet_socket *cnet_connect_to_host(string *host, int port, int domain, int type)
    host->data[host->length] = '\0';
 
     // get server ip from server name
+    // printf("%s\n", host->data);
     if ((he = gethostbyname(host->data)) == NULL){
         perror("gethostbyname failed");
         return NULL;
@@ -445,7 +476,7 @@ int cnet_get_socket_port(cnet_socket *sock)
     return sock->port;
 }
 
-int cnet_check_error(void *ptr)
+int error(void *ptr)
 {
     return (cnet_io *)ptr == NULL;
 }

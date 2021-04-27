@@ -37,7 +37,7 @@ string *substring(string *s, int start, int end);
 
 string *reverse(string *s);
 
-void cnet_str_split(string *s,  string *delim, string **dest, int max);
+void split(string *s,  string *delim, cnet_array *dest);
 
 // Bruk: This is deprecated because of the new one more extra byte allocation
 // That extra byte is used to store a null terminator on demand.

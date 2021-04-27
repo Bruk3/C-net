@@ -10,7 +10,7 @@ int main()
 	cnet_socket *listener = cnet_listen_socket(0, 0, 8090);
 
 	printf("%s\n", "Listener socket created");
-	cnet_socket *conn_sock = cnet_accept_connection(listener);
+	cnet_socket *conn_sock = naccept(listener);
 
 	string *s = cnet_new_str_nolen("Connection accepted");
 

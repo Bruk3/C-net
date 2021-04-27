@@ -14,7 +14,7 @@ file arg_count = (file : );
 }
 {
 socket send = (socket : );
-(socket : send=(socket : nopen((string : "www.google.com"), (string : "tcp"), (int : 80), (string : "connect"))));
+(socket : send=(socket : nopen((string : "www.google.com"), (int : 80), (string : "tcp"), (string : "connect"))));
 }
 {
 string tmp1000 = (string : soi((int : arg1len)));
