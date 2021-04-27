@@ -35,5 +35,3 @@ _opam/
 # runtest logs
 runtests.log
 
-test*
-
