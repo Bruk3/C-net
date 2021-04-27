@@ -14,6 +14,7 @@ int main(string[] argv)
 	/* simple socket creation/deletion */
 	// Create a listening socket (also called server socket)
 	socket listener = nopen("", port.toint(), "tcp", "listen");
+  	stdout.writeln("Listening on port: " + port);
 
 	while (1) {
 		socket clntsock = listener.naccept(); /* gives connected socket */
@@ -28,11 +29,8 @@ int main(string[] argv)
 		string method = tokens[0];
 		string req_URI = tokens[1];
 		string httpVersion = tokens[2];
-
 		string fileName;
 		string respHeader;
-		int size;
-
 
 		if (method.slength() == 0 || httpVersion.slength() == 0 ){
 			respHeader = "501 Not Implemented";
@@ -59,7 +57,6 @@ int main(string[] argv)
 		} else {
 			respHeader = "200 OK";
 		}
-
 		// log the request
 		stdout.writeln(req_line);
 
@@ -73,7 +70,5 @@ int main(string[] argv)
 		delete clntsock;
 
 	}
-
 	return 0;
-
 }
