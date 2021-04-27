@@ -39,7 +39,6 @@ let translate (sdecl_list : sprogram) =
   let i8_t       = L.i8_type     context (* Char *)
   and i32_t      = L.i32_type    context (* Int *)
   and i64_t      = L.i64_type   context  (* Codegen internal use *)
-  and i1_t      = L.i1_type   context  (* Codegen internal use *)
   and float_t    = L.double_type context (* Float *)
   and void_t     = L.void_type   context in
   let str_t      = L.pointer_type i8_t in
@@ -47,7 +46,7 @@ let translate (sdecl_list : sprogram) =
 
 
   (* Return the LLVM type for a cnet type *)
-  let rec ltype_of_typ (t : A.typ) (cstrcts : (A.strct * L.lltype) StringMap.t)
+  let ltype_of_typ (t : A.typ) (cstrcts : (A.strct * L.lltype) StringMap.t)
     : (L.lltype) = match t with
       A.Char            -> i8_t
     | A.Int             -> i32_t
@@ -64,7 +63,7 @@ let translate (sdecl_list : sprogram) =
   let non_ptr_typ t cstrcts = match t with
     | A.String          ->  (snd (find_checked "string" cstrcts))
     | A.Struct(n)       ->  (snd (find_checked n cstrcts))
-    | A.Array(typ)      ->  (snd (find_checked "array" cstrcts))
+    | A.Array(_)      ->  (snd (find_checked "array" cstrcts))
     | A.Socket          ->  (snd (find_checked "cnet_socket" cstrcts))
     | A.File            ->  (snd (find_checked "cnet_file" cstrcts))
     | _                 ->  ltype_of_typ t cstrcts
@@ -110,7 +109,7 @@ in
   in
 
   let ltype_of_typ t = ltype_of_typ t cstructs in
-  let non_ptr_typ t = non_ptr_typ t cstructs in
+  (* let non_ptr_typ t = non_ptr_typ t cstructs in *)
 
   let cbuiltin_vars =
     let declare_struct_var {vtyp=vt; vname=vn} =
@@ -167,9 +166,9 @@ in
       L.var_arg_function_type (ltype_of_typ (A.Array(t))) [| i32_t; i32_t; i32_t; i32_t; (ltype_of_typ t) |] in
   let init_array_func t: L.llvalue =
       L.declare_function "cnet_init_array" (var_arr_t t) the_module in
-  let non_variadic_arr_t t : L.lltype = 
-    L.function_type (ltype_of_typ (A.Array(t))) [| i32_t; i32_t; i32_t |] in 
-  let cnet_array_decl_func t: L.llvalue = 
+  let non_variadic_arr_t t : L.lltype =
+    L.function_type (ltype_of_typ (A.Array(t))) [| i32_t; i32_t; i32_t |] in
+  let cnet_array_decl_func t: L.llvalue =
     L.declare_function "cnet_array_decl" (non_variadic_arr_t t) the_module in
   let arr_idx_t t: L.lltype = match t with
     A.Array(typ) -> L.function_type  (L.pointer_type (ltype_of_typ typ)) [| ltype_of_typ t; i32_t|]
@@ -376,7 +375,7 @@ in
         let type_t = expr builder (A.Int,SIntlit((type_of t))) scope in
         let ll_arr_lit = List.map (fun a -> expr builder a scope) arr_lit in
         let ll_va_args =  size_t :: type_t :: arr_len ::arr_lit_len :: ll_arr_lit in
-        if ((List.length ll_arr_lit) = 0) 
+        if ((List.length ll_arr_lit) = 0)
         then L.build_call (cnet_array_decl_func t) [| size_t ; type_t ; arr_len |] "cnet_array_decl" builder
         else L.build_call (init_array_func t) (Array.of_list ll_va_args) "cnet_init_array" builder
       | SCall (n, args) ->
@@ -444,7 +443,7 @@ in
         ignore (expr builder the_assignment new_scope); (* do the assignment *)
         (new_scope, builder)
 
-      | SDelete e ->let t, e' = e in (match t with
+      | SDelete e ->let t, e' = e in ignore (match t with
           Struct(n) ->(match e' with
                         SId s ->
                           (* Printf.fprintf stderr "To be del:%s\n" (U.final_id_of_sid s); *)
@@ -557,5 +556,5 @@ in
 
       | _ -> codegen_err "unimplemented statement type"
     in
-    List.fold_left stmt (func_scope, builder) fdecl.sbody; () in
+    ignore (List.fold_left stmt (func_scope, builder) fdecl.sbody) in
   List.iter build_function_body fdecls; the_module;

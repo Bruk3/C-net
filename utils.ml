@@ -110,8 +110,6 @@ let ids_to_vdecls (ids : A.id list)=
  * *)
 let handle_strings sexp : sstmt list * sexpr * sstmt list=
   let assign a b = SVdecl_ass({A.vtyp=String; A.vname = a}, b) in
-  let styp = A.String in (* just for easier reading *)
-
   let rec handle_helper stmts cur_exp n = match cur_exp with
 
       (* (A.String as st, SCall(fn, args)) -> *)

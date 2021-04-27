@@ -427,7 +427,7 @@ let check  = function
             string_flatten exp, sp
 
           | Delete n ->
-            let t, id' = type_of_identifier scope n in
+            let t, _ = type_of_identifier scope n in
             let err = "illegal identifier for delete: [" ^ string_of_typ t ^ " " ^ string_of_rid n ^
                       "]. Identifier should be of type Struct or Array" in
             let e = Rid(n) in
