@@ -97,6 +97,8 @@ string *cnet_strcpy(string *dst, string *src)
 		return cnet_strassign(src);
 	}
 
+	printf("cnet_strcpy called into %s from %s\n", src->data, dst->data);
+
 	if (dst->data)
 		free(dst->data);
 

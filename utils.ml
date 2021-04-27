@@ -285,7 +285,7 @@ let decompose_program (sprog : sdecl list) =
                       let user_main = {styp=fd.styp;sfname="user_main";sparameters=new_params;sbody=fd.sbody} in
                         (vdecls, strct_decls, user_main :: fdecls)
                     | _      -> (vdecls, strct_decls,fd::fdecls)
-  in
+                    in
   List.fold_left helper ([], [], []) sprog
 
 

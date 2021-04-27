@@ -189,10 +189,10 @@ in
   let cnet_char_at_func: L.llvalue =
     L.declare_function "cnet_char_at" cnet_char_at_t the_module in
 
-  let memset_t =
-    L.function_type str_t [|str_t; i32_t; i64_t |] in
-  let memset_func =
-    L.declare_function "memset" memset_t the_module in
+  let strlen_t =
+    L.function_type i64_t [|str_t|] in
+  let strlen_func =
+    L.declare_function "strlen" strlen_t the_module in
 
   let main_t : L.lltype =
       L.function_type (ltype_of_typ Int) [| i32_t; ptr_t (ptr_t i8_t)|] in
@@ -271,6 +271,34 @@ in
           else
             lookup_helper n tl
       in
+      let get_strlit_general s_ptr builder =
+        let cnet_str_typ = non_ptr_typ A.String in
+        let the_str = L.build_alloca cnet_str_typ "stacked_strlit" builder in
+        let the_str_ptr = L.build_alloca (ltype_of_typ A.String) "strlit" builder in
+        let the_str_ptr = L.build_store the_str the_str_ptr builder in
+        let s_ptr' = L.build_sext_or_bitcast s_ptr
+            (ltype_of_typ A.String) "cast" builder
+        in
+        let data_mem = L.build_struct_gep the_str 1 "data" builder in (* the_str.data *)
+        let len_mem = L.build_struct_gep the_str 2 "data" builder in (* the_str.length *)
+        let _ = L.build_store s_ptr' data_mem builder in (* the_str.data = %strlit *)
+        let the_len = L.build_call strlen_func [| s_ptr |]
+            "strlit_len" builder
+        in
+        (* cast it to i32_t since strlen returns an i64_t *)
+        let the_len = L.build_trunc_or_bitcast the_len i32_t "strlit_len32" builder in
+        let _ = L.build_store the_len len_mem builder (* the_str.length = strlen(%strlit) *)
+
+        in
+        the_str
+      in
+
+      (* builds a local string on the stack based on the string s *)
+      let get_strlit s builder =
+        let the_global_string = L.build_global_stringptr s "global_strlit" builder
+        in
+        get_strlit_general the_global_string builder
+      in
 
       (* Todo: Recursive lookup for complex data types*)
       (* let lookup n scopes = lookup_helper n (lookup_scope n scopes) *)
@@ -302,7 +330,9 @@ in
         | SIntlit i   -> L.const_int i32_t i
         | SCharlit c  -> L.const_int i8_t c
         | SFloatlit f -> L.const_float float_t f
-        | SId s       -> L.build_load (snd (lookup s)) (U.final_id_of_sid s) builder
+        | SStrlit s   -> get_strlit s builder
+
+        | SId s       -> L.build_load (snd (lookup s )) (U.final_id_of_sid s) builder
 
         | SBinassop (s, op, e) -> let e' =  expr builder e scope
           in (match e with
@@ -356,9 +386,6 @@ in
                                                 A.Minus when t = A.Float -> L.build_fneg
                                               | A.Minus                  -> L.build_neg
                                               | A.Not                  -> L.build_not) e' "tmp" builder
-      | SStrlit s   ->
-        L.build_call cnet_new_str_func [| L.build_global_stringptr s "tmp"
-                                            builder |] "strlit" builder
       | SNew s      ->
         let strct, ll_strct = StringMap.find s cstructs in
         let new_struct = L.build_malloc ll_strct "tmp" builder in
